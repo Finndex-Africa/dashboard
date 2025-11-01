@@ -23,14 +23,14 @@ export default function DashboardPage() {
             title: 'Total Views',
             value: 3456,
             change: 0.43,
-            trend: 'up',
+            trend: 'up' as const,
             icon: <EyeOutlined />,
         },
         {
             title: 'Total Profit',
             value: 42200,
             change: 4.35,
-            trend: 'up',
+            trend: 'up' as const,
             prefix: '$',
             icon: <DollarOutlined />,
         },
@@ -38,14 +38,14 @@ export default function DashboardPage() {
             title: 'Total Products',
             value: 2450,
             change: 2.59,
-            trend: 'up',
+            trend: 'up' as const,
             icon: <ShoppingOutlined />,
         },
         {
             title: 'Total Users',
             value: 3465,
             change: 1.45,
-            trend: 'up',
+            trend: 'up' as const,
             icon: <TeamOutlined />,
         },
     ];
@@ -92,12 +92,12 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            <Card bordered={false}>
+            <Card>
                 <div className="flex justify-between items-center mb-6">
                     <Title level={4} className="!mb-0">Recent Transactions</Title>
                     <Button type="primary">View All</Button>
                 </div>
-                <PropertiesTable />
+                <PropertiesTable properties={[]} />
             </Card>
         </div>
     );

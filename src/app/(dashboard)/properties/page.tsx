@@ -63,9 +63,9 @@ export default function PropertiesPage() {
             while (hasMore) {
                 const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
 
-                // apiClient.get() returns { success: true, data: [...], pagination: {...} }
-                const pageData = response?.data || [];
-                const pagination = response?.pagination;
+                // apiClient.get() returns { success: true, data: { data: [...], pagination: {...} } }
+                const pageData = response?.data?.data || [];
+                const pagination = response?.data?.pagination;
 
                 console.log(`Properties - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
 

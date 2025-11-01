@@ -22,6 +22,7 @@ import type { Service } from '@/types/dashboard';
 import { servicesApi } from '@/services/api/services.api';
 import { uploadMultipleToDigitalOcean } from '@/lib/digitalocean-upload';
 import Modal from 'antd/es/modal';
+import message from 'antd/es/message';
 import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
@@ -55,8 +56,8 @@ export default function ServicesPage() {
 
             while (hasMore) {
                 const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
-                const pageData = response?.data || [];
-                const pagination = response?.pagination;
+                const pageData = response?.data?.data || [];
+                const pagination = response?.data?.pagination;
 
                 console.log(`Services - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
 
@@ -190,7 +191,7 @@ export default function ServicesPage() {
 
     // Filter services
     const filteredServices = services.filter(service => {
-        const matchesSearch = service.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        const matchesSearch = service.title?.toLowerCase().includes(searchText.toLowerCase()) ||
             service.description?.toLowerCase().includes(searchText.toLowerCase());
         const matchesStatus = statusFilter === 'all' || service.status === statusFilter;
         const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;

@@ -144,3 +144,12 @@ export interface Notification {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface SidebarMenuItem {
+    key: string;
+    label: string;
+    icon: React.ReactNode;
+    path: string;
+    roles: string[];
+    children?: SidebarMenuItem[];
+}

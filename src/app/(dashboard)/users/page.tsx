@@ -27,7 +27,8 @@ import {
     CloseCircleOutlined,
 } from '@ant-design/icons';
 import { Column } from '@ant-design/plots';
-import { usersApi, type User } from '@/services/api/users.api';
+import { usersApi } from '@/services/api/users.api';
+import type { User } from '@/types/users';
 
 const { Title, Text } = Typography;
 

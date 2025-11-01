@@ -11,7 +11,8 @@ import {
     MessageOutlined,
     BellOutlined,
 } from '@ant-design/icons';
-import type { SidebarMenuItem, UserRole } from '@/types/dashboard';
+import type { SidebarMenuItem } from '@/types/dashboard';
+import type { UserRole } from '@/types/users';
 
 /**
  * Navigation menu items with role-based access control
@@ -108,13 +109,12 @@ export const filterMenuByRole = (
  * Get default route for user role
  */
 export const getDefaultRoute = (userRole: UserRole): string => {
-    const roleRoutes: Record<UserRole, string> = {
+    const roleRoutes: Partial<Record<UserRole, string>> = {
         admin: '/dashboard',
         agent: '/dashboard',
         landlord: '/dashboard',
         service_provider: '/dashboard',
         home_seeker: '/dashboard',
-        guest: '/',
     };
 
     return roleRoutes[userRole] || '/';

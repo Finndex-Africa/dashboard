@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export default function AuthTransferPage() {
+function AuthTransferContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const hasProcessed = useRef(false);
@@ -69,5 +69,20 @@ export default function AuthTransferPage() {
                 <p className="text-gray-600 mt-2">Please wait</p>
             </div>
         </div>
+    );
+}
+
+export default function AuthTransferPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <h2 className="text-xl font-semibold text-gray-900">Loading...</h2>
+                </div>
+            </div>
+        }>
+            <AuthTransferContent />
+        </Suspense>
     );
 }

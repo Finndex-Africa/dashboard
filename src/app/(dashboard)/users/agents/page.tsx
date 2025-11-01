@@ -17,7 +17,8 @@ import Select from 'antd/es/select';
 import { PlusOutlined, TeamOutlined, TrophyOutlined, DollarCircleOutlined, StarOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Column } from '@ant-design/plots';
 import type { Agent } from '@/types/dashboard';
-import { usersApi, type User } from '@/services/api/users.api';
+import { usersApi } from '@/services/api/users.api';
+import type { User } from '@/types/users';
 
 const { Title } = Typography;
 
@@ -40,12 +41,12 @@ export default function AgentsPage() {
                 _id: user._id,
                 name: `${user.firstName} ${user.lastName}`,
                 email: user.email,
-                phone: user.phoneNumber || 'N/A',
+                phone: user.phone || 'N/A',
                 specialization: 'General',
                 properties: 0,
                 sales: 0,
                 rating: 0,
-                status: user.active ? 'Active' : 'Inactive',
+                status: user.status === 'active' ? 'Active' : 'Inactive',
                 createdAt: user.createdAt,
             }));
 
