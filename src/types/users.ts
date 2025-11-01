@@ -1,18 +1,28 @@
 import { ReactNode } from 'react';
 
-export type UserRole = 'admin' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker' | 'guest';
+export type UserRole = 'admin' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker';
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'blocked';
 
 export interface User {
-  id: string;
-  name: string;
+  _id: string;
+  id?: string; // For backward compatibility
+  firstName?: string;
+  lastName?: string;
+  name?: string;
   email: string;
-  phone?: string;
+  phone: string;
   avatar?: string;
-  role: UserRole;
-  status: UserStatus;
+  userType: UserRole;
+  role?: UserRole; // For backward compatibility
+  status: string;
+  verified: boolean;
+  phoneVerified: boolean;
+  blocked: boolean;
+  blockedReason?: string;
+  blockedAt?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  lastActive?: string;
   properties?: number;
   bookings?: number;
   revenue?: number;

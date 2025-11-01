@@ -24,42 +24,117 @@ import { Line, Pie } from '@ant-design/plots';
 import { propertiesApi } from '@/services/api/properties.api';
 import { servicesApi } from '@/services/api/services.api';
 import { usersApi } from '@/services/api/users.api';
+import { notificationsApi } from '@/services/api/notifications.api';
 import type { Property } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
+
+// Helper functions
+function formatTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
+function getNotificationStatus(type: string): 'success' | 'info' | 'warning' | 'error' | 'default' {
+    const statusMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
+        'property_approved': 'success',
+        'property_rejected': 'error',
+        'booking_confirmed': 'success',
+        'payment_received': 'success',
+        'new_inquiry': 'warning',
+        'property_viewed': 'default',
+        'service_completed': 'success',
+        'review_submitted': 'info',
+    };
+    return statusMap[type] || 'default';
+}
 
 export default function DashboardPage() {
     const [properties, setProperties] = useState<Property[]>([]);
     const [services, setServices] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         let mounted = true;
+
+        // Helper function to fetch all pages of data
+        const fetchAllPages = async (apiCall: any, entityName: string) => {
+            let allData: any[] = [];
+            let currentPage = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                try {
+                    const response = await apiCall({ page: currentPage, limit: 100 });
+
+                    // apiClient.get() returns { success: true, data: [...], pagination: {...} }
+                    const pageData = response?.data || [];
+                    const pagination = response?.pagination;
+
+                    console.log(`${entityName} - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
+
+                    allData = [...allData, ...pageData];
+
+                    // Check if there are more pages
+                    if (!pagination) {
+                        return allData;
+                    }
+
+                    if (currentPage >= pagination.totalPages) {
+                        return allData;
+                    }
+
+                    currentPage++;
+                } catch (error) {
+                    console.error(`Error fetching ${entityName} page ${currentPage}:`, error);
+                    return allData;
+                }
+            }
+
+            return allData;
+        };
+
         const fetchData = async () => {
-            if (loading) return; // Prevent multiple simultaneous requests
+            if (loading) return;
 
             try {
                 setLoading(true);
-                const [propertiesRes, servicesRes, usersRes] = await Promise.all([
-                    propertiesApi.getAll({ page: 1, limit: 100 }).catch(() => ({ data: { data: [] } })),
-                    servicesApi.getAll({ page: 1, limit: 100 }).catch(() => ({ data: { data: [] } })),
-                    usersApi.getAll({ page: 1, limit: 100 }).catch(() => ({ data: { data: [] } })),
+
+                // Fetch ALL data by getting all pages
+                const [propertiesData, servicesData, usersData, notificationsData] = await Promise.all([
+                    fetchAllPages(propertiesApi.getAll, 'properties'),
+                    fetchAllPages(servicesApi.getAll, 'services'),
+                    fetchAllPages(usersApi.getAll, 'users'),
+                    fetchAllPages((params: any) => notificationsApi.getAll({ ...params, limit: 50 }), 'notifications'),
                 ]);
 
                 if (!mounted) return;
 
-                const propertiesData = propertiesRes.data?.data || [];
-                const servicesData = servicesRes.data?.data || [];
-                const usersData = usersRes.data?.data || [];
+                console.log('Fetched ALL Data:', {
+                    properties: propertiesData.length,
+                    services: servicesData.length,
+                    users: usersData.length,
+                    notifications: notificationsData.length,
+                });
 
                 setProperties(propertiesData);
                 setServices(servicesData);
                 setUsers(usersData);
+                setNotifications(notificationsData);
             } catch (error: any) {
                 if (!mounted) return;
                 console.error('Failed to fetch dashboard data:', error);
-                // Only show error for non-404 errors
                 if (error.response?.status !== 404) {
                     message.error('Failed to load dashboard data');
                 }
@@ -75,7 +150,7 @@ export default function DashboardPage() {
         return () => {
             mounted = false;
         };
-    }, []); // Empty dependency array - only run once on mount
+    }, []);
 
     const totalProperties = properties.length;
     const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
@@ -118,47 +193,90 @@ export default function DashboardPage() {
         },
     ];
 
-    const revenueData = [
-        { month: 'Jan', value: 45000 },
-        { month: 'Feb', value: 52000 },
-        { month: 'Mar', value: 48000 },
-        { month: 'Apr', value: 61000 },
-        { month: 'May', value: 55000 },
-        { month: 'Jun', value: 67000 },
-        { month: 'Jul', value: 71000 },
-        { month: 'Aug', value: 69000 },
-        { month: 'Sep', value: 78000 },
-        { month: 'Oct', value: 82000 },
-        { month: 'Nov', value: 75000 },
-        { month: 'Dec', value: 85000 },
-    ];
+    // Generate monthly trend data from createdAt dates
+    const generateMonthlyData = () => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentYear = new Date().getFullYear();
 
-    const propertyTypeData = [
-        { type: 'Apartments', value: 45 },
-        { type: 'Houses', value: 38 },
-        { type: 'Commercial', value: 32 },
-        { type: 'Land', value: 25 },
-        { type: 'Other', value: 16 },
-    ];
+        return months.map((month, index) => {
+            const monthProperties = properties.filter(p => {
+                const date = new Date(p.createdAt);
+                return date.getMonth() === index && date.getFullYear() === currentYear;
+            });
+            const monthServices = services.filter(s => {
+                const date = new Date(s.createdAt);
+                return date.getMonth() === index && date.getFullYear() === currentYear;
+            });
+            const monthUsers = users.filter(u => {
+                const date = new Date(u.createdAt);
+                return date.getMonth() === index && date.getFullYear() === currentYear;
+            });
 
-    const revenueConfig = {
-        data: revenueData,
+            return {
+                month,
+                properties: monthProperties.length,
+                services: monthServices.length,
+                users: monthUsers.length,
+            };
+        });
+    };
+
+    const monthlyData = generateMonthlyData();
+
+    // Calculate property type distribution from real data
+    const propertyTypeCounts: Record<string, number> = {};
+    properties.forEach(p => {
+        const type = p.propertyType || 'Other';
+        propertyTypeCounts[type] = (propertyTypeCounts[type] || 0) + 1;
+    });
+
+    const propertyTypeData = Object.entries(propertyTypeCounts)
+        .map(([type, value]) => ({
+            type: type.charAt(0).toUpperCase() + type.slice(1),
+            value,
+        }))
+        .sort((a, b) => b.value - a.value);
+
+    // Top performing properties by views and inquiries
+    const topProperties = properties
+        .map(p => ({
+            ...p,
+            performance: (p.views || 0) + (p.inquiries || 0) * 5, // Weight inquiries higher
+        }))
+        .sort((a, b) => b.performance - a.performance)
+        .slice(0, 5);
+
+    // Format recent activity from notifications
+    const recentActivity = notifications.slice(0, 7).map(notif => ({
+        action: notif.title || 'Activity',
+        detail: notif.message || '',
+        time: formatTimeAgo(notif.createdAt),
+        status: getNotificationStatus(notif.type),
+    }));
+
+    // Multi-line chart config
+    const trendConfig = {
+        data: monthlyData.flatMap(d => [
+            { month: d.month, value: d.properties, category: 'Properties' },
+            { month: d.month, value: d.services, category: 'Services' },
+            { month: d.month, value: d.users, category: 'Users' },
+        ]),
         xField: 'month',
         yField: 'value',
+        seriesField: 'category',
         smooth: true,
-        color: '#667eea',
-        areaStyle: {
-            fill: 'l(270) 0:#ffffff 0.5:#667eea30 1:#667eea',
+        color: ['#667eea', '#4facfe', '#43e97b'],
+        legend: {
+            position: 'top' as const,
         },
-        line: {
-            size: 3,
+        lineStyle: {
+            lineWidth: 3,
         },
         point: {
             size: 5,
             shape: 'circle',
             style: {
                 fill: 'white',
-                stroke: '#667eea',
                 lineWidth: 2,
             },
         },
@@ -295,24 +413,24 @@ export default function DashboardPage() {
                         style={{ borderRadius: '16px', border: 'none' }}
                         className="shadow-lg"
                     >
-                        <Line {...revenueConfig} height={320} />
+                        <Line {...trendConfig} height={320} />
                         <Row gutter={16} className="mt-6 pt-4 border-t">
                             <Col span={8} className="text-center">
-                                <Text type="secondary">Average</Text>
+                                <Text type="secondary">Properties</Text>
                                 <div className="mt-1">
-                                    <Text strong className="text-xl">$65,167</Text>
+                                    <Text strong className="text-xl" style={{ color: '#667eea' }}>{totalProperties}</Text>
                                 </div>
                             </Col>
                             <Col span={8} className="text-center">
-                                <Text type="secondary">Highest</Text>
+                                <Text type="secondary">Services</Text>
                                 <div className="mt-1">
-                                    <Text strong className="text-xl" style={{ color: '#52c41a' }}>$85,000</Text>
+                                    <Text strong className="text-xl" style={{ color: '#4facfe' }}>{totalServices}</Text>
                                 </div>
                             </Col>
                             <Col span={8} className="text-center">
-                                <Text type="secondary">Lowest</Text>
+                                <Text type="secondary">Users</Text>
                                 <div className="mt-1">
-                                    <Text strong className="text-xl" style={{ color: '#faad14' }}>$45,000</Text>
+                                    <Text strong className="text-xl" style={{ color: '#43e97b' }}>{totalUsers}</Text>
                                 </div>
                             </Col>
                         </Row>
@@ -331,23 +449,31 @@ export default function DashboardPage() {
                         style={{ borderRadius: '16px', border: 'none' }}
                         className="shadow-lg"
                     >
-                        <Pie {...pieConfig} height={320} />
-                        <div className="mt-4 space-y-2">
-                            {propertyTypeData.map((item, idx) => (
-                                <div key={idx} className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <div style={{
-                                            width: '12px',
-                                            height: '12px',
-                                            borderRadius: '50%',
-                                            background: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'][idx],
-                                        }} />
-                                        <Text>{item.type}</Text>
-                                    </div>
-                                    <Text strong>{item.value}</Text>
+                        {propertyTypeData.length > 0 ? (
+                            <>
+                                <Pie {...pieConfig} height={320} />
+                                <div className="mt-4 space-y-2">
+                                    {propertyTypeData.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <div style={{
+                                                    width: '12px',
+                                                    height: '12px',
+                                                    borderRadius: '50%',
+                                                    background: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'][idx % 5],
+                                                }} />
+                                                <Text>{item.type}</Text>
+                                            </div>
+                                            <Text strong>{item.value}</Text>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Text type="secondary">No property type data available</Text>
+                            </div>
+                        )}
                     </Card>
                 </Col>
             </Row>
@@ -367,27 +493,30 @@ export default function DashboardPage() {
                         className="shadow-lg"
                     >
                         <div className="space-y-4">
-                            {[
-                                { name: 'Karen Luxury Villa', location: 'Karen, Nairobi', value: 125000, performance: 95 },
-                                { name: 'Westlands Penthouse', location: 'Westlands', value: 98000, performance: 88 },
-                                { name: 'Kilimani Apartment', location: 'Kilimani', value: 85000, performance: 82 },
-                                { name: 'Runda Estate', location: 'Runda', value: 156000, performance: 78 },
-                                { name: 'CBD Office Space', location: 'Central', value: 210000, performance: 92 },
-                            ].map((prop, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <Avatar size={48} style={{ background: `linear-gradient(135deg, ${['#667eea', '#f093fb', '#4facfe', '#43e97b', '#ffa94d'][idx]} 0%, ${['#764ba2', '#f5576c', '#00f2fe', '#38f9d7', '#ff6b6b'][idx]} 100%)` }}>
-                                        {idx + 1}
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <Text strong className="block">{prop.name}</Text>
-                                        <Text type="secondary" className="text-sm">{prop.location}</Text>
+                            {topProperties.length > 0 ? topProperties.map((prop, idx) => {
+                                const maxPerformance = Math.max(...topProperties.map(p => p.performance || 0));
+                                const performancePercent = maxPerformance > 0 ? ((prop.performance || 0) / maxPerformance) * 100 : 0;
+
+                                return (
+                                    <div key={prop._id || idx} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <Avatar size={48} style={{ background: `linear-gradient(135deg, ${['#667eea', '#f093fb', '#4facfe', '#43e97b', '#ffa94d'][idx]} 0%, ${['#764ba2', '#f5576c', '#00f2fe', '#38f9d7', '#ff6b6b'][idx]} 100%)` }}>
+                                            {idx + 1}
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <Text strong className="block">{prop.title || 'Untitled Property'}</Text>
+                                            <Text type="secondary" className="text-sm">{prop.location || 'Location not specified'}</Text>
+                                        </div>
+                                        <div className="text-right">
+                                            <Text strong className="block">${(prop.price || 0).toLocaleString()}</Text>
+                                            <Progress percent={Math.round(performancePercent)} size="small" strokeColor="#52c41a" showInfo={false} />
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <Text strong className="block">${prop.value.toLocaleString()}</Text>
-                                        <Progress percent={prop.performance} size="small" strokeColor="#52c41a" showInfo={false} />
-                                    </div>
+                                );
+                            }) : (
+                                <div className="text-center py-8">
+                                    <Text type="secondary">No properties data available</Text>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </Card>
                 </Col>
@@ -405,15 +534,7 @@ export default function DashboardPage() {
                         className="shadow-lg"
                     >
                         <div className="space-y-3">
-                            {[
-                                { action: 'New property listed', detail: 'Karen Luxury Villa', time: '2 mins ago', status: 'success' },
-                                { action: 'Booking confirmed', detail: 'Westlands Apartment #304', time: '15 mins ago', status: 'info' },
-                                { action: 'Payment received', detail: '$125,000 from John Doe', time: '1 hour ago', status: 'success' },
-                                { action: 'New inquiry', detail: 'Office Space CBD', time: '2 hours ago', status: 'warning' },
-                                { action: 'Property viewed', detail: 'Kilimani Penthouse', time: '3 hours ago', status: 'default' },
-                                { action: 'Service completed', detail: 'Plumbing - Runda Estate', time: '4 hours ago', status: 'success' },
-                                { action: 'Review submitted', detail: '5 stars for Karen Villa', time: '5 hours ago', status: 'success' },
-                            ].map((activity, idx) => (
+                            {recentActivity.length > 0 ? recentActivity.map((activity, idx) => (
                                 <div key={idx} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                     <Badge status={activity.status as any} />
                                     <div className="flex-1">
@@ -422,7 +543,11 @@ export default function DashboardPage() {
                                     </div>
                                     <Text type="secondary" className="text-xs whitespace-nowrap">{activity.time}</Text>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8">
+                                    <Text type="secondary">No recent activity</Text>
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </Col>

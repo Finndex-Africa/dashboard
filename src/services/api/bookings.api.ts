@@ -6,19 +6,22 @@ export interface BookingFilters {
     limit?: number;
     status?: string;
     userId?: string;
-    propertyId?: string;
+    serviceId?: string;
+    providerId?: string;
 }
 
 export interface CreateBookingDto {
-    propertyId: string;
-    checkIn: string;
-    checkOut: string;
-    guests?: number;
+    serviceId: string;
+    scheduledDate: string;
+    duration: number;
+    contactPhone: string;
     notes?: string;
+    serviceLocation?: string;
+    serviceAddress?: string;
 }
 
 export interface UpdateBookingDto extends Partial<CreateBookingDto> {
-    status?: 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'in_progress' | 'rejected';
 }
 
 export const bookingsApi = {
@@ -29,7 +32,8 @@ export const bookingsApi = {
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.status) params.append('status', filters.status);
         if (filters?.userId) params.append('userId', filters.userId);
-        if (filters?.propertyId) params.append('propertyId', filters.propertyId);
+        if (filters?.serviceId) params.append('serviceId', filters.serviceId);
+        if (filters?.providerId) params.append('providerId', filters.providerId);
 
         return apiClient.get<PaginatedResponse<Booking>>(`/bookings?${params.toString()}`);
     },

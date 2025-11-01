@@ -1,18 +1,5 @@
 import { apiClient, PaginatedResponse } from '@/lib/api-client';
-
-export interface User {
-    _id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: 'ADMIN' | 'LANDLORD' | 'AGENT' | 'SERVICE_PROVIDER' | 'HOME_SEEKER';
-    phoneNumber?: string;
-    profilePicture?: string;
-    verified: boolean;
-    active: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
+import { User } from '@/types/users';
 
 export interface UserFilters {
     page?: number;

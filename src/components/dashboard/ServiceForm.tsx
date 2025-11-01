@@ -9,30 +9,29 @@ import Button from 'antd/es/button';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
 import Divider from 'antd/es/divider';
-import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import Upload from 'antd/es/upload';
 import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
-import type { Property } from '@/types/dashboard';
+import type { Service } from '@/types/dashboard';
 import { showToast } from '@/lib/toast';
 
 const { TextArea } = Input;
 const { Text } = Typography;
 
-interface PropertyFormProps {
-    initialValues?: Partial<Property>;
-    onSubmit: (values: Partial<Property>, files: File[]) => void;
+interface ServiceFormProps {
+    initialValues?: Partial<Service>;
+    onSubmit: (values: Partial<Service>, files: File[]) => void;
     onCancel: () => void;
     loading?: boolean;
 }
 
-export function PropertyForm({
+export function ServiceForm({
     initialValues,
     onSubmit,
     onCancel,
     loading,
-}: PropertyFormProps) {
+}: ServiceFormProps) {
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
 
@@ -43,7 +42,7 @@ export function PropertyForm({
             .map(file => file.originFileObj as File);
 
         // Pass form values and files to parent
-        // Parent will create property first, then upload images with property ID
+        // Parent will create service first, then upload images with service ID
         onSubmit(values, filesToUpload);
     };
 
@@ -73,19 +72,19 @@ export function PropertyForm({
         >
             {/* Basic Information Section */}
             <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
+                <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
                     Basic Information
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24}>
                         <Form.Item
                             name="title"
-                            label="Property Title"
-                            rules={[{ required: true, message: 'Please enter property title' }]}
+                            label="Service Name"
+                            rules={[{ required: true, message: 'Please enter service name' }]}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., Luxury 3BR Apartment in Westlands"
+                                placeholder="e.g., Professional Cleaning Service"
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -95,38 +94,39 @@ export function PropertyForm({
                 <Row gutter={16}>
                     <Col xs={24} sm={12}>
                         <Form.Item
-                            name="propertyType"
-                            label="Property Type"
-                            rules={[{ required: true, message: 'Please select property type' }]}
+                            name="category"
+                            label="Category"
+                            rules={[{ required: true, message: 'Please select category' }]}
                         >
                             <Select
                                 size="large"
-                                placeholder="Select type"
+                                placeholder="Select category"
                                 style={{ borderRadius: '8px' }}
                             >
-                                <Select.Option value="Apartment">Apartment</Select.Option>
-                                <Select.Option value="House">House</Select.Option>
-                                <Select.Option value="Commercial">Commercial</Select.Option>
-                                <Select.Option value="Land">Land</Select.Option>
-                                <Select.Option value="Other">Other</Select.Option>
+                                <Select.Option value="electrical">Electrical</Select.Option>
+                                <Select.Option value="plumbing">Plumbing</Select.Option>
+                                <Select.Option value="cleaning">Cleaning</Select.Option>
+                                <Select.Option value="painting_decoration">Painting & Decoration</Select.Option>
+                                <Select.Option value="carpentry_furniture">Carpentry & Furniture</Select.Option>
+                                <Select.Option value="moving_logistics">Moving & Logistics</Select.Option>
+                                <Select.Option value="security_services">Security Services</Select.Option>
+                                <Select.Option value="sanitation_services">Sanitation Services</Select.Option>
+                                <Select.Option value="maintenance">Maintenance</Select.Option>
+                                <Select.Option value="other">Other</Select.Option>
                             </Select>
                         </Form.Item>
                     </Col>
                     <Col xs={24} sm={12}>
                         <Form.Item
-                            name="furnished"
-                            label="Furnished"
-                            rules={[{ required: true, message: 'Please select furnished status' }]}
-                            initialValue={false}
+                            name="location"
+                            label="Location"
+                            rules={[{ required: true, message: 'Please enter location' }]}
                         >
-                            <Select
+                            <Input
                                 size="large"
-                                placeholder="Select furnished status"
+                                placeholder="e.g., Paynesville City, Montserrado"
                                 style={{ borderRadius: '8px' }}
-                            >
-                                <Select.Option value={true}>Yes - Furnished</Select.Option>
-                                <Select.Option value={false}>No - Unfurnished</Select.Option>
-                            </Select>
+                            />
                         </Form.Item>
                     </Col>
                 </Row>
@@ -134,13 +134,13 @@ export function PropertyForm({
 
             <Divider style={{ margin: '24px 0' }} />
 
-            {/* Property Details Section */}
+            {/* Pricing Section */}
             <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Property Details
+                <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
+                    Pricing
                 </Text>
                 <Row gutter={16}>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24}>
                         <Form.Item
                             name="price"
                             label="Price (USD)"
@@ -151,46 +151,6 @@ export function PropertyForm({
                                 style={{ width: '100%', borderRadius: '8px' }}
                                 placeholder="0"
                                 min={0}
-                                formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
-                            />
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                        <Form.Item
-                            name="rooms"
-                            label="Number of Rooms"
-                            rules={[{ required: true, message: 'Please enter number of rooms' }]}
-                        >
-                            <InputNumber
-                                size="large"
-                                style={{ width: '100%', borderRadius: '8px' }}
-                                placeholder="0"
-                                min={1}
-                            />
-                        </Form.Item>
-                    </Col>
-                </Row>
-            </div>
-
-            <Divider style={{ margin: '24px 0' }} />
-
-            {/* Location Section */}
-            <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Location
-                </Text>
-                <Row gutter={16}>
-                    <Col xs={24}>
-                        <Form.Item
-                            name="location"
-                            label="Full Address"
-                            rules={[{ required: true, message: 'Please enter location' }]}
-                        >
-                            <Input
-                                size="large"
-                                placeholder="e.g., Westlands, Nairobi, Kenya"
-                                style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
                     </Col>
@@ -201,17 +161,17 @@ export function PropertyForm({
 
             {/* Description Section */}
             <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
+                <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
                     Description
                 </Text>
                 <Form.Item
                     name="description"
-                    label="Property Description"
+                    label="Service Description"
                     rules={[{ required: true, message: 'Please enter description' }]}
                 >
                     <TextArea
                         rows={5}
-                        placeholder="Provide a detailed description of the property, including key features and amenities..."
+                        placeholder="Provide a detailed description of the service, including what's included and any special features..."
                         style={{ borderRadius: '8px' }}
                     />
                 </Form.Item>
@@ -221,8 +181,8 @@ export function PropertyForm({
 
             {/* Images Section */}
             <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Property Images
+                <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
+                    Service Images
                 </Text>
                 <Upload
                     listType="picture-card"
@@ -272,13 +232,13 @@ export function PropertyForm({
                     htmlType="submit"
                     loading={loading}
                     style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                         border: 'none',
                         borderRadius: '8px',
                         minWidth: '120px'
                     }}
                 >
-                    {initialValues ? 'Update Property' : 'Add Property'}
+                    {initialValues ? 'Update Service' : 'Add Service'}
                 </Button>
             </div>
         </Form>

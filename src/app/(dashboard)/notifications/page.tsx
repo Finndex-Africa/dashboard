@@ -42,7 +42,7 @@ export default function NotificationsPage() {
         try {
             setLoading(true);
             const response = await notificationsApi.getAll({ page: 1, limit: 100 });
-            const notificationsData = response.data?.data || [];
+            const notificationsData = response.data || [];
             setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
         } catch (error: any) {
             console.error('Failed to fetch notifications:', error);
@@ -324,9 +324,7 @@ export default function NotificationsPage() {
                     renderItem={(notification) => (
                         <List.Item
                             key={notification._id}
-                            className={`cursor-pointer hover:bg-gray-50 transition-colors ${
-                                !notification.read ? 'bg-blue-50' : ''
-                            }`}
+                            className={`cursor-pointer transition-colors`}
                             onClick={() => handleView(notification)}
                             actions={[
                                 !notification.read && (

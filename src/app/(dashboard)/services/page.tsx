@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
-import message from 'antd/es/message';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
@@ -18,11 +17,16 @@ import {
     SearchOutlined,
 } from '@ant-design/icons';
 import { ServicesTable } from '@/components/dashboard/ServicesTable';
+import { ServiceForm } from '@/components/dashboard/ServiceForm';
 import type { Service } from '@/types/dashboard';
 import { servicesApi } from '@/services/api/services.api';
+import { uploadMultipleToDigitalOcean } from '@/lib/digitalocean-upload';
+import Modal from 'antd/es/modal';
+import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
+const { TextArea } = Input;
 
 export default function ServicesPage() {
     const [services, setServices] = useState<Service[]>([]);
@@ -30,6 +34,13 @@ export default function ServicesPage() {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [editingService, setEditingService] = useState<Service | null>(null);
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
 
     useEffect(() => {
         fetchServices();
@@ -38,16 +49,32 @@ export default function ServicesPage() {
     const fetchServices = async () => {
         try {
             setLoading(true);
-            const response = await servicesApi.getAll({ page: 1, limit: 100 });
-            if (response.data && 'data' in response.data) {
-                setServices(response.data.data || []);
-            } else {
-                setServices(response.data as any || []);
+            let allServices: Service[] = [];
+            let currentPage = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
+                const pageData = response?.data || [];
+                const pagination = response?.pagination;
+
+                console.log(`Services - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
+
+                allServices = [...allServices, ...pageData];
+
+                if (!pagination || currentPage >= pagination.totalPages) {
+                    hasMore = false;
+                    continue;
+                }
+                currentPage++;
             }
+
+            setServices(allServices);
+            console.log(`Fetched ${allServices.length} total services`);
         } catch (error: any) {
             console.error('Failed to fetch services:', error);
             if (error.response?.status !== 404) {
-                message.error('Failed to load services');
+                showToast.error('Failed to load services');
             }
             setServices([]);
         } finally {
@@ -58,17 +85,113 @@ export default function ServicesPage() {
     const handleDelete = async (service: Service) => {
         try {
             await servicesApi.delete(service._id);
-            message.success('Service deleted successfully');
+            showToast.success('Service deleted successfully');
             fetchServices();
         } catch (error: any) {
-            message.error(error.response?.data?.message || 'Failed to delete service');
+            showToast.error(error.response?.data?.message || 'Failed to delete service');
+        }
+    };
+
+    const handleAddService = () => {
+        setEditingService(null);
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (values: Partial<Service>, files: File[]) => {
+        try {
+            setSubmitting(true);
+
+            if (editingService) {
+                // For editing, just update the service
+                await servicesApi.update(editingService._id, values);
+                showToast.success('Service updated successfully');
+            } else {
+                // Step 1: Create service without images
+                const response = await servicesApi.create(values as any);
+                const createdService = response.data;
+
+                // Step 2: Upload images to DigitalOcean with service ID as subfolder
+                let imageUrls: string[] = [];
+                if (files.length > 0) {
+                    try {
+                        imageUrls = await uploadMultipleToDigitalOcean(
+                            files,
+                            'services',
+                            createdService._id
+                        );
+                    } catch (uploadError) {
+                        console.error('Failed to upload images:', uploadError);
+                        showToast.warning('Service created but image upload failed. You can add images later.');
+                    }
+                }
+
+                // Step 3: Update service with image URLs if any were uploaded
+                if (imageUrls.length > 0) {
+                    await servicesApi.update(createdService._id, { images: imageUrls } as any);
+                }
+
+                showToast.success('Service created successfully');
+            }
+
+            setIsModalOpen(false);
+            fetchServices();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to save service');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setIsModalOpen(false);
+        setEditingService(null);
+    };
+
+    const handleApprove = async (service: Service) => {
+        try {
+            setActionLoading(service._id);
+            await servicesApi.verify(service._id);
+            message.success('Service approved successfully');
+            fetchServices();
+        } catch (error: any) {
+            message.error(error.response?.data?.message || 'Failed to approve service');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRejectClick = (service: Service) => {
+        setSelectedService(service);
+        setRejectionReason('');
+        setIsRejectModalOpen(true);
+    };
+
+    const handleRejectSubmit = async () => {
+        if (!selectedService) return;
+
+        if (!rejectionReason.trim()) {
+            message.error('Please provide a rejection reason');
+            return;
+        }
+
+        try {
+            setActionLoading(selectedService._id);
+            await servicesApi.reject(selectedService._id, rejectionReason);
+            message.success('Service rejected successfully. An email has been sent to the creator.');
+            setIsRejectModalOpen(false);
+            setRejectionReason('');
+            fetchServices();
+        } catch (error: any) {
+            message.error(error.response?.data?.message || 'Failed to reject service');
+        } finally {
+            setActionLoading(null);
         }
     };
 
     // Filter services
     const filteredServices = services.filter(service => {
         const matchesSearch = service.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-                            service.description?.toLowerCase().includes(searchText.toLowerCase());
+            service.description?.toLowerCase().includes(searchText.toLowerCase());
         const matchesStatus = statusFilter === 'all' || service.status === statusFilter;
         const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
         return matchesSearch && matchesStatus && matchesCategory;
@@ -84,14 +207,14 @@ export default function ServicesPage() {
         },
         {
             title: 'Active',
-            value: services.filter(s => s.status === 'Active').length,
+            value: services.filter(s => s.status === 'active').length,
             icon: <CheckCircleOutlined />,
             color: '#43e97b',
             bgColor: '#43e97b15',
         },
         {
             title: 'Pending',
-            value: services.filter(s => s.status === 'Pending').length,
+            value: services.filter(s => s.status === 'pending').length,
             icon: <ClockCircleOutlined />,
             color: '#ffa94d',
             bgColor: '#ffa94d15',
@@ -125,6 +248,7 @@ export default function ServicesPage() {
                     type="primary"
                     icon={<PlusOutlined />}
                     size="large"
+                    onClick={handleAddService}
                     style={{
                         background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                         border: 'none',
@@ -210,9 +334,10 @@ export default function ServicesPage() {
                             placeholder="Status"
                         >
                             <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="Active">Active</Select.Option>
-                            <Select.Option value="Inactive">Inactive</Select.Option>
-                            <Select.Option value="Pending">Pending</Select.Option>
+                            <Select.Option value="active">Active</Select.Option>
+                            <Select.Option value="inactive">Inactive</Select.Option>
+                            <Select.Option value="pending">Pending</Select.Option>
+                            <Select.Option value="rejected">Rejected</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={6} lg={4}>
@@ -255,8 +380,55 @@ export default function ServicesPage() {
                     services={filteredServices}
                     loading={loading}
                     onDelete={handleDelete}
+                    onApprove={handleApprove}
+                    onReject={handleRejectClick}
+                    approvingId={actionLoading}
                 />
             </Card>
+
+            {/* Add/Edit Service Modal */}
+            <Modal
+                title={editingService ? 'Edit Service' : 'Add New Service'}
+                open={isModalOpen}
+                onCancel={handleCancel}
+                footer={null}
+                width={800}
+                styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
+            >
+                <ServiceForm
+                    initialValues={editingService || undefined}
+                    onSubmit={handleSubmit}
+                    onCancel={handleCancel}
+                    loading={submitting}
+                />
+            </Modal>
+
+            {/* Reject Service Modal */}
+            <Modal
+                title="Reject Service"
+                open={isRejectModalOpen}
+                onCancel={() => {
+                    setIsRejectModalOpen(false);
+                    setRejectionReason('');
+                }}
+                onOk={handleRejectSubmit}
+                okText="Reject"
+                okButtonProps={{ danger: true, loading: actionLoading === selectedService?._id }}
+            >
+                <div style={{ marginTop: '16px' }}>
+                    <Text strong>Rejection Reason:</Text>
+                    <Text type="secondary" style={{ display: 'block', marginTop: '4px', marginBottom: '8px' }}>
+                        This reason will be sent to the service provider via email.
+                    </Text>
+                    <TextArea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Please provide a clear reason for rejecting this service..."
+                        rows={4}
+                        style={{ marginTop: '8px' }}
+                    />
+                </div>
+            </Modal>
         </div>
     );
 }

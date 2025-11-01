@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
-import message from 'antd/es/message';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
@@ -27,19 +26,26 @@ import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 import { PropertyForm } from '@/components/dashboard/PropertyForm';
 import type { Property } from '@/types/dashboard';
 import { propertiesApi } from '@/services/api/properties.api';
+import { uploadMultipleToDigitalOcean } from '@/lib/digitalocean-upload';
+import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
+const { TextArea } = Input;
 
 export default function PropertiesPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [properties, setProperties] = useState<Property[]>([]);
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
 
     useEffect(() => {
         fetchProperties();
@@ -48,16 +54,43 @@ export default function PropertiesPage() {
     const fetchProperties = async () => {
         try {
             setLoading(true);
-            const response = await propertiesApi.getAll({ page: 1, limit: 100 });
-            if (response.data && 'data' in response.data) {
-                setProperties(response.data.data || []);
-            } else {
-                setProperties(response.data as any || []);
+
+            // Fetch ALL pages of properties
+            let allProperties: Property[] = [];
+            let currentPage = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
+
+                // apiClient.get() returns { success: true, data: [...], pagination: {...} }
+                const pageData = response?.data || [];
+                const pagination = response?.pagination;
+
+                console.log(`Properties - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
+
+                allProperties = [...allProperties, ...pageData];
+
+                // Check if there are more pages
+                if (!pagination) {
+                    hasMore = false;
+                    continue;
+                }
+
+                if (currentPage >= pagination.totalPages) {
+                    hasMore = false;
+                    continue;
+                }
+
+                currentPage++;
             }
+
+            setProperties(allProperties);
+            console.log(`Fetched ${allProperties.length} total properties`);
         } catch (error: any) {
             console.error('Failed to fetch properties:', error);
             if (error.response?.status !== 404) {
-                message.error('Failed to load properties');
+                showToast.error('Failed to load properties');
             }
             setProperties([]);
         } finally {
@@ -65,14 +98,41 @@ export default function PropertiesPage() {
         }
     };
 
-    const handleAddProperty = async (values: any) => {
+    const handleAddProperty = async (values: any, files: File[]) => {
         try {
-            await propertiesApi.create(values);
-            message.success('Property added successfully');
+            setSubmitting(true);
+
+            // Step 1: Create property without images
+            const response = await propertiesApi.create(values);
+            const createdProperty = response.data;
+
+            // Step 2: Upload images to DigitalOcean with property ID as subfolder
+            let imageUrls: string[] = [];
+            if (files.length > 0) {
+                try {
+                    imageUrls = await uploadMultipleToDigitalOcean(
+                        files,
+                        'properties',
+                        createdProperty._id
+                    );
+                } catch (uploadError) {
+                    console.error('Failed to upload images:', uploadError);
+                    showToast.warning('Property created but image upload failed. You can add images later.');
+                }
+            }
+
+            // Step 3: Update property with image URLs if any were uploaded
+            if (imageUrls.length > 0) {
+                await propertiesApi.update(createdProperty._id, { images: imageUrls });
+            }
+
+            showToast.success('Property added successfully');
             setIsAddModalOpen(false);
             fetchProperties();
         } catch (error: any) {
-            message.error(error.response?.data?.message || 'Failed to add property');
+            showToast.error(error.response?.data?.message || 'Failed to add property');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -84,10 +144,51 @@ export default function PropertiesPage() {
     const handleDelete = async (property: Property) => {
         try {
             await propertiesApi.delete(property._id);
-            message.success('Property deleted successfully');
+            showToast.success('Property deleted successfully');
             fetchProperties();
         } catch (error: any) {
-            message.error(error.response?.data?.message || 'Failed to delete property');
+            showToast.error(error.response?.data?.message || 'Failed to delete property');
+        }
+    };
+
+    const handleApprove = async (property: Property) => {
+        try {
+            setActionLoading(property._id);
+            await propertiesApi.approve(property._id);
+            showToast.success('Property approved successfully');
+            fetchProperties();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to approve property');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRejectClick = (property: Property) => {
+        setSelectedProperty(property);
+        setRejectionReason('');
+        setIsRejectModalOpen(true);
+    };
+
+    const handleRejectSubmit = async () => {
+        if (!selectedProperty) return;
+
+        if (!rejectionReason.trim()) {
+            showToast.error('Please provide a rejection reason');
+            return;
+        }
+
+        try {
+            setActionLoading(selectedProperty._id);
+            await propertiesApi.reject(selectedProperty._id, rejectionReason);
+            showToast.success('Property rejected successfully. An email has been sent to the creator.');
+            setIsRejectModalOpen(false);
+            setRejectionReason('');
+            fetchProperties();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to reject property');
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -96,7 +197,7 @@ export default function PropertiesPage() {
         const matchesSearch = property.title?.toLowerCase().includes(searchText.toLowerCase()) ||
                             property.location?.toLowerCase().includes(searchText.toLowerCase());
         const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
-        const matchesType = typeFilter === 'all' || property.type === typeFilter;
+        const matchesType = typeFilter === 'all' || property.propertyType === typeFilter;
         return matchesSearch && matchesStatus && matchesType;
     });
 
@@ -117,18 +218,39 @@ export default function PropertiesPage() {
             bgColor: '#f093fb15',
         },
         {
-            title: 'Available',
-            value: properties.filter(p => p.status === 'Available').length,
+            title: 'Approved',
+            value: properties.filter(p => p.status === 'approved').length,
             icon: <CheckCircleOutlined />,
             color: '#43e97b',
             bgColor: '#43e97b15',
         },
         {
-            title: 'Rented',
-            value: properties.filter(p => p.status === 'Rented').length,
+            title: 'Pending',
+            value: properties.filter(p => p.status === 'pending').length,
             icon: <ClockCircleOutlined />,
             color: '#ffa94d',
             bgColor: '#ffa94d15',
+        },
+        {
+            title: 'Rented',
+            value: properties.filter(p => p.status === 'rented').length,
+            icon: <CheckCircleOutlined />,
+            color: '#4facfe',
+            bgColor: '#4facfe15',
+        },
+        {
+            title: 'Rejected',
+            value: properties.filter(p => p.status === 'rejected').length,
+            icon: <ClockCircleOutlined />,
+            color: '#f5576c',
+            bgColor: '#f5576c15',
+        },
+        {
+            title: 'Archived',
+            value: properties.filter(p => p.status === 'archived').length,
+            icon: <ClockCircleOutlined />,
+            color: '#95a5a6',
+            bgColor: '#95a5a615',
         },
     ];
 
@@ -236,10 +358,11 @@ export default function PropertiesPage() {
                             placeholder="Status"
                         >
                             <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="Available">Available</Select.Option>
-                            <Select.Option value="Rented">Rented</Select.Option>
-                            <Select.Option value="Sold">Sold</Select.Option>
-                            <Select.Option value="Pending">Pending</Select.Option>
+                            <Select.Option value="approved">Approved</Select.Option>
+                            <Select.Option value="pending">Pending</Select.Option>
+                            <Select.Option value="rented">Rented</Select.Option>
+                            <Select.Option value="rejected">Rejected</Select.Option>
+                            <Select.Option value="archived">Archived</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={6} lg={4}>
@@ -280,6 +403,9 @@ export default function PropertiesPage() {
                     loading={loading}
                     onView={handleView}
                     onDelete={handleDelete}
+                    onApprove={handleApprove}
+                    onReject={handleRejectClick}
+                    approvingId={actionLoading}
                 />
             </Card>
 
@@ -299,7 +425,7 @@ export default function PropertiesPage() {
                 <PropertyForm
                     onSubmit={handleAddProperty}
                     onCancel={() => setIsAddModalOpen(false)}
-                    loading={loading}
+                    loading={submitting}
                 />
             </Modal>
 
@@ -329,14 +455,15 @@ export default function PropertiesPage() {
                         <Descriptions.Item label="Title" span={2}>
                             <Text strong>{selectedProperty.title}</Text>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Type">{selectedProperty.type}</Descriptions.Item>
+                        <Descriptions.Item label="Type">{selectedProperty.propertyType}</Descriptions.Item>
                         <Descriptions.Item label="Status">
                             <Tag color={
-                                selectedProperty.status === 'Available' ? 'green' :
-                                selectedProperty.status === 'Rented' ? 'blue' :
-                                selectedProperty.status === 'Sold' ? 'red' : 'orange'
+                                selectedProperty.status === 'approved' ? 'green' :
+                                selectedProperty.status === 'rented' ? 'blue' :
+                                selectedProperty.status === 'rejected' ? 'red' :
+                                selectedProperty.status === 'archived' ? 'gray' : 'orange'
                             }>
-                                {selectedProperty.status}
+                                {selectedProperty.status.charAt(0).toUpperCase() + selectedProperty.status.slice(1)}
                             </Tag>
                         </Descriptions.Item>
                         <Descriptions.Item label="Location" span={2}>{selectedProperty.location}</Descriptions.Item>
@@ -360,6 +487,33 @@ export default function PropertiesPage() {
                     </Descriptions>
                 </Modal>
             )}
+
+            {/* Reject Property Modal */}
+            <Modal
+                title="Reject Property"
+                open={isRejectModalOpen}
+                onCancel={() => {
+                    setIsRejectModalOpen(false);
+                    setRejectionReason('');
+                }}
+                onOk={handleRejectSubmit}
+                okText="Reject"
+                okButtonProps={{ danger: true, loading: actionLoading === selectedProperty?._id }}
+            >
+                <div style={{ marginTop: '16px' }}>
+                    <Text strong>Rejection Reason:</Text>
+                    <Text type="secondary" style={{ display: 'block', marginTop: '4px', marginBottom: '8px' }}>
+                        This reason will be sent to the property creator via email.
+                    </Text>
+                    <TextArea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Please provide a clear reason for rejecting this property..."
+                        rows={4}
+                        style={{ marginTop: '8px' }}
+                    />
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -75,4 +75,14 @@ export const propertiesApi = {
     search: async (query: string) => {
         return apiClient.get<Property[]>(`/properties/search?q=${encodeURIComponent(query)}`);
     },
+
+    // Approve property (Admin only)
+    approve: async (id: string) => {
+        return apiClient.patch<Property>(`/properties/${id}/approve`, {});
+    },
+
+    // Reject property (Admin only)
+    reject: async (id: string, rejectionReason: string) => {
+        return apiClient.patch<Property>(`/properties/${id}/reject`, { rejectionReason });
+    },
 };

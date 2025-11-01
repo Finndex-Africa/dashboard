@@ -1,23 +1,27 @@
 export enum ServiceCategory {
-    MAINTENANCE = 'maintenance',
+    ELECTRICAL = 'electrical',
+    PLUMBING = 'plumbing',
     CLEANING = 'cleaning',
-    SECURITY = 'security',
-    MOVING = 'moving',
-    LANDSCAPING = 'landscaping',
-    PEST_CONTROL = 'pest_control',
-    PAINTING = 'painting',
+    PAINTING_DECORATION = 'painting_decoration',
+    CARPENTRY_FURNITURE = 'carpentry_furniture',
+    MOVING_LOGISTICS = 'moving_logistics',
+    SECURITY_SERVICES = 'security_services',
+    SANITATION_SERVICES = 'sanitation_services',
+    MAINTENANCE = 'maintenance',
     OTHER = 'other'
 }
 
 export interface Service {
     _id: string;
-    name: string;
+    title: string;
     description: string;
     category: string;
-    provider: string;
+    location: string;
     price: number;
-    status: 'Active' | 'Inactive' | 'Pending';
+    status: 'pending' | 'active' | 'rejected' | 'inactive';
     rating?: number;
+    images?: string[];
+    provider?: string | { _id: string; name: string; email: string };
     createdAt: string;
     updatedAt: string;
 }
@@ -26,15 +30,27 @@ export interface Property {
     _id: string;
     title: string;
     type: 'Apartment' | 'House' | 'Commercial' | 'Land' | 'Other';
+    propertyType: string;
     location: string;
     price: number;
-    status: 'Available' | 'Rented' | 'Sold' | 'Pending';
+    status: 'pending' | 'approved' | 'rejected' | 'rented' | 'archived';
     bedrooms?: number;
     bathrooms?: number;
-    area: number;
+    rooms?: number;
+    area?: number;
     description: string;
     images: string[];
     agentId?: string;
+    landlordId?: string;
+    views?: number;
+    inquiries?: number;
+    isPremium?: boolean;
+    rating?: number;
+    reviewCount?: number;
+    furnished?: boolean;
+    priceUnit?: string;
+    availableFrom?: string;
+    availableTo?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -94,14 +110,25 @@ export interface ApiResponse<T> {
 
 export interface Booking {
     _id: string;
-    propertyId: string | Property;
-    userId: string;
-    checkIn: string;
-    checkOut: string;
-    status: 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
-    totalPrice: number;
-    guests?: number;
+    serviceId: string | Service;
+    userId: string | { _id: string; name: string; email: string; phone?: string; avatar?: string };
+    providerId: string | { _id: string; name: string; email: string; phone?: string; avatar?: string };
+    scheduledDate: string;
+    duration: number; // Duration in hours
     notes?: string;
+    contactPhone: string;
+    serviceLocation?: string;
+    serviceAddress?: string;
+    totalPrice: number;
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'in_progress' | 'rejected';
+    paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
+    paymentMethod?: string;
+    paymentReference?: string;
+    paidAt?: string;
+    cancellationReason?: string;
+    cancelledAt?: string;
+    completedAt?: string;
+    confirmedAt?: string;
     createdAt: string;
     updatedAt: string;
 }

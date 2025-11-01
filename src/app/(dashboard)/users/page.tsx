@@ -46,7 +46,7 @@ export default function UsersPage() {
             setLoading(true);
             const response = await usersApi.getAll({ page: 1, limit: 100 });
             // API returns { success: true, data: { data: [...], pagination: {...} } }
-            const usersData = response.data?.data || [];
+            const usersData = response.data || [];
             setUsers(Array.isArray(usersData) ? usersData : []);
         } catch (error: any) {
             console.error('Failed to fetch users:', error);
@@ -82,59 +82,35 @@ export default function UsersPage() {
     };
 
     const totalUsers = users.length;
-    const adminUsers = users.filter(u => u.role === 'ADMIN').length;
-    const landlordUsers = users.filter(u => u.role === 'LANDLORD').length;
-    const agentUsers = users.filter(u => u.role === 'AGENT').length;
-    const serviceProviderUsers = users.filter(u => u.role === 'SERVICE_PROVIDER').length;
-    const homeSeekerUsers = users.filter(u => u.role === 'HOME_SEEKER').length;
+    const adminUsers = users.filter(u => u.userType === 'admin').length;
+    const landlordUsers = users.filter(u => u.userType === 'landlord').length;
+    const agentUsers = users.filter(u => u.userType === 'agent').length;
+    const serviceProviderUsers = users.filter(u => u.userType === 'service_provider').length;
+    const homeSeekerUsers = users.filter(u => u.userType === 'home_seeker').length;
     const verifiedUsers = users.filter(u => u.verified).length;
-    const activeUsers = users.filter(u => u.active).length;
+    const activeUsers = users.filter(u => u.status === 'active').length;
 
-    const userTypeData = [
-        { type: 'Admin', count: adminUsers },
-        { type: 'Landlord', count: landlordUsers },
-        { type: 'Agent', count: agentUsers },
-        { type: 'Service Provider', count: serviceProviderUsers },
-        { type: 'Home Seeker', count: homeSeekerUsers },
-    ];
-
-    const chartConfig = {
-        data: userTypeData,
-        xField: 'type',
-        yField: 'count',
-        color: '#1890ff',
-        columnStyle: { radius: [8, 8, 0, 0] },
-        label: {
-            position: 'top' as const,
-            style: {
-                fill: '#000000',
-                opacity: 0.6,
-            },
-        },
-    };
-
-    const getRoleColor = (role: User['role']) => {
+    const getRoleColor = (role: User['userType']) => {
         switch (role) {
-            case 'ADMIN': return 'red';
-            case 'LANDLORD': return 'blue';
-            case 'AGENT': return 'green';
-            case 'SERVICE_PROVIDER': return 'orange';
-            case 'HOME_SEEKER': return 'purple';
+            case 'admin': return 'red';
+            case 'landlord': return 'blue';
+            case 'agent': return 'green';
+            case 'service_provider': return 'orange';
+            case 'home_seeker': return 'purple';
             default: return 'default';
         }
     };
 
-    const getRoleLabel = (role: User['role']) => {
+    const getRoleLabel = (role: User['userType']) => {
         switch (role) {
-            case 'ADMIN': return 'Admin';
-            case 'LANDLORD': return 'Landlord';
-            case 'AGENT': return 'Agent';
-            case 'SERVICE_PROVIDER': return 'Service Provider';
-            case 'HOME_SEEKER': return 'Home Seeker';
+            case 'admin': return 'Admin';
+            case 'landlord': return 'Landlord';
+            case 'agent': return 'Agent';
+            case 'service_provider': return 'Service Provider';
+            case 'home_seeker': return 'Home Seeker';
             default: return role;
         }
     };
-
     const columns = [
         {
             title: 'User',
@@ -153,23 +129,23 @@ export default function UsersPage() {
         },
         {
             title: 'Phone',
-            dataIndex: 'phoneNumber',
-            key: 'phoneNumber',
+            dataIndex: 'phone',
+            key: 'phone',
             render: (phone: string) => phone || 'N/A',
         },
         {
             title: 'Role',
-            dataIndex: 'role',
-            key: 'role',
+            dataIndex: 'userType',
+            key: 'userType',
             filters: [
-                { text: 'Admin', value: 'ADMIN' },
-                { text: 'Landlord', value: 'LANDLORD' },
-                { text: 'Agent', value: 'AGENT' },
-                { text: 'Service Provider', value: 'SERVICE_PROVIDER' },
-                { text: 'Home Seeker', value: 'HOME_SEEKER' },
+                { text: 'admin', value: 'admin' },
+                { text: 'Landlord', value: 'landlord' },
+                { text: 'Agent', value: 'agent' },
+                { text: 'Service_rovider', value: 'service_provider' },
+                { text: 'Home Seeker', value: 'home_seeker' },
             ],
-            onFilter: (value: any, record: User) => record.role === value,
-            render: (role: User['role']) => (
+            onFilter: (value: any, record: User) => record.userType === value,
+            render: (role: User['userType']) => (
                 <Tag color={getRoleColor(role)}>{getRoleLabel(role)}</Tag>
             ),
         },
@@ -190,15 +166,15 @@ export default function UsersPage() {
         },
         {
             title: 'Status',
-            dataIndex: 'active',
-            key: 'active',
+            dataIndex: 'status',
+            key: 'status',
             filters: [
-                { text: 'Active', value: true },
-                { text: 'Inactive', value: false },
+                { text: 'Active', value: "active" },
+                { text: 'Inactive', value: "inactive" },
             ],
-            onFilter: (value: any, record: User) => record.active === value,
-            render: (active: boolean) => (
-                <Tag color={active ? 'green' : 'red'}>{active ? 'Active' : 'Inactive'}</Tag>
+            onFilter: (value: any, record: User) => record.status === value,
+            render: (status: string) => (
+                <Tag color={status === 'active' ? 'green' : 'red'}>{status === 'active' ? 'Active' : 'Inactive'}</Tag>
             ),
         },
         {
@@ -342,10 +318,6 @@ export default function UsersPage() {
                 </Col>
             </Row>
 
-            <Card title={<Text strong>User Distribution by Type</Text>}>
-                <Column {...chartConfig} height={300} />
-            </Card>
-
             <Card>
                 <Table columns={columns} dataSource={users} loading={loading} rowKey="_id" pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} users`, showSizeChanger: true }} />
             </Card>
@@ -362,12 +334,12 @@ export default function UsersPage() {
                                 <div className="text-gray-500">{selectedUser.email}</div>
                             </div>
                         </div>
-                        <div><Text type="secondary">Phone Number</Text><div className="font-medium">{selectedUser.phoneNumber || 'N/A'}</div></div>
-                        <div><Text type="secondary">Role</Text><div><Tag color={getRoleColor(selectedUser.role)}>{getRoleLabel(selectedUser.role)}</Tag></div></div>
+                        <div><Text type="secondary">Phone Number</Text><div className="font-medium">{selectedUser.phone || 'N/A'}</div></div>
+                        <div><Text type="secondary">Role</Text><div><Tag color={getRoleColor(selectedUser.userType)}>{getRoleLabel(selectedUser.userType)}</Tag></div></div>
                         <div><Text type="secondary">Verification Status</Text><div><Tag color={selectedUser.verified ? 'green' : 'orange'} icon={selectedUser.verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>{selectedUser.verified ? 'Verified' : 'Not Verified'}</Tag></div></div>
-                        <div><Text type="secondary">Account Status</Text><div><Tag color={selectedUser.active ? 'green' : 'red'}>{selectedUser.active ? 'Active' : 'Inactive'}</Tag></div></div>
+                        <div><Text type="secondary">Account Status</Text><div><Tag color={selectedUser.status === 'active' ? 'green' : 'red'}>{selectedUser.status === 'active' ? 'Active' : 'Inactive'}</Tag></div></div>
                         <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
-                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{new Date(selectedUser.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
+                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
                     </div>
                 )}
             </Modal>

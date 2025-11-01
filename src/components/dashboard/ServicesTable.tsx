@@ -6,7 +6,7 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -16,6 +16,9 @@ interface ServicesTableProps {
     onView?: (service: Service) => void;
     onEdit?: (service: Service) => void;
     onDelete?: (service: Service) => void;
+    onApprove?: (service: Service) => void;
+    onReject?: (service: Service) => void;
+    approvingId?: string | null;
 }
 
 export function ServicesTable({
@@ -24,18 +27,27 @@ export function ServicesTable({
     onView,
     onEdit,
     onDelete,
+    onApprove,
+    onReject,
+    approvingId,
 }: ServicesTableProps) {
     const getStatusColor = (status: Service['status']) => {
         switch (status) {
-            case 'Active':
+            case 'active':
                 return 'green';
-            case 'Inactive':
+            case 'inactive':
                 return 'red';
-            case 'Pending':
+            case 'pending':
                 return 'orange';
+            case 'rejected':
+                return 'volcano';
             default:
                 return 'default';
         }
+    };
+
+    const getStatusLabel = (status: Service['status']) => {
+        return status.charAt(0).toUpperCase() + status.slice(1);
     };
 
     const columns: ColumnsType<Service> = [
@@ -73,13 +85,14 @@ export function ServicesTable({
             dataIndex: 'status',
             key: 'status',
             filters: [
-                { text: 'Active', value: 'Active' },
-                { text: 'Inactive', value: 'Inactive' },
-                { text: 'Pending', value: 'Pending' },
+                { text: 'Active', value: 'active' },
+                { text: 'Inactive', value: 'inactive' },
+                { text: 'Pending', value: 'pending' },
+                { text: 'Rejected', value: 'rejected' },
             ],
             onFilter: (value, record) => record.status === value,
             render: (status: Service['status']) => (
-                <Tag color={getStatusColor(status)}>{status}</Tag>
+                <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
             ),
         },
         {
@@ -98,34 +111,60 @@ export function ServicesTable({
             key: 'actions',
             render: (_, record) => (
                 <Space size="small">
-                    <Tooltip title="View">
-                        <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => onView?.(record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => onEdit?.(record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                        <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => onDelete?.(record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Download">
-                        <Button
-                            type="text"
-                            icon={<DownloadOutlined />}
-                        />
-                    </Tooltip>
+                    {record.status === 'pending' && onApprove && onReject ? (
+                        <>
+                            <Tooltip title="Approve">
+                                <Button
+                                    type="primary"
+                                    size="small"
+                                    icon={<CheckOutlined />}
+                                    loading={approvingId === record._id}
+                                    onClick={() => onApprove(record)}
+                                    style={{
+                                        background: '#43e97b',
+                                        borderColor: '#43e97b',
+                                    }}
+                                >
+                                    Approve
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Reject">
+                                <Button
+                                    danger
+                                    size="small"
+                                    icon={<CloseOutlined />}
+                                    onClick={() => onReject(record)}
+                                >
+                                    Reject
+                                </Button>
+                            </Tooltip>
+                        </>
+                    ) : (
+                        <>
+                            <Tooltip title="View">
+                                <Button
+                                    type="text"
+                                    icon={<EyeOutlined />}
+                                    onClick={() => onView?.(record)}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Edit">
+                                <Button
+                                    type="text"
+                                    icon={<EditOutlined />}
+                                    onClick={() => onEdit?.(record)}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => onDelete?.(record)}
+                                />
+                            </Tooltip>
+                        </>
+                    )}
                 </Space>
             ),
         },

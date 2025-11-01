@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import Layout from 'antd/es/layout';
 import Menu from 'antd/es/menu';
-import Button from 'antd/es/button';
 import Dropdown from 'antd/es/dropdown';
-import Input from 'antd/es/input';
 import Space from 'antd/es/space';
 import Avatar from 'antd/es/avatar';
 import {
@@ -16,15 +14,13 @@ import {
     MessageOutlined,
     SettingOutlined,
     LogoutOutlined,
-    SearchOutlined,
-    BellOutlined,
-    SunOutlined,
-    MoonOutlined,
     UserOutlined,
     CalendarOutlined,
+    BellOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { designTokens } from '@/config/theme';
+import { Toaster } from 'react-hot-toast';
 
 const { Sider, Header } = Layout;
 
@@ -34,7 +30,6 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [collapsed, setCollapsed] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
     const [user, setUser] = useState<any>(null);
     const router = useRouter();
     const pathname = usePathname();
@@ -50,8 +45,6 @@ export default function DashboardLayout({
             }
         }
     }, []);
-
-    const { Search } = Input;
 
     const handleMenuClick = (key: string) => {
         if (key === 'logout') {
@@ -136,8 +129,47 @@ export default function DashboardLayout({
     };
 
     return (
-        <Layout>
-            <Sider
+        <>
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: '#fff',
+                        color: '#333',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        padding: '16px',
+                        fontSize: '14px',
+                    },
+                    success: {
+                        iconTheme: {
+                            primary: '#43e97b',
+                            secondary: '#fff',
+                        },
+                        style: {
+                            border: '1px solid #43e97b20',
+                        },
+                    },
+                    error: {
+                        iconTheme: {
+                            primary: '#ff6b6b',
+                            secondary: '#fff',
+                        },
+                        style: {
+                            border: '1px solid #ff6b6b20',
+                        },
+                    },
+                    loading: {
+                        iconTheme: {
+                            primary: '#4facfe',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
+            <Layout>
+                <Sider
                 collapsible
                 collapsed={collapsed}
                 onCollapse={setCollapsed}
@@ -190,72 +222,37 @@ export default function DashboardLayout({
                         boxShadow: designTokens.shadows.base,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        justifyContent: 'flex-end',
                         height: '72px',
                     }}
                 >
-                    <div className="flex-1 pt-1 max-w-2xl">
-                        <Search
-                            placeholder="Search properties, services, users..."
-                            allowClear
-                            size="large"
-                            prefix={<SearchOutlined style={{ color: '#667eea', fontSize: '18px' }} />}
-                            style={{
-                                borderRadius: '12px',
-                                border: '1px solid #e8e8e8',
-                            }}
-                        />
-                    </div>
-                    <Space size="middle">
-                        <Button
-                            type="text"
-                            icon={<SettingOutlined style={{ fontSize: '18px' }} />}
-                            size="large"
-                            style={{ borderRadius: '10px' }}
-                            className="hover:bg-gray-50"
-                        />
-                        <Button
-                            type="text"
-                            icon={<BellOutlined style={{ fontSize: '18px' }} />}
-                            size="large"
-                            style={{ borderRadius: '10px' }}
-                            className="hover:bg-gray-50"
-                        />
-                        <Button
-                            type="text"
-                            icon={darkMode ? <SunOutlined style={{ fontSize: '18px' }} /> : <MoonOutlined style={{ fontSize: '18px' }} />}
-                            onClick={() => setDarkMode(!darkMode)}
-                            size="large"
-                            style={{ borderRadius: '10px' }}
-                            className="hover:bg-gray-50"
-                        />
-                        <Dropdown menu={{ items: userMenuItems }}>
-                            <Space className="cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-all">
-                                <Avatar
-                                    src={user?.avatar}
-                                    icon={!user?.avatar && <UserOutlined />}
-                                    size={40}
-                                    style={{
-                                        backgroundColor: '#6366f1',
-                                        border: '2px solid #f0f0f0'
-                                    }}
-                                />
-                                <div className="hidden md:block">
-                                    <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '18px' }}>
-                                        {user?.firstName || user?.email?.split('@')[0] || 'Super'} {user?.lastName || 'Admin'}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: '#888', lineHeight: '16px' }}>
-                                        {user?.userType || 'Admin'}
-                                    </div>
+                    <Dropdown menu={{ items: userMenuItems }}>
+                        <Space className="cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-all">
+                            <Avatar
+                                src={user?.avatar}
+                                icon={!user?.avatar && <UserOutlined />}
+                                size={40}
+                                style={{
+                                    backgroundColor: '#6366f1',
+                                    border: '2px solid #f0f0f0'
+                                }}
+                            />
+                            <div className="hidden md:block">
+                                <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '18px' }}>
+                                    {user?.firstName || user?.email?.split('@')[0] || 'Super'} {user?.lastName || 'Admin'}
                                 </div>
-                            </Space>
-                        </Dropdown>
-                    </Space>
+                                <div style={{ fontSize: '12px', color: '#888', lineHeight: '16px' }}>
+                                    {user?.userType || 'Admin'}
+                                </div>
+                            </div>
+                        </Space>
+                    </Dropdown>
                 </Header>
                 <div className="p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
                     {children}
                 </div>
             </Layout>
         </Layout>
+        </>
     );
 }

@@ -38,12 +38,12 @@ export const notificationsApi = {
 
     // Mark notification as read
     markAsRead: async (id: string) => {
-        return apiClient.patch<Notification>(`/notifications/${id}`, { read: true });
+        return apiClient.patch<Notification>(`/notifications/${id}/read`, {});
     },
 
     // Mark all notifications as read
     markAllAsRead: async () => {
-        return apiClient.patch<void>('/notifications/mark-all-read', {});
+        return apiClient.patch<void>('/notifications/read-all', {});
     },
 
     // Create new notification

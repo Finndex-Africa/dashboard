@@ -96,13 +96,18 @@ export const servicesApi = {
         return apiClient.get<Service[]>(`/services/search?q=${encodeURIComponent(query)}`);
     },
 
-    // Verify service (Admin only)
+    // Verify service (Admin only) - This approves the service
     verify: async (id: string) => {
-        return apiClient.patch<Service>(`/services/${id}/verify`);
+        return apiClient.patch<Service>(`/services/${id}/verify`, {});
+    },
+
+    // Reject service (Admin only)
+    reject: async (id: string, rejectionReason: string) => {
+        return apiClient.patch<Service>(`/services/${id}/reject`, { rejectionReason });
     },
 
     // Mark as featured (Admin only)
     feature: async (id: string, days: number) => {
-        return apiClient.patch<Service>(`/services/${id}/feature?days=${days}`);
+        return apiClient.patch<Service>(`/services/${id}/feature?days=${days}`, {});
     },
 };

@@ -12,7 +12,6 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
-import message from 'antd/es/message';
 import Modal from 'antd/es/modal';
 import {
     CalendarOutlined,
@@ -26,6 +25,7 @@ import {
 import { bookingsApi } from '@/services/api/bookings.api';
 import type { Booking } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
+import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -46,12 +46,12 @@ export default function BookingsPage() {
         try {
             setLoading(true);
             const response = await bookingsApi.getAll({ page: 1, limit: 100 });
-            const bookingsData = response.data?.data || [];
+            const bookingsData = response.data || [];
             setBookings(Array.isArray(bookingsData) ? bookingsData : []);
         } catch (error: any) {
             console.error('Failed to fetch bookings:', error);
             if (error.response?.status !== 404) {
-                message.error('Failed to load bookings');
+                showToast.error('Failed to load bookings');
             }
             setBookings([]);
         } finally {
@@ -73,11 +73,11 @@ export default function BookingsPage() {
             onOk: async () => {
                 try {
                     await bookingsApi.delete(booking._id);
-                    message.success('Booking deleted successfully');
+                    showToast.success('Booking deleted successfully');
                     fetchBookings();
                 } catch (error: any) {
                     console.error('Failed to delete booking:', error);
-                    message.error('Failed to delete booking');
+                    showToast.error('Failed to delete booking');
                 }
             },
         });
@@ -86,16 +86,16 @@ export default function BookingsPage() {
     // Filter bookings
     const filteredBookings = bookings.filter(booking => {
         const matchesSearch = searchText === '' ||
-            (typeof booking.propertyId === 'object' && booking.propertyId?.title?.toLowerCase().includes(searchText.toLowerCase()));
+            (typeof booking.serviceId === 'object' && booking.serviceId?.title?.toLowerCase().includes(searchText.toLowerCase()));
         const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
 
     const totalBookings = bookings.length;
-    const pendingBookings = bookings.filter(b => b.status === 'Pending').length;
-    const confirmedBookings = bookings.filter(b => b.status === 'Confirmed').length;
+    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
     const totalRevenue = bookings
-        .filter(b => b.status === 'Completed' || b.status === 'Confirmed')
+        .filter(b => b.status === 'completed' || b.status === 'confirmed')
         .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
     const stats = [
@@ -131,61 +131,92 @@ export default function BookingsPage() {
 
     const getStatusColor = (status: Booking['status']) => {
         switch (status) {
-            case 'Pending':
+            case 'pending':
                 return 'orange';
-            case 'Confirmed':
+            case 'confirmed':
                 return 'blue';
-            case 'Completed':
+            case 'in_progress':
+                return 'cyan';
+            case 'completed':
                 return 'green';
-            case 'Cancelled':
+            case 'cancelled':
                 return 'red';
+            case 'rejected':
+                return 'volcano';
             default:
                 return 'default';
         }
     };
 
+    const getStatusLabel = (status: Booking['status']) => {
+        return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+    };
+
+    const getPaymentStatusColor = (status: Booking['paymentStatus']) => {
+        switch (status) {
+            case 'completed':
+                return 'green';
+            case 'pending':
+                return 'orange';
+            case 'failed':
+                return 'red';
+            case 'refunded':
+                return 'blue';
+            default:
+                return 'default';
+        }
+    };
+
+    const formatLabel = (text: string) => {
+        return text.charAt(0).toUpperCase() + text.slice(1).replace('_', ' ');
+    };
+
     const columns: ColumnsType<Booking> = [
         {
-            title: 'Property',
-            dataIndex: 'propertyId',
-            key: 'propertyId',
-            render: (property: any) => (
+            title: 'Service',
+            dataIndex: 'serviceId',
+            key: 'serviceId',
+            render: (service: any) => (
                 <div>
                     <div className="font-medium text-gray-900">
-                        {typeof property === 'object' ? property.title : 'N/A'}
+                        {typeof service === 'object' ? service.title : 'N/A'}
                     </div>
                     <div className="text-sm text-gray-500">
-                        {typeof property === 'object' && property.location ? property.location : ''}
+                        {typeof service === 'object' && service.category ? service.category : ''}
                     </div>
                 </div>
             ),
         },
         {
-            title: 'Check In',
-            dataIndex: 'checkIn',
-            key: 'checkIn',
-            sorter: (a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime(),
+            title: 'Scheduled Date',
+            dataIndex: 'scheduledDate',
+            key: 'scheduledDate',
+            sorter: (a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime(),
             render: (date) => new Date(date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
             }),
         },
         {
-            title: 'Check Out',
-            dataIndex: 'checkOut',
-            key: 'checkOut',
-            render: (date) => new Date(date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-            }),
+            title: 'Duration',
+            dataIndex: 'duration',
+            key: 'duration',
+            render: (duration) => `${duration} ${duration === 1 ? 'hour' : 'hours'}`,
         },
         {
-            title: 'Guests',
-            dataIndex: 'guests',
-            key: 'guests',
-            render: (guests) => guests || 'N/A',
+            title: 'Customer',
+            dataIndex: 'userId',
+            key: 'userId',
+            render: (user: any) => (
+                <div>
+                    <div className="font-medium text-gray-900">
+                        {typeof user === 'object' ? user.name : 'N/A'}
+                    </div>
+                </div>
+            ),
         },
         {
             title: 'Total Price',
@@ -199,7 +230,7 @@ export default function BookingsPage() {
             dataIndex: 'status',
             key: 'status',
             render: (status: Booking['status']) => (
-                <Tag color={getStatusColor(status)}>{status}</Tag>
+                <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
             ),
         },
         {
@@ -229,7 +260,7 @@ export default function BookingsPage() {
                         <Button
                             type="text"
                             icon={<EditOutlined />}
-                            onClick={() => message.info('Edit functionality coming soon')}
+                            onClick={() => showToast.warning('Edit functionality coming soon')}
                         />
                     </Tooltip>
                     <Tooltip title="Delete">
@@ -257,7 +288,7 @@ export default function BookingsPage() {
                     }}>
                         Bookings
                     </Title>
-                    <Text type="secondary">Manage property bookings and reservations</Text>
+                    <Text type="secondary">Manage service bookings and appointments</Text>
                 </div>
             </div>
 
@@ -314,7 +345,7 @@ export default function BookingsPage() {
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={16} lg={14}>
                         <Search
-                            placeholder="Search bookings by property name..."
+                            placeholder="Search bookings by service name..."
                             allowClear
                             size="large"
                             prefix={<SearchOutlined style={{ color: '#667eea' }} />}
@@ -334,10 +365,12 @@ export default function BookingsPage() {
                             placeholder="Status"
                         >
                             <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="Pending">Pending</Select.Option>
-                            <Select.Option value="Confirmed">Confirmed</Select.Option>
-                            <Select.Option value="Cancelled">Cancelled</Select.Option>
-                            <Select.Option value="Completed">Completed</Select.Option>
+                            <Select.Option value="pending">Pending</Select.Option>
+                            <Select.Option value="confirmed">Confirmed</Select.Option>
+                            <Select.Option value="in_progress">In Progress</Select.Option>
+                            <Select.Option value="completed">Completed</Select.Option>
+                            <Select.Option value="cancelled">Cancelled</Select.Option>
+                            <Select.Option value="rejected">Rejected</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={24} lg={4}>
@@ -385,37 +418,53 @@ export default function BookingsPage() {
                 {selectedBooking && (
                     <div className="space-y-4" style={{ marginTop: '20px' }}>
                         <div>
-                            <Text type="secondary">Property</Text>
+                            <Text type="secondary">Service</Text>
                             <div className="font-medium">
-                                {typeof selectedBooking.propertyId === 'object'
-                                    ? selectedBooking.propertyId.title
+                                {typeof selectedBooking.serviceId === 'object'
+                                    ? selectedBooking.serviceId.title
                                     : 'N/A'}
                             </div>
                         </div>
                         <div>
-                            <Text type="secondary">Check In</Text>
+                            <Text type="secondary">Customer</Text>
                             <div className="font-medium">
-                                {new Date(selectedBooking.checkIn).toLocaleDateString('en-US', {
+                                {typeof selectedBooking.userId === 'object'
+                                    ? selectedBooking.userId.name
+                                    : 'N/A'}
+                            </div>
+                        </div>
+                        <div>
+                            <Text type="secondary">Scheduled Date</Text>
+                            <div className="font-medium">
+                                {new Date(selectedBooking.scheduledDate).toLocaleDateString('en-US', {
                                     month: 'long',
                                     day: 'numeric',
                                     year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
                                 })}
                             </div>
                         </div>
                         <div>
-                            <Text type="secondary">Check Out</Text>
-                            <div className="font-medium">
-                                {new Date(selectedBooking.checkOut).toLocaleDateString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                })}
-                            </div>
+                            <Text type="secondary">Duration</Text>
+                            <div className="font-medium">{selectedBooking.duration} {selectedBooking.duration === 1 ? 'hour' : 'hours'}</div>
                         </div>
                         <div>
-                            <Text type="secondary">Guests</Text>
-                            <div className="font-medium">{selectedBooking.guests || 'N/A'}</div>
+                            <Text type="secondary">Contact Phone</Text>
+                            <div className="font-medium">{selectedBooking.contactPhone}</div>
                         </div>
+                        {selectedBooking.serviceLocation && (
+                            <div>
+                                <Text type="secondary">Service Location</Text>
+                                <div className="font-medium">{selectedBooking.serviceLocation}</div>
+                            </div>
+                        )}
+                        {selectedBooking.serviceAddress && (
+                            <div>
+                                <Text type="secondary">Service Address</Text>
+                                <div className="font-medium">{selectedBooking.serviceAddress}</div>
+                            </div>
+                        )}
                         <div>
                             <Text type="secondary">Total Price</Text>
                             <div className="font-medium text-lg">
@@ -426,7 +475,15 @@ export default function BookingsPage() {
                             <Text type="secondary">Status</Text>
                             <div>
                                 <Tag color={getStatusColor(selectedBooking.status)}>
-                                    {selectedBooking.status}
+                                    {getStatusLabel(selectedBooking.status)}
+                                </Tag>
+                            </div>
+                        </div>
+                        <div>
+                            <Text type="secondary">Payment Status</Text>
+                            <div>
+                                <Tag color={getPaymentStatusColor(selectedBooking.paymentStatus)}>
+                                    {formatLabel(selectedBooking.paymentStatus as string)}
                                 </Tag>
                             </div>
                         </div>
