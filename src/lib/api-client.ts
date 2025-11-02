@@ -58,18 +58,27 @@ class ApiClient {
         this.client.interceptors.response.use(
             (response) => response,
             (error) => {
-                if (error.response?.status === 401) {
-                    // Unauthorized - clear auth and redirect to website
-                    if (typeof window !== 'undefined') {
+                const status = error.response?.status;
+                const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+
+                if (status === 401) {
+                    const isAuthError = errorMessage.toLowerCase().includes('token') ||
+                                      errorMessage.toLowerCase().includes('unauthorized') ||
+                                      errorMessage.toLowerCase().includes('authentication');
+
+                    if (isAuthError && typeof window !== 'undefined') {
                         localStorage.removeItem('token');
                         localStorage.removeItem('user');
-                        // Clear the cookie
                         document.cookie = 'token=; path=/; max-age=0';
-                        // Redirect to website instead of login to avoid middleware loop
                         const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
                         window.location.href = websiteUrl;
                     }
                 }
+
+                if (status === 403 && !error.response.data.message) {
+                    error.response.data.message = 'You do not have permission to perform this action';
+                }
+
                 return Promise.reject(error);
             }
         );

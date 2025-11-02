@@ -63,11 +63,16 @@ export default function PropertiesPage() {
             while (hasMore) {
                 const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
 
-                // apiClient.get() returns { success: true, data: { data: [...], pagination: {...} } }
-                const pageData = response?.data?.data || [];
-                const pagination = response?.data?.pagination;
+                // Handle both response formats
+                let pageData: Property[] = [];
+                let pagination: any = null;
 
-                console.log(`Properties - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
+                if (Array.isArray(response?.data)) {
+                    pageData = response.data as Property[];
+                } else if (response?.data?.data) {
+                    pageData = response.data.data || [];
+                    pagination = response.data.pagination;
+                }
 
                 allProperties = [...allProperties, ...pageData];
 

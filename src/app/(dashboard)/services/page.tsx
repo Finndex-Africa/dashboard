@@ -56,10 +56,17 @@ export default function ServicesPage() {
 
             while (hasMore) {
                 const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
-                const pageData = response?.data?.data || [];
-                const pagination = response?.data?.pagination;
 
-                console.log(`Services - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
+                // Handle both response formats
+                let pageData: Service[] = [];
+                let pagination: any = null;
+
+                if (Array.isArray(response?.data)) {
+                    pageData = response.data as Service[];
+                } else if (response?.data?.data) {
+                    pageData = response.data.data || [];
+                    pagination = response.data.pagination;
+                }
 
                 allServices = [...allServices, ...pageData];
 
