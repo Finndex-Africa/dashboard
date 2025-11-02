@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
     title: 'Finndex Dashboard',
     description: 'Manage your Finndex Africa properties and services',
+    icons: {
+        icon: '/favicon.ico',
+        apple: '/favicon.ico',
+    },
 }
 
 export default function RootLayout({
