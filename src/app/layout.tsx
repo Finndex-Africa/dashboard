@@ -9,8 +9,12 @@ export const metadata: Metadata = {
     title: 'Finndex Dashboard',
     description: 'Manage your Finndex Africa properties and services',
     icons: {
-        icon: '/favicon.ico',
-        apple: '/favicon.ico',
+        icon: [
+            { url: '/images/logos/logo1.png' },
+            { url: '/favicon.ico' },
+        ],
+        apple: '/images/logos/logo1.png',
+        shortcut: '/images/logos/logo1.png',
     },
 }
 
