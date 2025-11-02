@@ -1,13 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    experimental: {
-        serverComponentsExternalPackages: [
-            '@opentelemetry/instrumentation',
-            '@opentelemetry/api',
-            '@sentry/node-core'
-        ]
-    },
   reactStrictMode: true,
+
   async redirects() {
     return [
       {
@@ -17,10 +11,13 @@ const nextConfig = {
       },
     ]
   },
+
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_AUTH_MODE: process.env.NEXT_PUBLIC_AUTH_MODE || 'dashboard'
+    NEXT_PUBLIC_AUTH_MODE: process.env.NEXT_PUBLIC_AUTH_MODE || 'dashboard',
+    NEXT_PUBLIC_WEBSITE_URL: process.env.NEXT_PUBLIC_WEBSITE_URL,
   },
+
   // Resolve OpenTelemetry and instrumentation package conflicts
   experimental: {
     serverComponentsExternalPackages: [
@@ -29,6 +26,7 @@ const nextConfig = {
       '@sentry/node-core'
     ]
   },
+
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Ignore problematic instrumentation packages on server
