@@ -156,11 +156,19 @@ export default function PropertiesPage() {
         }
     };
 
-    const handleApprove = async (property: Property) => {
+    const handleApproveClick = (property: Property) => {
+        setSelectedProperty(property);
+        setIsViewModalOpen(true);
+    };
+
+    const handleApproveConfirm = async () => {
+        if (!selectedProperty) return;
+
         try {
-            setActionLoading(property._id);
-            await propertiesApi.approve(property._id);
+            setActionLoading(selectedProperty._id);
+            await propertiesApi.approve(selectedProperty._id);
             showToast.success('Property approved successfully');
+            setIsViewModalOpen(false);
             fetchProperties();
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to approve property');
@@ -408,7 +416,7 @@ export default function PropertiesPage() {
                     loading={loading}
                     onView={handleView}
                     onDelete={handleDelete}
-                    onApprove={handleApprove}
+                    onApprove={handleApproveClick}
                     onReject={handleRejectClick}
                     approvingId={actionLoading}
                 />
@@ -452,7 +460,38 @@ export default function PropertiesPage() {
                             style={{ borderRadius: '8px' }}
                         >
                             Close
-                        </Button>
+                        </Button>,
+                        selectedProperty?.status === 'pending' && (
+                            <Button
+                                key="reject"
+                                size="large"
+                                danger
+                                onClick={() => {
+                                    setIsViewModalOpen(false);
+                                    setRejectionReason('');
+                                    setIsRejectModalOpen(true);
+                                }}
+                                style={{ borderRadius: '8px' }}
+                            >
+                                Reject
+                            </Button>
+                        ),
+                        selectedProperty?.status === 'pending' && (
+                            <Button
+                                key="approve"
+                                size="large"
+                                type="primary"
+                                onClick={handleApproveConfirm}
+                                loading={actionLoading === selectedProperty?._id}
+                                style={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    border: 'none',
+                                    borderRadius: '8px'
+                                }}
+                            >
+                                Approve
+                            </Button>
+                        ),
                     ]}
                     width={800}
                 >
