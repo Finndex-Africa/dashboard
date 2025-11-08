@@ -51,6 +51,29 @@ export interface Property {
     priceUnit?: string;
     availableFrom?: string;
     availableTo?: string;
+
+    // Additional property details (Airbnb-style)
+    amenities?: string[];
+    maxGuests?: number;
+    parking?: boolean;
+    parkingSpaces?: number;
+    wifi?: boolean;
+    airConditioning?: boolean;
+    heating?: boolean;
+    kitchen?: boolean;
+    washer?: boolean;
+    dryer?: boolean;
+    tv?: boolean;
+    workspace?: boolean;
+    pool?: boolean;
+    gym?: boolean;
+    elevator?: boolean;
+    balcony?: boolean;
+    garden?: boolean;
+    petFriendly?: boolean;
+    smoking?: boolean;
+    securitySystem?: boolean;
+
     createdAt: string;
     updatedAt: string;
 }

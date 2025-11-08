@@ -12,6 +12,7 @@ import Divider from 'antd/es/divider';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import Upload from 'antd/es/upload';
+import Checkbox from 'antd/es/checkbox';
 import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { Property } from '@/types/dashboard';
@@ -163,15 +164,172 @@ export function PropertyForm({
                     </Col>
                     <Col xs={24} sm={12}>
                         <Form.Item
-                            name="rooms"
-                            label="Number of Rooms"
-                            rules={[{ required: true, message: 'Please enter number of rooms' }]}
+                            name="area"
+                            label="Area (sq ft)"
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                                placeholder="0"
+                                min={0}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Row gutter={16}>
+                    <Col xs={24} sm={8}>
+                        <Form.Item
+                            name="bedrooms"
+                            label="Bedrooms"
+                            rules={[{ required: true, message: 'Please enter number of bedrooms' }]}
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                                placeholder="0"
+                                min={0}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                        <Form.Item
+                            name="bathrooms"
+                            label="Bathrooms"
+                            rules={[{ required: true, message: 'Please enter number of bathrooms' }]}
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                                placeholder="0"
+                                min={0}
+                                step={0.5}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                        <Form.Item
+                            name="maxGuests"
+                            label="Max Guests"
                         >
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
                                 placeholder="0"
                                 min={1}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </div>
+
+            <Divider style={{ margin: '24px 0' }} />
+
+            {/* Amenities Section */}
+            <div style={{ marginBottom: '24px' }}>
+                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
+                    Amenities & Features
+                </Text>
+
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="wifi" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>WiFi</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="airConditioning" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Air Conditioning</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="heating" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Heating</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="kitchen" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Kitchen</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="washer" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Washer</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="dryer" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Dryer</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="tv" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>TV</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="workspace" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Dedicated Workspace</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="parking" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Parking</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="pool" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Swimming Pool</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="gym" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Gym</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="elevator" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Elevator</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="balcony" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Balcony</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="garden" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Garden</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="securitySystem" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Security System</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="petFriendly" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Pet Friendly</Checkbox>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Form.Item name="smoking" valuePropName="checked" style={{ marginBottom: 0 }}>
+                            <Checkbox>Smoking Allowed</Checkbox>
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Row gutter={16} style={{ marginTop: '16px' }}>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="parkingSpaces"
+                            label="Number of Parking Spaces"
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                                placeholder="0"
+                                min={0}
                             />
                         </Form.Item>
                     </Col>
