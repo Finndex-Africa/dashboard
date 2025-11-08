@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
@@ -37,7 +37,17 @@ export function PropertyForm({
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
 
-    const handleSubmit = async (values: any) => {
+    // Reset form when initialValues changes (modal opens/closes)
+    useEffect(() => {
+        if (!initialValues) {
+            form.resetFields();
+            setFileList([]);
+        } else {
+            form.setFieldsValue(initialValues);
+        }
+    }, [initialValues, form]);
+
+    const handleSubmit = (values: any) => {
         // Extract actual File objects from fileList
         const filesToUpload = fileList
             .filter(file => file.originFileObj)
@@ -47,7 +57,7 @@ export function PropertyForm({
         console.log('📋 Form values:', values);
 
         // Pass form values and files to parent
-        // Parent will create property first, then upload images with property ID
+        // Parent will handle async operations and form reset via modal close
         onSubmit(values, filesToUpload);
     };
 

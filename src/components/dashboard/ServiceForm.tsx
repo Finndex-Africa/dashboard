@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
@@ -35,7 +35,17 @@ export function ServiceForm({
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
 
-    const handleSubmit = async (values: any) => {
+    // Reset form when initialValues changes (modal opens/closes)
+    useEffect(() => {
+        if (!initialValues) {
+            form.resetFields();
+            setFileList([]);
+        } else {
+            form.setFieldsValue(initialValues);
+        }
+    }, [initialValues, form]);
+
+    const handleSubmit = (values: any) => {
         // Extract actual File objects from fileList
         const filesToUpload = fileList
             .filter(file => file.originFileObj)
