@@ -62,21 +62,31 @@ export async function uploadToCloudinary(options: UploadOptions): Promise<string
             xhr.addEventListener('load', () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const response = JSON.parse(xhr.responseText);
+                    console.log('✅ Upload successful:', response.secure_url);
                     resolve(response.secure_url);
                 } else {
-                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                    const errorResponse = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                    console.error('❌ Upload failed:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        response: errorResponse,
+                        cloudName: CLOUDINARY_CLOUD_NAME,
+                        uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+                    });
+                    reject(new Error(`Upload failed: ${errorResponse.error?.message || xhr.statusText || 'Unknown error'}`));
                 }
             });
 
             xhr.addEventListener('error', () => {
-                reject(new Error('Upload failed'));
+                console.error('❌ Network error during upload');
+                reject(new Error('Network error during upload'));
             });
 
             xhr.open('POST', uploadUrl);
             xhr.send(formData);
         });
     } catch (error: any) {
-        console.error('Failed to upload file to Cloudinary:', error);
+        console.error('❌ Failed to upload file to Cloudinary:', error);
         throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
     }
 }
