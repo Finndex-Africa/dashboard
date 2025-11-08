@@ -477,18 +477,81 @@ export default function PropertiesPage() {
                                 ${selectedProperty.price?.toLocaleString()}
                             </Text>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Area">
-                            {selectedProperty.area} sq ft
+                        <Descriptions.Item label="Furnished">
+                            {selectedProperty.furnished ? 'Yes' : 'No'}
                         </Descriptions.Item>
-                        {selectedProperty.bedrooms && (
+                        {selectedProperty.area && (
+                            <Descriptions.Item label="Area">{selectedProperty.area} sq ft</Descriptions.Item>
+                        )}
+                        {selectedProperty.maxGuests && (
+                            <Descriptions.Item label="Max Guests">{selectedProperty.maxGuests}</Descriptions.Item>
+                        )}
+                        {selectedProperty.bedrooms !== undefined && (
                             <Descriptions.Item label="Bedrooms">{selectedProperty.bedrooms}</Descriptions.Item>
                         )}
-                        {selectedProperty.bathrooms && (
+                        {selectedProperty.bathrooms !== undefined && (
                             <Descriptions.Item label="Bathrooms">{selectedProperty.bathrooms}</Descriptions.Item>
+                        )}
+                        {selectedProperty.parkingSpaces !== undefined && selectedProperty.parkingSpaces > 0 && (
+                            <Descriptions.Item label="Parking Spaces">{selectedProperty.parkingSpaces}</Descriptions.Item>
                         )}
                         <Descriptions.Item label="Description" span={2}>
                             {selectedProperty.description}
                         </Descriptions.Item>
+
+                        {/* Amenities Section */}
+                        <Descriptions.Item label="Amenities & Features" span={2}>
+                            <Space wrap style={{ marginTop: '8px' }}>
+                                {selectedProperty.wifi && <Tag color="blue">WiFi</Tag>}
+                                {selectedProperty.airConditioning && <Tag color="cyan">Air Conditioning</Tag>}
+                                {selectedProperty.heating && <Tag color="orange">Heating</Tag>}
+                                {selectedProperty.kitchen && <Tag color="green">Kitchen</Tag>}
+                                {selectedProperty.washer && <Tag color="purple">Washer</Tag>}
+                                {selectedProperty.dryer && <Tag color="purple">Dryer</Tag>}
+                                {selectedProperty.tv && <Tag color="blue">TV</Tag>}
+                                {selectedProperty.workspace && <Tag color="geekblue">Workspace</Tag>}
+                                {selectedProperty.parking && <Tag color="gold">Parking</Tag>}
+                                {selectedProperty.pool && <Tag color="cyan">Swimming Pool</Tag>}
+                                {selectedProperty.gym && <Tag color="red">Gym</Tag>}
+                                {selectedProperty.elevator && <Tag color="blue">Elevator</Tag>}
+                                {selectedProperty.balcony && <Tag color="green">Balcony</Tag>}
+                                {selectedProperty.garden && <Tag color="green">Garden</Tag>}
+                                {selectedProperty.securitySystem && <Tag color="red">Security System</Tag>}
+                                {selectedProperty.petFriendly && <Tag color="magenta">Pet Friendly</Tag>}
+                                {selectedProperty.smoking && <Tag color="orange">Smoking Allowed</Tag>}
+                                {!selectedProperty.wifi && !selectedProperty.airConditioning && !selectedProperty.heating &&
+                                 !selectedProperty.kitchen && !selectedProperty.washer && !selectedProperty.dryer &&
+                                 !selectedProperty.tv && !selectedProperty.workspace && !selectedProperty.parking &&
+                                 !selectedProperty.pool && !selectedProperty.gym && !selectedProperty.elevator &&
+                                 !selectedProperty.balcony && !selectedProperty.garden && !selectedProperty.securitySystem &&
+                                 !selectedProperty.petFriendly && !selectedProperty.smoking && (
+                                    <Text type="secondary">No amenities specified</Text>
+                                )}
+                            </Space>
+                        </Descriptions.Item>
+
+                        {/* Images */}
+                        {selectedProperty.images && selectedProperty.images.length > 0 && (
+                            <Descriptions.Item label="Images" span={2}>
+                                <Space wrap style={{ marginTop: '8px' }}>
+                                    {selectedProperty.images.map((img, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={img}
+                                            alt={`Property ${idx + 1}`}
+                                            style={{
+                                                width: '100px',
+                                                height: '100px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => window.open(img, '_blank')}
+                                        />
+                                    ))}
+                                </Space>
+                            </Descriptions.Item>
+                        )}
                     </Descriptions>
                 </Modal>
             )}
