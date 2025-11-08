@@ -26,7 +26,7 @@ import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 import { PropertyForm } from '@/components/dashboard/PropertyForm';
 import type { Property } from '@/types/dashboard';
 import { propertiesApi } from '@/services/api/properties.api';
-import { uploadMultipleToDigitalOcean } from '@/lib/digitalocean-upload';
+import { uploadMultipleToCloudinary } from '@/lib/cloudinary-upload';
 import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
@@ -111,11 +111,11 @@ export default function PropertiesPage() {
             const response = await propertiesApi.create(values);
             const createdProperty = response.data;
 
-            // Step 2: Upload images to DigitalOcean with property ID as subfolder
+            // Step 2: Upload images to Cloudinary with property ID as subfolder
             let imageUrls: string[] = [];
             if (files.length > 0) {
                 try {
-                    imageUrls = await uploadMultipleToDigitalOcean(
+                    imageUrls = await uploadMultipleToCloudinary(
                         files,
                         'properties',
                         createdProperty._id

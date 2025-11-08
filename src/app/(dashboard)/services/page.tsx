@@ -20,7 +20,7 @@ import { ServicesTable } from '@/components/dashboard/ServicesTable';
 import { ServiceForm } from '@/components/dashboard/ServiceForm';
 import type { Service } from '@/types/dashboard';
 import { servicesApi } from '@/services/api/services.api';
-import { uploadMultipleToDigitalOcean } from '@/lib/digitalocean-upload';
+import { uploadMultipleToCloudinary } from '@/lib/cloudinary-upload';
 import Modal from 'antd/es/modal';
 import message from 'antd/es/message';
 import { showToast } from '@/lib/toast';
@@ -118,11 +118,11 @@ export default function ServicesPage() {
                 const response = await servicesApi.create(values as any);
                 const createdService = response.data;
 
-                // Step 2: Upload images to DigitalOcean with service ID as subfolder
+                // Step 2: Upload images to Cloudinary with service ID as subfolder
                 let imageUrls: string[] = [];
                 if (files.length > 0) {
                     try {
-                        imageUrls = await uploadMultipleToDigitalOcean(
+                        imageUrls = await uploadMultipleToCloudinary(
                             files,
                             'services',
                             createdService._id
