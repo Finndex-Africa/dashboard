@@ -42,6 +42,9 @@ export function PropertyForm({
             .filter(file => file.originFileObj)
             .map(file => file.originFileObj as File);
 
+        console.log('📸 Files to upload:', filesToUpload.length, filesToUpload);
+        console.log('📋 Form values:', values);
+
         // Pass form values and files to parent
         // Parent will create property first, then upload images with property ID
         onSubmit(values, filesToUpload);
@@ -55,12 +58,14 @@ export function PropertyForm({
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
             showToast.error('You can only upload image files!');
+            return Upload.LIST_IGNORE;
         }
         const isLt10M = file.size / 1024 / 1024 < 10;
         if (!isLt10M) {
             showToast.error('Image must be smaller than 10MB!');
+            return Upload.LIST_IGNORE;
         }
-        return isImage && isLt10M;
+        return false; // Prevent auto upload, we'll handle it manually
     };
 
     return (
@@ -246,7 +251,7 @@ export function PropertyForm({
                     )}
                 </Upload>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to DigitalOcean Spaces.
+                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to Cloudinary.
                 </Text>
             </div>
 
