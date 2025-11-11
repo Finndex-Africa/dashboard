@@ -430,7 +430,7 @@ export function PropertyForm({
                     )}
                 </Upload>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to Cloudinary.
+                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to digital ocean.
                 </Text>
             </div>
 

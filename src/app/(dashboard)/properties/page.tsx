@@ -27,7 +27,7 @@ import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 import { PropertyForm } from '@/components/dashboard/PropertyForm';
 import type { Property } from '@/types/dashboard';
 import { propertiesApi } from '@/services/api/properties.api';
-import { uploadMultipleToCloudinary } from '@/lib/cloudinary-upload';
+import { mediaApi } from '@/services/api/media.api';
 import { showToast } from '@/lib/toast';
 
 const { Title, Text } = Typography;
@@ -123,15 +123,18 @@ export default function PropertiesPage() {
             const response = await propertiesApi.create(values);
             const createdProperty = response.data;
 
-            // Step 2: Upload images to Cloudinary with property ID as subfolder
+            // Step 2: Upload images via backend API to Digital Ocean Spaces
             let imageUrls: string[] = [];
             if (files.length > 0) {
                 try {
-                    imageUrls = await uploadMultipleToCloudinary(
+                    // uploadResponse is MediaResponse[] directly
+                    const uploadedMedia = await mediaApi.uploadMultiple(
                         files,
                         'properties',
                         createdProperty._id
                     );
+                    imageUrls = uploadedMedia.map(media => media.url);
+                    console.log('✅ Images uploaded successfully:', imageUrls);
                 } catch (uploadError) {
                     console.error('Failed to upload images:', uploadError);
                     showToast.warning('Property created but image upload failed. You can add images later.');
@@ -154,9 +157,18 @@ export default function PropertiesPage() {
         }
     };
 
-    const handleView = (property: Property) => {
-        setSelectedProperty(property);
-        setIsViewModalOpen(true);
+    const handleView = async (property: Property) => {
+        try {
+            // Fetch fresh property data to ensure we have the latest images
+            const response = await propertiesApi.getById(property._id);
+            setSelectedProperty(response.data);
+            setIsViewModalOpen(true);
+        } catch (error: any) {
+            console.error('Failed to fetch property details:', error);
+            // Fallback to cached data if fetch fails
+            setSelectedProperty(property);
+            setIsViewModalOpen(true);
+        }
     };
 
     const handleDelete = async (property: Property) => {

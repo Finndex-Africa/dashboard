@@ -24,7 +24,7 @@ import { ServicesTable } from '@/components/dashboard/ServicesTable';
 import { ServiceForm } from '@/components/dashboard/ServiceForm';
 import type { Service } from '@/types/dashboard';
 import { servicesApi } from '@/services/api/services.api';
-import { uploadMultipleToCloudinary } from '@/lib/cloudinary-upload';
+import { mediaApi } from '@/services/api/media.api';
 import Modal from 'antd/es/modal';
 import message from 'antd/es/message';
 import { showToast } from '@/lib/toast';
@@ -121,22 +121,25 @@ export default function ServicesPage() {
 
             if (editingService) {
                 // For editing, just update the service
-                await servicesApi.update(editingService._id, values);
+                await servicesApi.update(editingService._id, values as any);
                 showToast.success('Service updated successfully');
             } else {
                 // Step 1: Create service without images
                 const response = await servicesApi.create(values as any);
                 const createdService = response.data;
 
-                // Step 2: Upload images to Cloudinary with service ID as subfolder
+                // Step 2: Upload images via backend API to Digital Ocean Spaces
                 let imageUrls: string[] = [];
                 if (files.length > 0) {
                     try {
-                        imageUrls = await uploadMultipleToCloudinary(
+                        // uploadedMedia is MediaResponse[] directly
+                        const uploadedMedia = await mediaApi.uploadMultiple(
                             files,
                             'services',
                             createdService._id
                         );
+                        imageUrls = uploadedMedia.map(media => media.url);
+                        console.log('✅ Images uploaded successfully:', imageUrls);
                     } catch (uploadError) {
                         console.error('Failed to upload images:', uploadError);
                         showToast.warning('Service created but image upload failed. You can add images later.');

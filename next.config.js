@@ -2,6 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'finndexafrica.nyc3.cdn.digitaloceanspaces.com' },
+      { protocol: 'https', hostname: 'finndexafrica.sfo3.digitaloceanspaces.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' }, // Legacy support for existing images
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+    ],
+  },
+
   async redirects() {
     return [
       {
