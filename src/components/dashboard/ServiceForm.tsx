@@ -42,6 +42,17 @@ export function ServiceForm({
             setFileList([]);
         } else {
             form.setFieldsValue(initialValues);
+
+            // Convert existing images to UploadFile format
+            if (initialValues.images && initialValues.images.length > 0) {
+                const existingFiles: UploadFile[] = initialValues.images.map((url, index) => ({
+                    uid: `-existing-${index}`,
+                    name: `image-${index}.jpg`,
+                    status: 'done',
+                    url: url,
+                }));
+                setFileList(existingFiles);
+            }
         }
     }, [initialValues, form]);
 
@@ -64,12 +75,14 @@ export function ServiceForm({
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
             showToast.error('You can only upload image files!');
+            return Upload.LIST_IGNORE;
         }
         const isLt10M = file.size / 1024 / 1024 < 10;
         if (!isLt10M) {
             showToast.error('Image must be smaller than 10MB!');
+            return Upload.LIST_IGNORE;
         }
-        return isImage && isLt10M;
+        return false; // Prevent auto upload, we'll handle it manually
     };
 
     return (
@@ -144,13 +157,89 @@ export function ServiceForm({
 
             <Divider style={{ margin: '24px 0' }} />
 
+            {/* Business Details Section */}
+            <div style={{ marginBottom: '24px' }}>
+                <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
+                    Business Details
+                </Text>
+                <Row gutter={16}>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="businessName"
+                            label="Business Name"
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., ABC Services Ltd"
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="experience"
+                            label="Years of Experience"
+                        >
+                            <InputNumber
+                                size="large"
+                                style={{ width: '100%', borderRadius: '8px' }}
+                                placeholder="0"
+                                min={0}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="phoneNumber"
+                            label="Phone Number"
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., +231886149219"
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="whatsappNumber"
+                            label="WhatsApp Number"
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., +231886149219"
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col xs={24}>
+                        <Form.Item
+                            name="verificationNumber"
+                            label="License/Verification Number"
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., LIC-12345"
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </div>
+
+            <Divider style={{ margin: '24px 0' }} />
+
             {/* Pricing Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Pricing
+                    Pricing & Duration
                 </Text>
                 <Row gutter={16}>
-                    <Col xs={24}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             name="price"
                             label="Price (USD)"
@@ -161,6 +250,41 @@ export function ServiceForm({
                                 style={{ width: '100%', borderRadius: '8px' }}
                                 placeholder="0"
                                 min={0}
+                                formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                        <Form.Item
+                            name="priceUnit"
+                            label="Price Unit"
+                            initialValue="hour"
+                        >
+                            <Select
+                                size="large"
+                                placeholder="Select unit"
+                                style={{ borderRadius: '8px' }}
+                            >
+                                <Select.Option value="hour">Per Hour</Select.Option>
+                                <Select.Option value="day">Per Day</Select.Option>
+                                <Select.Option value="week">Per Week</Select.Option>
+                                <Select.Option value="month">Per Month</Select.Option>
+                                <Select.Option value="project">Per Project</Select.Option>
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col xs={24}>
+                        <Form.Item
+                            name="duration"
+                            label="Typical Duration"
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., 2-3 hours"
+                                style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
                     </Col>
@@ -216,7 +340,7 @@ export function ServiceForm({
                     )}
                 </Upload>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to DigitalOcean Spaces.
+                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to Cloudinary.
                 </Text>
             </div>
 

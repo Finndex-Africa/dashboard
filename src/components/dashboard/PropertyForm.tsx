@@ -44,6 +44,17 @@ export function PropertyForm({
             setFileList([]);
         } else {
             form.setFieldsValue(initialValues);
+
+            // Convert existing images to UploadFile format
+            if (initialValues.images && initialValues.images.length > 0) {
+                const existingFiles: UploadFile[] = initialValues.images.map((url, index) => ({
+                    uid: `-existing-${index}`,
+                    name: `image-${index}.jpg`,
+                    status: 'done',
+                    url: url,
+                }));
+                setFileList(existingFiles);
+            }
         }
     }, [initialValues, form]);
 

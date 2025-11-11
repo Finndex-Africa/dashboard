@@ -13,6 +13,7 @@ import Space from 'antd/es/space';
 import Modal from 'antd/es/modal';
 import Tag from 'antd/es/tag';
 import Descriptions from 'antd/es/descriptions';
+import Image from 'antd/es/image';
 import {
     PlusOutlined,
     HomeOutlined,
@@ -38,6 +39,7 @@ export default function PropertiesPage() {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+    const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [properties, setProperties] = useState<Property[]>([]);
@@ -107,6 +109,16 @@ export default function PropertiesPage() {
         try {
             setSubmitting(true);
 
+            // Handle update
+            if (editingProperty) {
+                await propertiesApi.update(editingProperty._id, values);
+                showToast.success('Property updated successfully');
+                setIsAddModalOpen(false);
+                setEditingProperty(null);
+                fetchProperties();
+                return;
+            }
+
             // Step 1: Create property without images
             const response = await propertiesApi.create(values);
             const createdProperty = response.data;
@@ -133,9 +145,10 @@ export default function PropertiesPage() {
 
             showToast.success('Property added successfully');
             setIsAddModalOpen(false);
+            setEditingProperty(null);
             fetchProperties();
         } catch (error: any) {
-            showToast.error(error.response?.data?.message || 'Failed to add property');
+            showToast.error(error.response?.data?.message || `Failed to ${editingProperty ? 'update' : 'add'} property`);
         } finally {
             setSubmitting(false);
         }
@@ -154,6 +167,11 @@ export default function PropertiesPage() {
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to delete property');
         }
+    };
+
+    const handleEdit = (property: Property) => {
+        setEditingProperty(property);
+        setIsAddModalOpen(true);
     };
 
     const handleApproveClick = (property: Property) => {
@@ -415,6 +433,7 @@ export default function PropertiesPage() {
                     properties={filteredProperties}
                     loading={loading}
                     onView={handleView}
+                    onEdit={handleEdit}
                     onDelete={handleDelete}
                     onApprove={handleApproveClick}
                     onReject={handleRejectClick}
@@ -422,22 +441,29 @@ export default function PropertiesPage() {
                 />
             </Card>
 
-            {/* Add Property Modal */}
+            {/* Add/Edit Property Modal */}
             <Modal
                 title={
                     <div style={{ fontSize: '18px', fontWeight: 600 }}>
-                        Add New Property
+                        {editingProperty ? 'Edit Property' : 'Add New Property'}
                     </div>
                 }
                 open={isAddModalOpen}
-                onCancel={() => setIsAddModalOpen(false)}
+                onCancel={() => {
+                    setIsAddModalOpen(false);
+                    setEditingProperty(null);
+                }}
                 footer={null}
                 width={900}
                 style={{ top: 20 }}
             >
                 <PropertyForm
+                    initialValues={editingProperty || undefined}
                     onSubmit={handleAddProperty}
-                    onCancel={() => setIsAddModalOpen(false)}
+                    onCancel={() => {
+                        setIsAddModalOpen(false);
+                        setEditingProperty(null);
+                    }}
                     loading={submitting}
                 />
             </Modal>
@@ -570,25 +596,32 @@ export default function PropertiesPage() {
                         </Descriptions.Item>
 
                         {/* Images */}
-                        {selectedProperty.images && selectedProperty.images.length > 0 && (
+                        {selectedProperty.images && selectedProperty.images.length > 0 ? (
                             <Descriptions.Item label="Images" span={2}>
-                                <Space wrap style={{ marginTop: '8px' }}>
-                                    {selectedProperty.images.map((img, idx) => (
-                                        <img
-                                            key={idx}
-                                            src={img}
-                                            alt={`Property ${idx + 1}`}
-                                            style={{
-                                                width: '100px',
-                                                height: '100px',
-                                                objectFit: 'cover',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => window.open(img, '_blank')}
-                                        />
-                                    ))}
-                                </Space>
+                                <Image.PreviewGroup>
+                                    <Space wrap style={{ marginTop: '8px' }}>
+                                        {selectedProperty.images.map((img, idx) => (
+                                            <Image
+                                                key={idx}
+                                                src={img}
+                                                alt={`Property ${idx + 1}`}
+                                                width={100}
+                                                height={100}
+                                                style={{
+                                                    objectFit: 'cover',
+                                                    borderRadius: '8px',
+                                                }}
+                                                preview={{
+                                                    src: img,
+                                                }}
+                                            />
+                                        ))}
+                                    </Space>
+                                </Image.PreviewGroup>
+                            </Descriptions.Item>
+                        ) : (
+                            <Descriptions.Item label="Images" span={2}>
+                                <Text type="secondary">No images uploaded</Text>
                             </Descriptions.Item>
                         )}
                     </Descriptions>

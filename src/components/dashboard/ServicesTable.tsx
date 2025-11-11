@@ -53,11 +53,11 @@ export function ServicesTable({
     const columns: ColumnsType<Service> = [
         {
             title: 'Service',
-            dataIndex: 'name',
-            key: 'name',
-            render: (name, record) => (
+            dataIndex: 'title',
+            key: 'title',
+            render: (title, record) => (
                 <div>
-                    <div className="font-medium text-gray-900">{name}</div>
+                    <div className="font-medium text-gray-900">{title}</div>
                     <div className="text-sm text-gray-500">{record.category}</div>
                 </div>
             ),
@@ -111,7 +111,7 @@ export function ServicesTable({
             key: 'actions',
             render: (_, record) => (
                 <Space size="small">
-                    {record.status === 'pending' && onApprove && onReject ? (
+                    {record.verificationStatus === 'pending' && onApprove && onReject ? (
                         <>
                             <Tooltip title="Approve">
                                 <Button

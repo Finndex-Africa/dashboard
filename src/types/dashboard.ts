@@ -18,10 +18,27 @@ export interface Service {
     category: string;
     location: string;
     price: number;
+    priceUnit?: string;
+    duration?: string;
     status: 'pending' | 'active' | 'rejected' | 'inactive';
+    verificationStatus?: 'pending' | 'verified' | 'rejected';
     rating?: number;
+    reviewCount?: number;
     images?: string[];
     provider?: string | { _id: string; name: string; email: string };
+
+    // Business details
+    businessName?: string;
+    experience?: number;
+    phoneNumber?: string;
+    whatsappNumber?: string;
+    verificationNumber?: string;
+
+    // Additional fields
+    bookings?: number;
+    views?: number;
+    verified?: boolean;
+
     createdAt: string;
     updatedAt: string;
 }

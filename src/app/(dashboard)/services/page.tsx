@@ -8,6 +8,10 @@ import Row from 'antd/es/row';
 import Col from 'antd/es/col';
 import Input from 'antd/es/input';
 import Select from 'antd/es/select';
+import Tag from 'antd/es/tag';
+import Descriptions from 'antd/es/descriptions';
+import Image from 'antd/es/image';
+import Space from 'antd/es/space';
 import {
     PlusOutlined,
     ToolOutlined,
@@ -36,6 +40,7 @@ export default function ServicesPage() {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -105,6 +110,11 @@ export default function ServicesPage() {
         setIsModalOpen(true);
     };
 
+    const handleEdit = (service: Service) => {
+        setEditingService(service);
+        setIsModalOpen(true);
+    };
+
     const handleSubmit = async (values: Partial<Service>, files: File[]) => {
         try {
             setSubmitting(true);
@@ -142,6 +152,7 @@ export default function ServicesPage() {
             }
 
             setIsModalOpen(false);
+            setEditingService(null); // Reset editing service
             fetchServices();
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to save service');
@@ -155,11 +166,34 @@ export default function ServicesPage() {
         setEditingService(null);
     };
 
-    const handleApprove = async (service: Service) => {
+    const handleApproveClick = async (service: Service) => {
         try {
-            setActionLoading(service._id);
-            await servicesApi.verify(service._id);
+            // Fetch fresh service data to avoid stale state
+            const response = await servicesApi.getById(service._id);
+            setSelectedService(response.data);
+            setIsViewModalOpen(true);
+        } catch (error: any) {
+            message.error('Failed to load service details');
+        }
+    };
+
+    const handleApproveConfirm = async () => {
+        if (!selectedService) return;
+
+        // Check if service is already verified
+        if (selectedService.verificationStatus === 'verified') {
+            message.warning('This service is already verified');
+            setIsViewModalOpen(false);
+            fetchServices();
+            return;
+        }
+
+        try {
+            setActionLoading(selectedService._id);
+            await servicesApi.verify(selectedService._id);
             message.success('Service approved successfully');
+            setIsViewModalOpen(false);
+            setSelectedService(null);
             fetchServices();
         } catch (error: any) {
             message.error(error.response?.data?.message || 'Failed to approve service');
@@ -187,7 +221,9 @@ export default function ServicesPage() {
             await servicesApi.reject(selectedService._id, rejectionReason);
             message.success('Service rejected successfully. An email has been sent to the creator.');
             setIsRejectModalOpen(false);
+            setIsViewModalOpen(false);
             setRejectionReason('');
+            setSelectedService(null);
             fetchServices();
         } catch (error: any) {
             message.error(error.response?.data?.message || 'Failed to reject service');
@@ -200,7 +236,23 @@ export default function ServicesPage() {
     const filteredServices = services.filter(service => {
         const matchesSearch = service.title?.toLowerCase().includes(searchText.toLowerCase()) ||
             service.description?.toLowerCase().includes(searchText.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || service.status === statusFilter;
+
+        // Match status filter - check both status and verificationStatus
+        if (statusFilter === 'all') {
+            return matchesSearch && (categoryFilter === 'all' || service.category === categoryFilter);
+        }
+
+        if (statusFilter === 'pending') {
+            const matchesPending = service.verificationStatus === 'pending' || service.status === 'pending';
+            return matchesSearch && matchesPending && (categoryFilter === 'all' || service.category === categoryFilter);
+        }
+
+        if (statusFilter === 'verified') {
+            const matchesVerified = service.verificationStatus === 'verified';
+            return matchesSearch && matchesVerified && (categoryFilter === 'all' || service.category === categoryFilter);
+        }
+
+        const matchesStatus = service.status === statusFilter;
         const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
         return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -214,15 +266,15 @@ export default function ServicesPage() {
             bgColor: '#4facfe15',
         },
         {
-            title: 'Active',
-            value: services.filter(s => s.status === 'active').length,
+            title: 'Verified',
+            value: services.filter(s => s.verificationStatus === 'verified').length,
             icon: <CheckCircleOutlined />,
             color: '#43e97b',
             bgColor: '#43e97b15',
         },
         {
             title: 'Pending',
-            value: services.filter(s => s.status === 'pending').length,
+            value: services.filter(s => s.verificationStatus === 'pending').length,
             icon: <ClockCircleOutlined />,
             color: '#ffa94d',
             bgColor: '#ffa94d15',
@@ -342,10 +394,11 @@ export default function ServicesPage() {
                             placeholder="Status"
                         >
                             <Select.Option value="all">All Status</Select.Option>
+                            <Select.Option value="pending">Pending Approval</Select.Option>
+                            <Select.Option value="verified">Verified</Select.Option>
+                            <Select.Option value="rejected">Rejected</Select.Option>
                             <Select.Option value="active">Active</Select.Option>
                             <Select.Option value="inactive">Inactive</Select.Option>
-                            <Select.Option value="pending">Pending</Select.Option>
-                            <Select.Option value="rejected">Rejected</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={6} lg={4}>
@@ -387,8 +440,9 @@ export default function ServicesPage() {
                 <ServicesTable
                     services={filteredServices}
                     loading={loading}
+                    onEdit={handleEdit}
                     onDelete={handleDelete}
-                    onApprove={handleApprove}
+                    onApprove={handleApproveClick}
                     onReject={handleRejectClick}
                     approvingId={actionLoading}
                 />
@@ -410,6 +464,143 @@ export default function ServicesPage() {
                     loading={submitting}
                 />
             </Modal>
+
+            {/* View Service Details Modal */}
+            {selectedService && (
+                <Modal
+                    title={
+                        <div style={{ fontSize: '18px', fontWeight: 600 }}>
+                            Service Details
+                        </div>
+                    }
+                    open={isViewModalOpen}
+                    onCancel={() => setIsViewModalOpen(false)}
+                    footer={[
+                        <Button
+                            key="close"
+                            size="large"
+                            onClick={() => setIsViewModalOpen(false)}
+                            style={{ borderRadius: '8px' }}
+                        >
+                            Close
+                        </Button>,
+                        selectedService?.verificationStatus === 'pending' && (
+                            <Button
+                                key="reject"
+                                size="large"
+                                danger
+                                onClick={() => {
+                                    setIsViewModalOpen(false);
+                                    setRejectionReason('');
+                                    setIsRejectModalOpen(true);
+                                }}
+                                style={{ borderRadius: '8px' }}
+                            >
+                                Reject
+                            </Button>
+                        ),
+                        selectedService?.verificationStatus === 'pending' && (
+                            <Button
+                                key="approve"
+                                size="large"
+                                type="primary"
+                                onClick={handleApproveConfirm}
+                                loading={actionLoading === selectedService?._id}
+                                style={{
+                                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                                    border: 'none',
+                                    borderRadius: '8px'
+                                }}
+                            >
+                                Approve
+                            </Button>
+                        ),
+                    ]}
+                    width={800}
+                >
+                    <Descriptions bordered column={2} style={{ marginTop: '20px' }}>
+                        <Descriptions.Item label="Service Name" span={2}>
+                            <Text strong>{selectedService.title}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Category">{selectedService.category}</Descriptions.Item>
+                        <Descriptions.Item label="Status">
+                            <Tag color={
+                                selectedService.verificationStatus === 'verified' ? 'green' :
+                                selectedService.verificationStatus === 'rejected' ? 'red' : 'orange'
+                            }>
+                                {selectedService.verificationStatus
+                                    ? selectedService.verificationStatus.charAt(0).toUpperCase() + selectedService.verificationStatus.slice(1)
+                                    : 'Pending'}
+                            </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Location" span={2}>{selectedService.location}</Descriptions.Item>
+                        <Descriptions.Item label="Price">
+                            <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
+                                ${selectedService.price?.toLocaleString()} / {selectedService.priceUnit || 'hour'}
+                            </Text>
+                        </Descriptions.Item>
+                        {selectedService.duration && (
+                            <Descriptions.Item label="Duration">{selectedService.duration}</Descriptions.Item>
+                        )}
+                        {selectedService.businessName && (
+                            <Descriptions.Item label="Business Name" span={2}>{selectedService.businessName}</Descriptions.Item>
+                        )}
+                        {selectedService.experience !== undefined && (
+                            <Descriptions.Item label="Experience">{selectedService.experience} years</Descriptions.Item>
+                        )}
+                        {selectedService.verificationNumber && (
+                            <Descriptions.Item label="License Number">{selectedService.verificationNumber}</Descriptions.Item>
+                        )}
+                        {selectedService.phoneNumber && (
+                            <Descriptions.Item label="Phone">{selectedService.phoneNumber}</Descriptions.Item>
+                        )}
+                        {selectedService.whatsappNumber && (
+                            <Descriptions.Item label="WhatsApp">{selectedService.whatsappNumber}</Descriptions.Item>
+                        )}
+                        {selectedService.rating !== undefined && (
+                            <Descriptions.Item label="Rating">
+                                {selectedService.rating} ⭐ ({selectedService.reviewCount || 0} reviews)
+                            </Descriptions.Item>
+                        )}
+                        {selectedService.bookings !== undefined && (
+                            <Descriptions.Item label="Total Bookings">{selectedService.bookings}</Descriptions.Item>
+                        )}
+                        <Descriptions.Item label="Description" span={2}>
+                            {selectedService.description}
+                        </Descriptions.Item>
+
+                        {/* Images */}
+                        {selectedService.images && selectedService.images.length > 0 ? (
+                            <Descriptions.Item label="Images" span={2}>
+                                <Image.PreviewGroup>
+                                    <Space wrap style={{ marginTop: '8px' }}>
+                                        {selectedService.images.map((img, idx) => (
+                                            <Image
+                                                key={idx}
+                                                src={img}
+                                                alt={`Service ${idx + 1}`}
+                                                width={100}
+                                                height={100}
+                                                style={{
+                                                    objectFit: 'cover',
+                                                    borderRadius: '8px',
+                                                }}
+                                                preview={{
+                                                    src: img,
+                                                }}
+                                            />
+                                        ))}
+                                    </Space>
+                                </Image.PreviewGroup>
+                            </Descriptions.Item>
+                        ) : (
+                            <Descriptions.Item label="Images" span={2}>
+                                <Text type="secondary">No images uploaded</Text>
+                            </Descriptions.Item>
+                        )}
+                    </Descriptions>
+                </Modal>
+            )}
 
             {/* Reject Service Modal */}
             <Modal
