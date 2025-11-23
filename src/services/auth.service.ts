@@ -128,7 +128,13 @@ export class AuthService {
                 return null;
             }
 
-            return decodedToken.user;
+            // Ensure role field exists (map from userType if needed for backward compatibility)
+            const user = decodedToken.user;
+            if (!user.role && (user as any).userType) {
+                user.role = (user as any).userType;
+            }
+
+            return user;
         } catch (error) {
             console.error('Error getting user data:', error);
             // Clear invalid token

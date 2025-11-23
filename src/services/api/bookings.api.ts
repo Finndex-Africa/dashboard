@@ -57,4 +57,74 @@ export const bookingsApi = {
     delete: async (id: string) => {
         return apiClient.delete<void>(`/bookings/${id}`);
     },
+
+    // Get user's bookings (for home seekers)
+    getMyBookings: async (params?: {
+        status?: string;
+        page?: number;
+        limit?: number;
+    }) => {
+        const queryParams = new URLSearchParams();
+        if (params?.status) queryParams.append('status', params.status);
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+        return apiClient.get<PaginatedResponse<Booking>>(
+            `/bookings/my-bookings?${queryParams.toString()}`
+        );
+    },
+
+    // Get provider's bookings (for service providers)
+    getProviderBookings: async (params?: {
+        status?: string;
+        page?: number;
+        limit?: number;
+    }) => {
+        const queryParams = new URLSearchParams();
+        if (params?.status) queryParams.append('status', params.status);
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+        return apiClient.get<PaginatedResponse<Booking>>(
+            `/bookings/provider-bookings?${queryParams.toString()}`
+        );
+    },
+
+    // Get booking statistics
+    getMyStats: async () => {
+        return apiClient.get<{
+            total: number;
+            pending: number;
+            confirmed: number;
+            completed: number;
+            cancelled: number;
+        }>('/bookings/my-stats');
+    },
+
+    // Get provider statistics
+    getProviderStats: async () => {
+        return apiClient.get<{
+            total: number;
+            pending: number;
+            confirmed: number;
+            completed: number;
+            cancelled: number;
+            totalRevenue: number;
+        }>('/bookings/provider-stats');
+    },
+
+    // Cancel booking
+    cancel: async (id: string, reason?: string) => {
+        return apiClient.patch<Booking>(`/bookings/${id}/cancel`, { reason });
+    },
+
+    // Confirm booking (provider)
+    confirm: async (id: string) => {
+        return apiClient.patch<Booking>(`/bookings/${id}/confirm`, {});
+    },
+
+    // Complete booking (provider)
+    complete: async (id: string) => {
+        return apiClient.patch<Booking>(`/bookings/${id}/complete`, {});
+    },
 };

@@ -85,4 +85,16 @@ export const propertiesApi = {
     reject: async (id: string, rejectionReason: string) => {
         return apiClient.patch<Property>(`/properties/${id}/reject`, { rejectionReason });
     },
+
+    // Get property statistics for landlord/agent
+    getMyStats: async () => {
+        return apiClient.get<{
+            totalProperties: number;
+            totalValue: number;
+            totalViews: number;
+            totalInquiries: number;
+            activeListings: number;
+            pendingApproval: number;
+        }>('/properties/my-stats');
+    },
 };

@@ -110,4 +110,17 @@ export const servicesApi = {
     feature: async (id: string, days: number) => {
         return apiClient.patch<Service>(`/services/${id}/feature?days=${days}`, {});
     },
+
+    // Get service provider statistics
+    getProviderStats: async () => {
+        return apiClient.get<{
+            totalServices: number;
+            activeServices: number;
+            totalBookings: number;
+            pendingBookings: number;
+            completedBookings: number;
+            totalRevenue: number;
+            averageRating: number;
+        }>('/services/provider/stats');
+    },
 };

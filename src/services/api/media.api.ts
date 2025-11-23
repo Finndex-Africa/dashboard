@@ -4,7 +4,7 @@ export interface MediaResponse {
     _id: string;
     filename: string;
     originalName: string;
-    type: 'properties' | 'users' | 'services';
+    type: 'properties' | 'users' | 'services' | 'advertisements';
     uploadedBy: string;
     url: string;
     mimeType: string;
@@ -17,9 +17,9 @@ export const mediaApi = {
     // Upload single file with optional entityId for subfolder organization
     upload: async (
         file: File,
-        type: 'properties' | 'users' | 'services',
+        type: 'properties' | 'users' | 'services' | 'advertisements',
         entityId?: string
-    ): Promise<MediaResponse> => {
+    ): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', type);
@@ -33,13 +33,13 @@ export const mediaApi = {
             },
         });
 
-        return response.data;
+        return response.data.url;
     },
 
     // Upload multiple files with optional entityId for subfolder organization
     uploadMultiple: async (
         files: File[],
-        type: 'properties' | 'users' | 'services',
+        type: 'properties' | 'users' | 'services' | 'advertisements',
         entityId?: string
     ): Promise<MediaResponse[]> => {
         const formData = new FormData();

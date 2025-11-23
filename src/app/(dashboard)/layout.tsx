@@ -17,6 +17,7 @@ import {
     UserOutlined,
     CalendarOutlined,
     BellOutlined,
+    TrophyOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { designTokens } from '@/config/theme';
@@ -99,6 +100,11 @@ export default function DashboardLayout({
             key: '/bookings',
             icon: <CalendarOutlined />,
             label: 'Bookings',
+        },
+        {
+            key: '/advertisements',
+            icon: <TrophyOutlined />,
+            label: 'Advertisements',
         },
         {
             key: '/users',

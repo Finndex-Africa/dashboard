@@ -1,5 +1,9 @@
 'use client';
 
+import { useAuth } from '@/providers/AuthProvider';
+import HomeSeekerDashboard from '@/components/dashboard/HomeSeekerDashboard';
+import LandlordDashboard from '@/components/dashboard/LandlordDashboard';
+import ServiceProviderDashboard from '@/components/dashboard/ServiceProviderDashboard';
 import Typography from 'antd/es/typography';
 import Card from 'antd/es/card';
 import Button from 'antd/es/button';
@@ -18,6 +22,31 @@ import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 const { Title } = Typography;
 
 export default function DashboardPage() {
+    const { user } = useAuth();
+
+    // Render role-specific dashboard
+    if (user) {
+        switch (user.role) {
+            case 'home_seeker':
+                return <HomeSeekerDashboard />;
+
+            case 'landlord':
+            case 'agent':
+                return <LandlordDashboard />;
+
+            case 'service_provider':
+                return <ServiceProviderDashboard />;
+
+            case 'admin':
+                // Admin gets the full analytics dashboard
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    // Default admin dashboard with full analytics
     const kpiData = [
         {
             title: 'Total Views',
