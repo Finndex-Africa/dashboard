@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
 
 function AuthTransferContent() {
     const router = useRouter();
@@ -14,17 +15,31 @@ function AuthTransferContent() {
         const validateAndStoreToken = async () => {
             if (hasProcessed.current) return;
 
+            // Check if this is a logout request
+            const isLogout = searchParams.get('logout') === 'true';
+            if (isLogout) {
+                hasProcessed.current = true;
+                console.log('🚪 Logout request received');
+                localStorage.clear();
+                document.cookie = 'token=; path=/; max-age=0';
+                console.log('✅ Dashboard logged out');
+                return;
+            }
+
             const token = searchParams.get('token');
 
             if (!token) {
                 console.error('❌ No token provided');
-                router.replace('/login');
+                window.location.href = `${WEBSITE_URL}/routes/login`;
                 return;
             }
 
             hasProcessed.current = true;
             console.log('📥 Processing authentication transfer');
+            console.log('🔑 Token:', token?.substring(0, 20) + '...');
+            console.log('🌐 API URL:', API_URL);
 
+            // Validate token and get user data
             try {
                 const response = await fetch(`${API_URL}/auth/validate-token`, {
                     method: 'POST',
@@ -34,27 +49,35 @@ function AuthTransferContent() {
                     body: JSON.stringify({ token }),
                 });
 
+                console.log('📡 Response status:', response.status);
                 const data = await response.json();
+                console.log('📦 Response data:', data);
 
                 if (data.success && data.data.valid) {
                     console.log('✅ Token validated');
 
+                    // Clear existing auth data
                     localStorage.clear();
                     document.cookie = 'token=; path=/; max-age=0';
 
+                    // Store the new token and user data
                     localStorage.setItem('token', token);
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
 
-                    console.log('✅ Authentication complete');
-                    router.replace('/dashboard');
+                    console.log('✅ Authentication complete, redirecting to dashboard');
+
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        router.replace('/dashboard');
+                    }, 500);
                 } else {
                     console.error('❌ Invalid token');
-                    router.replace('/login');
+                    window.location.href = `${WEBSITE_URL}/routes/login`;
                 }
             } catch (error) {
                 console.error('❌ Validation failed:', error);
-                router.replace('/login');
+                window.location.href = `${WEBSITE_URL}/routes/login`;
             }
         };
 

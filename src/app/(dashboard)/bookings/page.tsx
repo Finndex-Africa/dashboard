@@ -173,16 +173,16 @@ export default function BookingsPage() {
 
     const columns: ColumnsType<Booking> = [
         {
-            title: 'Service',
+            title: 'Service/Property',
             dataIndex: 'serviceId',
             key: 'serviceId',
             render: (service: any) => (
                 <div>
                     <div className="font-medium text-gray-900">
-                        {typeof service === 'object' ? service.title : 'N/A'}
+                        {service && typeof service === 'object' ? service.title : 'N/A'}
                     </div>
                     <div className="text-sm text-gray-500">
-                        {typeof service === 'object' && service.category ? service.category : ''}
+                        {service && typeof service === 'object' && service.category ? service.category : ''}
                     </div>
                 </div>
             ),
@@ -418,9 +418,9 @@ export default function BookingsPage() {
                 {selectedBooking && (
                     <div className="space-y-4" style={{ marginTop: '20px' }}>
                         <div>
-                            <Text type="secondary">Service</Text>
+                            <Text type="secondary">Service/Property</Text>
                             <div className="font-medium">
-                                {typeof selectedBooking.serviceId === 'object'
+                                {selectedBooking.serviceId && typeof selectedBooking.serviceId === 'object'
                                     ? selectedBooking.serviceId.title
                                     : 'N/A'}
                             </div>
@@ -428,7 +428,7 @@ export default function BookingsPage() {
                         <div>
                             <Text type="secondary">Customer</Text>
                             <div className="font-medium">
-                                {typeof selectedBooking.userId === 'object'
+                                {selectedBooking.userId && typeof selectedBooking.userId === 'object'
                                     ? selectedBooking.userId.name
                                     : 'N/A'}
                             </div>

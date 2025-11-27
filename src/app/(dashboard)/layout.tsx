@@ -55,7 +55,18 @@ export default function DashboardLayout({
         }
     };
 
+    const handleHomeClick = () => {
+        const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
+        window.location.href = websiteUrl;
+    };
+
     const userMenuItems = [
+        {
+            key: 'home',
+            label: 'Home',
+            icon: <HomeOutlined />,
+            onClick: () => handleHomeClick(),
+        },
         {
             key: 'profile',
             label: 'Profile',
@@ -129,9 +140,13 @@ export default function DashboardLayout({
     ];
 
     const handleLogout = () => {
+        // Clear dashboard auth data
         localStorage.clear();
         document.cookie = 'token=; path=/; max-age=0';
-        window.location.href = `${process.env.NEXT_PUBLIC_WEBSITE_URL}/`;
+
+        // Redirect to frontend and trigger logout there as well
+        const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
+        window.location.href = `${websiteUrl}/?logout=true`;
     };
 
     return (
