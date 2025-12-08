@@ -14,6 +14,7 @@ import Modal from 'antd/es/modal';
 import Tag from 'antd/es/tag';
 import Descriptions from 'antd/es/descriptions';
 import Image from 'antd/es/image';
+import Result from 'antd/es/result';
 import {
     PlusOutlined,
     HomeOutlined,
@@ -29,12 +30,16 @@ import type { Property } from '@/types/dashboard';
 import { propertiesApi } from '@/services/api/properties.api';
 import { mediaApi } from '@/services/api/media.api';
 import { showToast } from '@/lib/toast';
+import { useAuth } from '@/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { TextArea } = Input;
 
 export default function PropertiesPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -49,51 +54,63 @@ export default function PropertiesPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
+    // Check if user has access to this page
+    const hasAccess = user?.role === 'landlord' || user?.role === 'agent' || user?.role === 'admin';
+
     useEffect(() => {
-        fetchProperties();
-    }, []);
+        if (hasAccess) {
+            fetchProperties();
+        }
+    }, [hasAccess]);
 
     const fetchProperties = async () => {
         try {
             setLoading(true);
 
-            // Fetch ALL pages of properties
             let allProperties: Property[] = [];
-            let currentPage = 1;
-            let hasMore = true;
 
-            while (hasMore) {
-                const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
+            // Admin: Fetch ALL properties with pagination
+            if (user?.role === 'admin') {
+                let currentPage = 1;
+                let hasMore = true;
 
-                // Handle both response formats
-                let pageData: Property[] = [];
-                let pagination: any = null;
+                while (hasMore) {
+                    const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
 
-                if (Array.isArray(response?.data)) {
-                    pageData = response.data as Property[];
-                } else if (response?.data?.data) {
-                    pageData = response.data.data || [];
-                    pagination = response.data.pagination;
+                    // Handle both response formats
+                    let pageData: Property[] = [];
+                    let pagination: any = null;
+
+                    if (Array.isArray(response?.data)) {
+                        pageData = response.data as Property[];
+                    } else if (response?.data?.data) {
+                        pageData = response.data.data || [];
+                        pagination = response.data.pagination;
+                    }
+
+                    allProperties = [...allProperties, ...pageData];
+
+                    // Check if there are more pages
+                    if (!pagination) {
+                        hasMore = false;
+                        continue;
+                    }
+
+                    if (currentPage >= pagination.totalPages) {
+                        hasMore = false;
+                        continue;
+                    }
+
+                    currentPage++;
                 }
-
-                allProperties = [...allProperties, ...pageData];
-
-                // Check if there are more pages
-                if (!pagination) {
-                    hasMore = false;
-                    continue;
-                }
-
-                if (currentPage >= pagination.totalPages) {
-                    hasMore = false;
-                    continue;
-                }
-
-                currentPage++;
+            } else {
+                // Landlord/Agent: Fetch only their own properties
+                const response = await propertiesApi.getMyProperties();
+                allProperties = Array.isArray(response.data) ? response.data : [];
             }
 
             setProperties(allProperties);
-            console.log(`Fetched ${allProperties.length} total properties`);
+            console.log(`Fetched ${allProperties.length} properties`);
         } catch (error: any) {
             console.error('Failed to fetch properties:', error);
             if (error.response?.status !== 404) {
@@ -244,7 +261,11 @@ export default function PropertiesPage() {
         return matchesSearch && matchesStatus && matchesType;
     });
 
-    const stats = [
+    // Stats based on user role
+    const isAdmin = user?.role === 'admin';
+
+    // For landlords, show only relevant stats (no rejected/archived for admin view)
+    const baseStats = [
         {
             title: 'Total Properties',
             value: properties.length,
@@ -274,6 +295,9 @@ export default function PropertiesPage() {
             color: '#ffa94d',
             bgColor: '#ffa94d15',
         },
+    ];
+
+    const adminOnlyStats = [
         {
             title: 'Rented',
             value: properties.filter(p => p.status === 'rented').length,
@@ -296,6 +320,24 @@ export default function PropertiesPage() {
             bgColor: '#95a5a615',
         },
     ];
+
+    const stats = isAdmin ? [...baseStats, ...adminOnlyStats] : baseStats;
+
+    // Show access denied for unauthorized users
+    if (!hasAccess) {
+        return (
+            <Result
+                status="403"
+                title="Access Denied"
+                subTitle="You don't have permission to access this page."
+                extra={
+                    <Button type="primary" onClick={() => router.push('/dashboard')}>
+                        Go to Dashboard
+                    </Button>
+                }
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -447,8 +489,8 @@ export default function PropertiesPage() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
-                    onApprove={handleApproveClick}
-                    onReject={handleRejectClick}
+                    onApprove={isAdmin ? handleApproveClick : undefined}
+                    onReject={isAdmin ? handleRejectClick : undefined}
                     approvingId={actionLoading}
                 />
             </Card>

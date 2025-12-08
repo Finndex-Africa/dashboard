@@ -1,6 +1,27 @@
 import axios from 'axios';
 import message from 'antd/es/message';
-import { jwtDecode } from 'jwt-decode';
+// Small JWT decoder to avoid relying on package default export in the bundler.
+function decodeJwt(token: string): any | null {
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        let json = '';
+        if (typeof window === 'undefined') {
+            json = Buffer.from(b64, 'base64').toString('utf8');
+        } else {
+            const str = atob(b64);
+            json = decodeURIComponent(
+                Array.prototype.map
+                    .call(str, (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join(''),
+            );
+        }
+        return JSON.parse(json);
+    } catch (e) {
+        return null;
+    }
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -42,7 +63,8 @@ export class AuthService {
         // Initialize token from localStorage if it exists
         if (typeof window !== 'undefined') {
             try {
-                this.token = window.localStorage.getItem('token');
+                // Check both 'authToken' (from auth transfer) and 'token' (from direct login)
+                this.token = window.localStorage.getItem('authToken') || window.localStorage.getItem('token');
                 // Validate stored user data
                 const user = this.getUser();
                 if (!user) {
@@ -62,6 +84,13 @@ export class AuthService {
             AuthService.instance = new AuthService();
         }
         return AuthService.instance;
+    }
+
+    // Force re-initialization of token from storage
+    public refreshToken(): void {
+        if (typeof window !== 'undefined') {
+            this.token = window.localStorage.getItem('authToken') || window.localStorage.getItem('token');
+        }
     }
 
     async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -99,6 +128,10 @@ export class AuthService {
     }
 
     getToken(): string | null {
+        // Always check storage for the most up-to-date token
+        if (typeof window !== 'undefined' && !this.token) {
+            this.token = window.localStorage.getItem('authToken') || window.localStorage.getItem('token');
+        }
         return this.token;
     }
 
@@ -110,35 +143,62 @@ export class AuthService {
         if (typeof window === 'undefined') return null;
 
         try {
-            const token = window.localStorage.getItem('token');
+            // First, try to get user data directly from localStorage (stored during login)
+            const storedUserData = window.localStorage.getItem('user');
+            if (storedUserData) {
+                try {
+                    const user = JSON.parse(storedUserData) as IUser;
+                    // Ensure role is set
+                    if (user.role) {
+                        return user;
+                    }
+                } catch (error) {
+                    console.error('Error parsing stored user data:', error);
+                }
+            }
+
+            // Fallback: extract from JWT token
+            const token = window.localStorage.getItem('authToken') || window.localStorage.getItem('token');
             if (!token) return null;
 
-            const decodedToken = jwtDecode(token) as IJwtPayload;
-            if (!decodedToken || !decodedToken.user) {
-                // Invalid token structure
+            const decodedToken = decodeJwt(token) as any;
+            if (!decodedToken) {
                 window.localStorage.removeItem('token');
+                window.localStorage.removeItem('authToken');
                 return null;
             }
 
             // Check if token is expired
             const currentTime = Date.now() / 1000;
             if (decodedToken.exp && decodedToken.exp < currentTime) {
-                // Token is expired
                 window.localStorage.removeItem('token');
+                window.localStorage.removeItem('authToken');
+                window.localStorage.removeItem('user');
                 return null;
             }
 
-            // Ensure role field exists (map from userType if needed for backward compatibility)
-            const user = decodedToken.user;
-            if (!user.role && (user as any).userType) {
-                user.role = (user as any).userType;
+            // Handle both JWT structures: { user: {...} } or direct user data
+            let userData = decodedToken.user || decodedToken;
+
+            // Map userType to role for consistency, handling multiple possible role field names
+            if (!userData.role) {
+                if (userData.userType) {
+                    userData = { ...userData, role: userData.userType };
+                } else if (userData.roleType) {
+                    userData = { ...userData, role: userData.roleType };
+                } else {
+                    // If no role can be determined, log warning and return null to force re-authentication
+                    console.warn('No role found in user data:', userData);
+                    return null;
+                }
             }
 
-            return user;
+            return userData as IUser;
         } catch (error) {
             console.error('Error getting user data:', error);
             // Clear invalid token
             window.localStorage.removeItem('token');
+            window.localStorage.removeItem('user');
             return null;
         }
     }
@@ -160,8 +220,31 @@ export class AuthService {
         axios.interceptors.response.use(
             (response) => response,
             (error) => {
-                if (error.response?.status === 401) {
-                    this.logout();
+                try {
+                    const status = error.response?.status;
+                    const url = error.config?.url;
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const { logError, logInfo } = require('@/utils/persistentLogger');
+                    logError('Dashboard AuthService: axios response error', { status, url, message: error.message });
+                    if (status === 401) {
+                        // In local development, avoid auto-logout so we can inspect the failing request
+                        try {
+                            const hostname = (typeof window !== 'undefined' && window.location && window.location.hostname) || '';
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            const { logInfo } = require('@/utils/persistentLogger');
+                            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                                logInfo('Dashboard AuthService: detected 401 response but skipping auto-logout on localhost', { url });
+                            } else {
+                                logInfo('Dashboard AuthService: detected 401 response, invoking logout', { url });
+                                this.logout();
+                            }
+                        } catch (e) {
+                            // Fallback to logout if check fails
+                            this.logout();
+                        }
+                    }
+                } catch (e) {
+                    // ignore logging failures
                 }
                 return Promise.reject(error);
             }

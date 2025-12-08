@@ -28,12 +28,18 @@ import { mediaApi } from '@/services/api/media.api';
 import Modal from 'antd/es/modal';
 import message from 'antd/es/message';
 import { showToast } from '@/lib/toast';
+import { useAuth } from '@/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
+import Result from 'antd/es/result';
+import Statistic from 'antd/es/statistic';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { TextArea } = Input;
 
 export default function ServicesPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
@@ -48,42 +54,56 @@ export default function ServicesPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
+    // Check if user has access to this page
+    const hasAccess = user?.role === 'service_provider' || user?.role === 'admin';
+    const isAdmin = user?.role === 'admin';
+
     useEffect(() => {
-        fetchServices();
-    }, []);
+        if (hasAccess) {
+            fetchServices();
+        }
+    }, [hasAccess]);
 
     const fetchServices = async () => {
         try {
             setLoading(true);
             let allServices: Service[] = [];
-            let currentPage = 1;
-            let hasMore = true;
 
-            while (hasMore) {
-                const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
+            // Admin: Fetch ALL services with pagination
+            if (isAdmin) {
+                let currentPage = 1;
+                let hasMore = true;
 
-                // Handle both response formats
-                let pageData: Service[] = [];
-                let pagination: any = null;
+                while (hasMore) {
+                    const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
 
-                if (Array.isArray(response?.data)) {
-                    pageData = response.data as Service[];
-                } else if (response?.data?.data) {
-                    pageData = response.data.data || [];
-                    pagination = response.data.pagination;
+                    // Handle both response formats
+                    let pageData: Service[] = [];
+                    let pagination: any = null;
+
+                    if (Array.isArray(response?.data)) {
+                        pageData = response.data as Service[];
+                    } else if (response?.data?.data) {
+                        pageData = response.data.data || [];
+                        pagination = response.data.pagination;
+                    }
+
+                    allServices = [...allServices, ...pageData];
+
+                    if (!pagination || currentPage >= pagination.totalPages) {
+                        hasMore = false;
+                        continue;
+                    }
+                    currentPage++;
                 }
-
-                allServices = [...allServices, ...pageData];
-
-                if (!pagination || currentPage >= pagination.totalPages) {
-                    hasMore = false;
-                    continue;
-                }
-                currentPage++;
+            } else {
+                // Service Provider: Fetch only their own services
+                const response = await servicesApi.getMyServices();
+                allServices = Array.isArray(response.data) ? response.data : [];
             }
 
             setServices(allServices);
-            console.log(`Fetched ${allServices.length} total services`);
+            console.log(`Fetched ${allServices.length} services`);
         } catch (error: any) {
             console.error('Failed to fetch services:', error);
             if (error.response?.status !== 404) {
@@ -293,6 +313,22 @@ export default function ServicesPage() {
         },
     ];
 
+    // Show access denied for unauthorized users
+    if (!hasAccess) {
+        return (
+            <Result
+                status="403"
+                title="Access Denied"
+                subTitle="You don't have permission to access this page."
+                extra={
+                    <Button type="primary" onClick={() => router.push('/dashboard')}>
+                        Go to Dashboard
+                    </Button>
+                }
+            />
+        );
+    }
+
     return (
         <div className="space-y-6">
             {/* Modern Header */}
@@ -445,8 +481,8 @@ export default function ServicesPage() {
                     loading={loading}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
-                    onApprove={handleApproveClick}
-                    onReject={handleRejectClick}
+                    onApprove={isAdmin ? handleApproveClick : undefined}
+                    onReject={isAdmin ? handleRejectClick : undefined}
                     approvingId={actionLoading}
                 />
             </Card>

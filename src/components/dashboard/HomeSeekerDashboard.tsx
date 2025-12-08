@@ -53,11 +53,18 @@ export default function HomeSeekerDashboard() {
                 notificationsApi.getAll({ limit: 5 })
             ]);
 
-            setBookings(bookingsResponse.data.data || []);
-            setNotifications(notificationsResponse.data.data || []);
+            // Handle paginated response structure
+            const bookingsData = (bookingsResponse as any)?.data?.data || bookingsResponse.data || [];
+            const notificationsData = (notificationsResponse as any)?.data?.data || notificationsResponse.data || [];
+
+            setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+            setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
         } catch (error: any) {
             console.error('Failed to fetch dashboard data:', error);
             message.error(error.response?.data?.message || 'Failed to load dashboard data');
+            // Set empty arrays on error so UI doesn't break
+            setBookings([]);
+            setNotifications([]);
         } finally {
             setLoading(false);
         }
@@ -86,10 +93,10 @@ export default function HomeSeekerDashboard() {
             key: 'service',
             render: (text: string, record: Booking) => (
                 <div>
-                    <Text strong>{text}</Text>
+                    <Text strong>{text || 'N/A'}</Text>
                     <br />
                     <Text type="secondary" className="text-xs">
-                        {record.serviceId.category}
+                        {record.serviceId && typeof record.serviceId === 'object' ? record.serviceId.category : 'N/A'}
                     </Text>
                 </div>
             ),

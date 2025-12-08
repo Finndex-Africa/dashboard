@@ -13,6 +13,11 @@ import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
 import Modal from 'antd/es/modal';
+import Form from 'antd/es/form';
+import DatePicker from 'antd/es/date-picker';
+import InputNumber from 'antd/es/input-number';
+import TextArea from 'antd/es/input/TextArea';
+import Spin from 'antd/es/spin';
 import {
     CalendarOutlined,
     CheckCircleOutlined,
@@ -21,32 +26,55 @@ import {
     EditOutlined,
     DeleteOutlined,
     SearchOutlined,
+    StopOutlined,
 } from '@ant-design/icons';
 import { bookingsApi } from '@/services/api/bookings.api';
 import type { Booking } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 import { showToast } from '@/lib/toast';
+import { useAuth } from '@/providers/AuthProvider';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
 export default function BookingsPage() {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editLoading, setEditLoading] = useState(false);
+    const [cancelLoading, setCancelLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [form] = Form.useForm();
 
     useEffect(() => {
-        fetchBookings();
-    }, []);
+        if (user) {
+            fetchBookings();
+        }
+    }, [user]);
 
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const response = await bookingsApi.getAll({ page: 1, limit: 100 });
-            const bookingsData = response.data || [];
+            let response;
+
+            // Use role-based API endpoints
+            if (user?.role === 'home_seeker') {
+                // Home seekers see only their own bookings
+                response = await bookingsApi.getMyBookings({ page: 1, limit: 100 });
+            } else if (user?.role === 'service_provider') {
+                // Service providers see bookings for their services
+                response = await bookingsApi.getProviderBookings({ page: 1, limit: 100 });
+            } else {
+                // Admins, landlords, and agents see all bookings
+                response = await bookingsApi.getAll({ page: 1, limit: 100 });
+            }
+
+            // Extract data from paginated response
+            const bookingsData = (response as any)?.data?.data || response.data || [];
             setBookings(Array.isArray(bookingsData) ? bookingsData : []);
         } catch (error: any) {
             console.error('Failed to fetch bookings:', error);
@@ -62,6 +90,72 @@ export default function BookingsPage() {
     const handleView = (booking: Booking) => {
         setSelectedBooking(booking);
         setViewModalOpen(true);
+    };
+
+    const handleEdit = (booking: Booking) => {
+        setSelectedBooking(booking);
+        // Don't set the scheduledDate field - let user clear and re-pick it
+        // This avoids DatePicker validation issues
+        form.setFieldsValue({
+            duration: booking.duration,
+            contactPhone: booking.contactPhone,
+            serviceLocation: booking.serviceLocation,
+            serviceAddress: booking.serviceAddress,
+            notes: booking.notes,
+        });
+        setEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async (values: any) => {
+        if (!selectedBooking) return;
+
+        try {
+            setEditLoading(true);
+            const updateData: any = {
+                duration: values.duration,
+                contactPhone: values.contactPhone,
+                serviceLocation: values.serviceLocation,
+                serviceAddress: values.serviceAddress,
+                notes: values.notes,
+            };
+
+            // Only include scheduledDate if it was modified
+            if (values.scheduledDate) {
+                updateData.scheduledDate = values.scheduledDate.toISOString ? values.scheduledDate.toISOString() : new Date(values.scheduledDate).toISOString();
+            }
+
+            await bookingsApi.update(selectedBooking._id, updateData);
+            showToast.success('Booking updated successfully');
+            setEditModalOpen(false);
+            fetchBookings();
+        } catch (error: any) {
+            console.error('Failed to update booking:', error);
+            showToast.error(error.response?.data?.message || 'Failed to update booking');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+    const handleCancel = (booking: Booking) => {
+        Modal.confirm({
+            title: 'Cancel Booking',
+            content: 'Are you sure you want to cancel this booking? This action cannot be undone.',
+            okText: 'Cancel Booking',
+            okType: 'danger',
+            onOk: async () => {
+                try {
+                    setCancelLoading(true);
+                    await bookingsApi.cancel(booking._id);
+                    showToast.success('Booking cancelled successfully');
+                    fetchBookings();
+                } catch (error: any) {
+                    console.error('Failed to cancel booking:', error);
+                    showToast.error(error.response?.data?.message || 'Failed to cancel booking');
+                } finally {
+                    setCancelLoading(false);
+                }
+            },
+        });
     };
 
     const handleDelete = (booking: Booking) => {
@@ -247,6 +341,7 @@ export default function BookingsPage() {
         {
             title: 'Actions',
             key: 'actions',
+            width: 120,
             render: (_, record) => (
                 <Space size="small">
                     <Tooltip title="View">
@@ -256,13 +351,26 @@ export default function BookingsPage() {
                             onClick={() => handleView(record)}
                         />
                     </Tooltip>
-                    <Tooltip title="Edit">
-                        <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => showToast.warning('Edit functionality coming soon')}
-                        />
-                    </Tooltip>
+                    {record.status === 'pending' && (
+                        <Tooltip title="Edit">
+                            <Button
+                                type="text"
+                                icon={<EditOutlined />}
+                                onClick={() => handleEdit(record)}
+                            />
+                        </Tooltip>
+                    )}
+                    {['pending', 'confirmed'].includes(record.status) && (
+                        <Tooltip title="Cancel">
+                            <Button
+                                type="text"
+                                danger
+                                icon={<StopOutlined />}
+                                loading={cancelLoading}
+                                onClick={() => handleCancel(record)}
+                            />
+                        </Tooltip>
+                    )}
                     <Tooltip title="Delete">
                         <Button
                             type="text"
@@ -494,6 +602,58 @@ export default function BookingsPage() {
                             </div>
                         )}
                     </div>
+                )}
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal
+                title={<div style={{ fontSize: '18px', fontWeight: 600 }}>Edit Booking</div>}
+                open={editModalOpen}
+                onCancel={() => setEditModalOpen(false)}
+                width={600}
+                footer={[
+                    <Button key="cancel" onClick={() => setEditModalOpen(false)} style={{ borderRadius: '8px' }}>
+                        Cancel
+                    </Button>,
+                    <Button
+                        key="submit"
+                        type="primary"
+                        loading={editLoading}
+                        onClick={() => form.submit()}
+                        style={{ borderRadius: '8px' }}
+                    >
+                        Save Changes
+                    </Button>,
+                ]}
+            >
+                {selectedBooking && (
+                    <Spin spinning={editLoading}>
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            onFinish={handleEditSubmit}
+                            style={{ marginTop: '20px' }}
+                        >
+                            <Form.Item label="Scheduled Date" name="scheduledDate" rules={[{ required: true }]}>
+                                <DatePicker showTime style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Form.Item label="Duration (hours)" name="duration" rules={[{ required: true }]}>
+                                <InputNumber min={1} style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Form.Item label="Contact Phone" name="contactPhone" rules={[{ required: true }]}>
+                                <Input />
+                            </Form.Item>
+                            <Form.Item label="Service Location" name="serviceLocation">
+                                <Input />
+                            </Form.Item>
+                            <Form.Item label="Service Address" name="serviceAddress">
+                                <Input />
+                            </Form.Item>
+                            <Form.Item label="Notes" name="notes">
+                                <TextArea rows={3} />
+                            </Form.Item>
+                        </Form>
+                    </Spin>
                 )}
             </Modal>
         </div>

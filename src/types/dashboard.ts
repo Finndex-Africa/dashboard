@@ -165,6 +165,12 @@ export interface Booking {
     paymentMethod?: string;
     paymentReference?: string;
     paidAt?: string;
+    // Commission fields
+    platformFee?: number; // 10% Finndex fee
+    providerEarnings?: number; // 90% for service provider
+    commissionProcessed: boolean;
+    commissionProcessedAt?: string;
+    commissionId?: string;
     cancellationReason?: string;
     cancelledAt?: string;
     completedAt?: string;

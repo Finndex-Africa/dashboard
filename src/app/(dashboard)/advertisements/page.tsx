@@ -15,6 +15,7 @@ import {
     Row,
     Col,
     Statistic,
+    Result,
 } from 'antd';
 import {
     PlusOutlined,
@@ -28,10 +29,14 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { advertisementsApi, type Advertisement } from '@/services/api/advertisements.api';
 import AdvertisementForm from '@/components/dashboard/AdvertisementForm';
+import { useAuth } from '@/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
 export default function AdvertisementsPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,9 +44,14 @@ export default function AdvertisementsPage() {
     const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
     const [filterPlacement, setFilterPlacement] = useState<string | undefined>(undefined);
 
+    // Check if user is admin
+    const isAdmin = user?.role === 'admin';
+
     useEffect(() => {
-        fetchAdvertisements();
-    }, [filterStatus, filterPlacement]);
+        if (isAdmin) {
+            fetchAdvertisements();
+        }
+    }, [filterStatus, filterPlacement, isAdmin]);
 
     const fetchAdvertisements = async () => {
         try {
@@ -51,7 +61,10 @@ export default function AdvertisementsPage() {
                 placement: filterPlacement,
                 limit: 100,
             });
-            setAdvertisements(response.data || []);
+            // Extract data from ApiSuccessResponse<PaginatedResponse<Advertisement>>
+            // response is { success: true, data: { data: Advertisement[], pagination: {...} } }
+            const advertisementsData = (response as any)?.data?.data || [];
+            setAdvertisements(advertisementsData);
         } catch (error: any) {
             console.error('Failed to fetch advertisements:', error);
             message.error('Failed to load advertisements');
@@ -214,6 +227,22 @@ export default function AdvertisementsPage() {
     const totalClicks = advertisements.reduce((sum, ad) => sum + (ad.clicks || 0), 0);
     const totalBudget = advertisements.reduce((sum, ad) => sum + (ad.budget || 0), 0);
     const activeAds = advertisements.filter(ad => ad.status === 'active').length;
+
+    // Show access denied for non-admin users
+    if (!isAdmin) {
+        return (
+            <Result
+                status="403"
+                title="Access Denied"
+                subTitle="Only administrators can access the advertisements management page."
+                extra={
+                    <Button type="primary" onClick={() => router.push('/dashboard')}>
+                        Go to Dashboard
+                    </Button>
+                }
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">

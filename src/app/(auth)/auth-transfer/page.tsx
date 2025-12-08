@@ -20,7 +20,11 @@ function AuthTransferContent() {
             if (isLogout) {
                 hasProcessed.current = true;
                 console.log('🚪 Logout request received');
-                localStorage.clear();
+                // Remove only auth-related storage keys to avoid wiping developer logs
+                localStorage.removeItem('token');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                localStorage.removeItem('refreshToken');
                 document.cookie = 'token=; path=/; max-age=0';
                 console.log('✅ Dashboard logged out');
                 return;
@@ -56,8 +60,11 @@ function AuthTransferContent() {
                 if (data.success && data.data.valid) {
                     console.log('✅ Token validated');
 
-                    // Clear existing auth data
-                    localStorage.clear();
+                    // Clear existing auth data (only auth keys)
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('refreshToken');
                     document.cookie = 'token=; path=/; max-age=0';
 
                     // Store the new token and user data
@@ -65,12 +72,17 @@ function AuthTransferContent() {
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
 
-                    console.log('✅ Authentication complete, redirecting to dashboard');
+                    console.log('✅ Authentication complete, stored token and user data');
 
-                    // Redirect to dashboard
+                    // Dispatch custom event to notify AuthProvider immediately
+                    window.dispatchEvent(new Event('auth-updated'));
+
+                    console.log('✅ Dispatched auth-updated event, redirecting to dashboard');
+
+                    // Redirect to dashboard with a slight delay to ensure state updates
                     setTimeout(() => {
                         router.replace('/dashboard');
-                    }, 500);
+                    }, 100);
                 } else {
                     console.error('❌ Invalid token');
                     window.location.href = `${WEBSITE_URL}/routes/login`;

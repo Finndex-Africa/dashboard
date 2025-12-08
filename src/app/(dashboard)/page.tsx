@@ -3,130 +3,61 @@
 import { useAuth } from '@/providers/AuthProvider';
 import HomeSeekerDashboard from '@/components/dashboard/HomeSeekerDashboard';
 import LandlordDashboard from '@/components/dashboard/LandlordDashboard';
+import AgentDashboard from '@/components/dashboard/AgentDashboard';
 import ServiceProviderDashboard from '@/components/dashboard/ServiceProviderDashboard';
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import Typography from 'antd/es/typography';
 import Card from 'antd/es/card';
-import Button from 'antd/es/button';
-import Select from 'antd/es/select';
-import {
-    EyeOutlined,
-    DollarOutlined,
-    ShoppingOutlined,
-    TeamOutlined,
-    MoreOutlined,
-} from '@ant-design/icons';
-import { KPICardsGrid } from '@/components/dashboard/KPICard';
-import { PaymentsChart } from '@/components/dashboard/PaymentsChart';
-import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 
-const { Title } = Typography;
+const { Title, Paragraph } = Typography;
 
 export default function DashboardPage() {
     const { user } = useAuth();
 
     // Render role-specific dashboard
-    if (user) {
+    if (user && user.role) {
         switch (user.role) {
             case 'home_seeker':
                 return <HomeSeekerDashboard />;
 
             case 'landlord':
-            case 'agent':
                 return <LandlordDashboard />;
+
+            case 'agent':
+                return <AgentDashboard />;
 
             case 'service_provider':
                 return <ServiceProviderDashboard />;
 
             case 'admin':
-                // Admin gets the full analytics dashboard
-                break;
+                return <AdminDashboard />;
 
             default:
+                // Log unexpected role for debugging
+                console.warn('Unknown user role:', user.role);
                 break;
         }
-    }
-
-    // Default admin dashboard with full analytics
-    const kpiData = [
-        {
-            title: 'Total Views',
-            value: 3456,
-            change: 0.43,
-            trend: 'up' as const,
-            icon: <EyeOutlined />,
-        },
-        {
-            title: 'Total Profit',
-            value: 42200,
-            change: 4.35,
-            trend: 'up' as const,
-            prefix: '$',
-            icon: <DollarOutlined />,
-        },
-        {
-            title: 'Total Products',
-            value: 2450,
-            change: 2.59,
-            trend: 'up' as const,
-            icon: <ShoppingOutlined />,
-        },
-        {
-            title: 'Total Users',
-            value: 3465,
-            change: 1.45,
-            trend: 'up' as const,
-            icon: <TeamOutlined />,
-        },
-    ];
-
-    const paymentsData = Array.from({ length: 12 }, (_, i) => ({
-        date: new Date(2025, i, 1).toLocaleString('default', { month: 'short' }),
-        amount: Math.floor(Math.random() * 50000) + 20000,
-        type: 'received',
-    })).concat(
-        Array.from({ length: 12 }, (_, i) => ({
-            date: new Date(2025, i, 1).toLocaleString('default', { month: 'short' }),
-            amount: Math.floor(Math.random() * 40000) + 15000,
-            type: 'due',
-        }))
-    );
-
-    return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <Title level={2} className="!mb-0">Dashboard</Title>
-                <Select
-                    defaultValue="monthly"
-                    style={{ width: 120 }}
-                    options={[
-                        { value: 'daily', label: 'Daily' },
-                        { value: 'weekly', label: 'Weekly' },
-                        { value: 'monthly', label: 'Monthly' },
-                        { value: 'yearly', label: 'Yearly' },
-                    ]}
-                />
-            </div>
-
-            <KPICardsGrid kpiData={kpiData} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PaymentsChart data={paymentsData} />
-
-                <Card bordered={false} className="h-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <Title level={4} className="!mb-0">Profit this Week</Title>
-                        <Button type="text" icon={<MoreOutlined />} />
-                    </div>
-                    {/* Add profit chart component here */}
+    } else if (user && !user.role) {
+        // User is loaded but has no role - this is an error state
+        console.error('User loaded but has no role', user);
+        return (
+            <div className="space-y-8">
+                <Typography.Title level={2} className="!mb-0">Error: Invalid User Role</Typography.Title>
+                <Card>
+                    <Typography.Paragraph>
+                        Your account does not have a valid role assigned. Please contact support.
+                    </Typography.Paragraph>
                 </Card>
             </div>
+        );
+    }
 
+    // Default loading state
+    return (
+        <div className="space-y-8">
+            <Title level={2}>Dashboard</Title>
             <Card>
-                <div className="flex justify-between items-center mb-6">
-                    <Title level={4} className="!mb-0">Recent Transactions</Title>
-                    <Button type="primary">View All</Button>
-                </div>
-                <PropertiesTable properties={[]} />
+                <Paragraph>Loading dashboard...</Paragraph>
             </Card>
         </div>
     );
