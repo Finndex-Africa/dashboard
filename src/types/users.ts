@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-export type UserRole = 'admin' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker';
+export type UserRole = 'admin' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker'; // 'landlord' is legacy, use 'agent'
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'blocked';
 
 export interface User {
@@ -34,7 +34,7 @@ export interface UserStats {
   active: number;
   inactive: number;
   homeSeeker: number;
-  landlord: number;
+  landlord: number; // Legacy - same as agent
   agent: number;
   serviceProvider: number;
   newUsersThisMonth: number;

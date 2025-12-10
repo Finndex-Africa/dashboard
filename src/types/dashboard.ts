@@ -58,7 +58,7 @@ export interface Property {
     description: string;
     images: string[];
     agentId?: string;
-    landlordId?: string;
+    landlordId?: string; // Legacy field - use agentId instead
     views?: number;
     inquiries?: number;
     isPremium?: boolean;

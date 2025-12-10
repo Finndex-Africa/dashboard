@@ -1,18 +1,20 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import { Card, Typography, Table, Tag, Empty, Spin, Row, Col, Statistic, message } from 'antd';
+import { Card, Typography, Table, Tag, Empty, Spin, Row, Col, Statistic, message, Button } from 'antd';
 import {
     HomeOutlined,
     DollarOutlined,
     EyeOutlined,
     MessageOutlined,
     RiseOutlined,
-    TeamOutlined,
-    CheckCircleOutlined,
+    CalendarOutlined,
 } from '@ant-design/icons';
 import { propertiesApi } from '@/services/api/properties.api';
 import { bookingsApi } from '@/services/api/bookings.api';
+import type { Booking } from '@/types/dashboard';
+import { useAuth } from '@/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
@@ -22,23 +24,8 @@ interface Property {
     type: string;
     price: number;
     status: string;
-    views?: number;
-    inquiries?: number;
-    ownerId?: { firstName: string; lastName: string };
-}
-
-interface Booking {
-    _id: string;
-    userId: {
-        firstName: string;
-        lastName: string;
-    };
-    propertyId: {
-        title: string;
-    };
-    scheduledDate: string;
-    status: string;
-    totalPrice: number;
+    views: number;
+    inquiries: number;
 }
 
 interface Stats {
@@ -48,14 +35,13 @@ interface Stats {
     totalInquiries: number;
     activeListings: number;
     pendingApproval: number;
-    totalSales: number;
-    totalCommission: number;
-    closedDeals: number;
 }
 
 export default function AgentDashboard() {
+    const { user } = useAuth();
+    const router = useRouter();
+
     const [properties, setProperties] = useState<Property[]>([]);
-    const [bookings, setBookings] = useState<Booking[]>([]);
     const [stats, setStats] = useState<Stats>({
         totalProperties: 0,
         totalValue: 0,
@@ -63,31 +49,32 @@ export default function AgentDashboard() {
         totalInquiries: 0,
         activeListings: 0,
         pendingApproval: 0,
-        totalSales: 0,
-        totalCommission: 0,
-        closedDeals: 0,
     });
     const [loading, setLoading] = useState(true);
+
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [bookingsLoading, setBookingsLoading] = useState(false);
 
     useEffect(() => {
         fetchDashboardData();
     }, []);
 
+    // Fetch bookings whenever properties or user change (best-effort mapping)
+    useEffect(() => {
+        if (user) {
+            fetchRecentBookings();
+        }
+    }, [properties, user]);
+
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
 
-            // Fetch properties and bookings in parallel
-            const [propertiesResponse, bookingsResponse] = await Promise.all([
-                propertiesApi.getMyProperties(),
-                bookingsApi.getAll({ limit: 10 })
-            ]);
-
+            // Fetch properties for this landlord
+            const propertiesResponse = await propertiesApi.getMyProperties();
             const propertiesData = Array.isArray(propertiesResponse.data) ? propertiesResponse.data : [];
-            const bookingsData = (bookingsResponse as any)?.data?.data || [];
 
             setProperties(propertiesData);
-            setBookings(Array.isArray(bookingsData) ? bookingsData : []);
 
             // Calculate stats from properties
             const activeListings = propertiesData.filter((p: any) => p.status === 'active').length;
@@ -96,11 +83,6 @@ export default function AgentDashboard() {
             const totalViews = propertiesData.reduce((sum: number, p: any) => sum + (p.views || 0), 0);
             const totalInquiries = propertiesData.reduce((sum: number, p: any) => sum + (p.inquiries || 0), 0);
 
-            // Calculate sales stats from bookings
-            const closedDeals = bookingsData.filter((b: any) => b.status === 'completed').length;
-            const totalSales = bookingsData.reduce((sum: number, b: any) => sum + (b.totalPrice || 0), 0);
-            const totalCommission = totalSales * 0.05; // 5% commission
-
             setStats({
                 totalProperties: propertiesData.length,
                 totalValue,
@@ -108,17 +90,51 @@ export default function AgentDashboard() {
                 totalInquiries,
                 activeListings,
                 pendingApproval,
-                totalSales,
-                totalCommission,
-                closedDeals,
             });
         } catch (error: any) {
             console.error('Failed to fetch dashboard data:', error);
-            message.error(error.response?.data?.message || 'Failed to load dashboard data');
+            if (error.response?.status !== 404) {
+                message.error(error.response?.data?.message || 'Failed to load dashboard data');
+            }
             setProperties([]);
-            setBookings([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchRecentBookings = async () => {
+        try {
+            setBookingsLoading(true);
+
+            // Fetch recent bookings (first page)
+            const response = await bookingsApi.getAll({ page: 1, limit: 100 });
+            const bookingsData = (response as any)?.data?.data || response.data || [];
+
+            // Filter bookings related to this landlord where possible
+            const propertyIds = (properties || []).map(p => p._id);
+
+            const myBookings = (Array.isArray(bookingsData) ? bookingsData : []).filter((b: any) => {
+                // If booking references a service with a provider
+                const service = b.serviceId;
+                if (service && typeof service === 'object') {
+                    if (service.provider && (service.provider === user?._id || service.provider._id === user?._id)) return true;
+                }
+
+                // If booking has a providerId
+                if (b.providerId && (b.providerId === user?._id || b.providerId?._id === user?._id)) return true;
+
+                // If booking references a property id (some booking shapes may include propertyId)
+                if (b.propertyId && propertyIds.includes(b.propertyId)) return true;
+
+                return false;
+            });
+
+            setBookings(Array.isArray(myBookings) ? myBookings.slice(0, 10) : []);
+        } catch (error: any) {
+            console.error('Failed to fetch recent bookings:', error);
+            setBookings([]);
+        } finally {
+            setBookingsLoading(false);
         }
     };
 
@@ -128,8 +144,6 @@ export default function AgentDashboard() {
             pending: 'orange',
             rejected: 'red',
             draft: 'default',
-            completed: 'blue',
-            cancelled: 'red',
         };
 
         return (
@@ -170,10 +184,10 @@ export default function AgentDashboard() {
             title: 'Views',
             dataIndex: 'views',
             key: 'views',
-            render: (views?: number) => (
+            render: (views: number) => (
                 <div className="flex items-center gap-1">
                     <EyeOutlined />
-                    <span>{views || 0}</span>
+                    <span>{views}</span>
                 </div>
             ),
         },
@@ -181,51 +195,12 @@ export default function AgentDashboard() {
             title: 'Inquiries',
             dataIndex: 'inquiries',
             key: 'inquiries',
-            render: (inquiries?: number) => (
+            render: (inquiries: number) => (
                 <div className="flex items-center gap-1">
                     <MessageOutlined />
-                    <span>{inquiries || 0}</span>
+                    <span>{inquiries}</span>
                 </div>
             ),
-        },
-    ];
-
-    const bookingColumns = [
-        {
-            title: 'Buyer',
-            dataIndex: ['userId', 'firstName'],
-            key: 'buyer',
-            render: (firstName: string, record: Booking) => (
-                <div>
-                    <Text strong>
-                        {firstName} {record.userId?.lastName}
-                    </Text>
-                </div>
-            ),
-        },
-        {
-            title: 'Property',
-            dataIndex: ['propertyId', 'title'],
-            key: 'property',
-            render: (text: string) => <Text>{text || 'N/A'}</Text>,
-        },
-        {
-            title: 'Scheduled Date',
-            dataIndex: 'scheduledDate',
-            key: 'scheduledDate',
-            render: (date: string) => new Date(date).toLocaleDateString(),
-        },
-        {
-            title: 'Sale Price',
-            dataIndex: 'totalPrice',
-            key: 'totalPrice',
-            render: (price: number) => `$${price.toLocaleString()}`,
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => getStatusTag(status),
         },
     ];
 
@@ -240,148 +215,100 @@ export default function AgentDashboard() {
     return (
         <div className="space-y-6">
             <div>
-                <Title level={2}>Agent Dashboard</Title>
-                <Text type="secondary">
-                    Overview of your properties, sales, and performance
-                </Text>
+                <Title level={2}>Property Management Dashboard</Title>
+                <Text type="secondary">Overview of your property listings and performance</Text>
             </div>
 
-            {/* Main Stats Cards */}
+            {/* Stats Cards */}
             <Row gutter={16}>
                 <Col xs={24} sm={12} lg={6}>
                     <Card bordered={false}>
-                        <Statistic
-                            title="Total Properties"
-                            value={stats.totalProperties}
-                            prefix={<HomeOutlined />}
-                            valueStyle={{ color: '#3f8600' }}
-                        />
+                        <Statistic title="Total Properties" value={stats.totalProperties} prefix={<HomeOutlined />} valueStyle={{ color: '#3f8600' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card bordered={false}>
-                        <Statistic
-                            title="Total Value"
-                            value={stats.totalValue}
-                            prefix={<DollarOutlined />}
-                            precision={0}
-                            valueStyle={{ color: '#1890ff' }}
-                        />
+                        <Statistic title="Portfolio Value" value={stats.totalValue} prefix={<DollarOutlined />} precision={0} valueStyle={{ color: '#1890ff' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card bordered={false}>
-                        <Statistic
-                            title="Total Sales"
-                            value={stats.totalSales}
-                            prefix={<DollarOutlined />}
-                            precision={0}
-                            valueStyle={{ color: '#52c41a' }}
-                        />
+                        <Statistic title="Total Views" value={stats.totalViews} prefix={<EyeOutlined />} suffix={<RiseOutlined style={{ color: '#52c41a' }} />} valueStyle={{ color: '#722ed1' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card bordered={false}>
-                        <Statistic
-                            title="Commission Earned"
-                            value={stats.totalCommission}
-                            prefix={<DollarOutlined />}
-                            precision={2}
-                            valueStyle={{ color: '#faad14' }}
-                        />
+                        <Statistic title="Inquiries" value={stats.totalInquiries} prefix={<MessageOutlined />} valueStyle={{ color: '#cf1322' }} />
                     </Card>
                 </Col>
             </Row>
 
-            {/* Secondary Stats */}
+            {/* Quick Stats */}
             <Row gutter={16}>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={24} md={12}>
                     <Card bordered={false} className="bg-green-50">
-                        <Statistic
-                            title="Active Listings"
-                            value={stats.activeListings}
-                            valueStyle={{ color: '#3f8600' }}
-                        />
+                        <Statistic title="Active Listings" value={stats.activeListings} valueStyle={{ color: '#3f8600' }} />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={24} md={12}>
                     <Card bordered={false} className="bg-orange-50">
-                        <Statistic
-                            title="Pending Approval"
-                            value={stats.pendingApproval}
-                            valueStyle={{ color: '#fa8c16' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false} className="bg-blue-50">
-                        <Statistic
-                            title="Closed Deals"
-                            value={stats.closedDeals}
-                            prefix={<CheckCircleOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false} className="bg-purple-50">
-                        <Statistic
-                            title="Total Inquiries"
-                            value={stats.totalInquiries}
-                            prefix={<MessageOutlined />}
-                            valueStyle={{ color: '#722ed1' }}
-                        />
+                        <Statistic title="Pending Approval" value={stats.pendingApproval} valueStyle={{ color: '#fa8c16' }} />
                     </Card>
                 </Col>
             </Row>
 
             {/* Properties Table */}
-            <Card
-                title={
-                    <div className="flex items-center gap-2">
-                        <HomeOutlined />
-                        <span>My Properties</span>
-                    </div>
-                }
-                bordered={false}
-            >
+            <Card title={<div className="flex items-center gap-2"><HomeOutlined /><span>My Properties</span></div>} extra={<Button type="primary" onClick={() => router.push('/properties')}>Add Property</Button>} bordered={false}>
                 {properties.length > 0 ? (
-                    <Table
-                        columns={propertyColumns}
-                        dataSource={properties}
-                        rowKey="_id"
-                        pagination={{ pageSize: 10 }}
-                    />
+                    <Table columns={propertyColumns} dataSource={properties} rowKey="_id" pagination={{ pageSize: 10 }} />
                 ) : (
-                    <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="No properties yet. Start by adding your first property!"
-                    />
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No properties yet. Start by adding your first property!" />
                 )}
             </Card>
 
-            {/* Sales & Inquiries Table */}
-            <Card
-                title={
-                    <div className="flex items-center gap-2">
-                        <TeamOutlined />
-                        <span>Recent Sales & Inquiries</span>
-                    </div>
-                }
-                bordered={false}
-            >
-                {bookings.length > 0 ? (
+            {/* Recent Bookings */}
+            <Card title={<div className="flex items-center gap-2"><CalendarOutlined /><span>Recent Bookings</span></div>} bordered={false}>
+                {bookingsLoading ? (
+                    <div className="flex justify-center items-center h-40"><Spin /></div>
+                ) : bookings.length > 0 ? (
                     <Table
-                        columns={bookingColumns}
                         dataSource={bookings}
-                        rowKey="_id"
-                        pagination={{ pageSize: 10 }}
+                        rowKey={(r: any) => r._id}
+                        pagination={{ pageSize: 5 }}
+                        columns={[
+                            {
+                                title: 'Customer',
+                                dataIndex: 'userId',
+                                key: 'user',
+                                render: (u: any) => (typeof u === 'object' ? u.name || u.email : (u || 'Guest')),
+                            },
+                            {
+                                title: 'Service',
+                                dataIndex: 'serviceId',
+                                key: 'service',
+                                render: (s: any) => (typeof s === 'object' ? s.title || s.name : (s || 'Service')),
+                            },
+                            {
+                                title: 'Date',
+                                dataIndex: 'scheduledDate',
+                                key: 'date',
+                                render: (d: string) => new Date(d).toLocaleString(),
+                            },
+                            {
+                                title: 'Status',
+                                dataIndex: 'status',
+                                key: 'status',
+                            },
+                            {
+                                title: 'Total',
+                                dataIndex: 'totalPrice',
+                                key: 'total',
+                                render: (p: number) => `$${(p || 0).toLocaleString()}`,
+                            },
+                        ]}
                     />
                 ) : (
-                    <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="No sales yet"
-                    />
+                    <Empty description="No recent bookings for your properties" />
                 )}
             </Card>
         </div>

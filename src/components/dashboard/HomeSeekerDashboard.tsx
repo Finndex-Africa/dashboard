@@ -93,10 +93,15 @@ export default function HomeSeekerDashboard() {
             key: 'service',
             render: (text: string, record: Booking) => (
                 <div>
-                    <Text strong>{text || 'N/A'}</Text>
+                    <Text strong>
+                        {text || <Text type="secondary" italic>Service not specified</Text>}
+                    </Text>
                     <br />
                     <Text type="secondary" className="text-xs">
-                        {record.serviceId && typeof record.serviceId === 'object' ? record.serviceId.category : 'N/A'}
+                        {record.serviceId && typeof record.serviceId === 'object' && record.serviceId.category
+                            ? record.serviceId.category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                            : <Text type="secondary" italic className="text-xs">Category unknown</Text>
+                        }
                     </Text>
                 </div>
             ),

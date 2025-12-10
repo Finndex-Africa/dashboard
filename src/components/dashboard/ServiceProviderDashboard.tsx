@@ -290,7 +290,7 @@ export default function ServiceProviderDashboard() {
                                 title: 'Service',
                                 dataIndex: ['serviceId', 'title'],
                                 key: 'service',
-                                render: (title: string) => title || 'N/A',
+                                render: (title: string) => title || <Text type="secondary" italic>Service not specified</Text>,
                             },
                             {
                                 title: 'Client',
