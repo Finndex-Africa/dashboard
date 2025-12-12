@@ -33,7 +33,9 @@ export const mediaApi = {
             },
         });
 
-        return response.data.url;
+        // apiClient.post returns ApiSuccessResponse<T>, so extract the actual data
+        const mediaData: MediaResponse = (response.data as any)?.data || response.data as any;
+        return mediaData.url;
     },
 
     // Upload multiple files with optional entityId for subfolder organization
@@ -57,25 +59,26 @@ export const mediaApi = {
             },
         });
 
-        return response.data;
+        // apiClient.post returns ApiSuccessResponse<T>, so extract the actual data array
+        return (response.data as any)?.data || response.data as any;
     },
 
     // Get user's media
     getMyMedia: async (type?: string): Promise<MediaResponse[]> => {
         const params = type ? `?type=${type}` : '';
         const response = await apiClient.get<MediaResponse[]>(`/media/my-media${params}`);
-        return response.data;
+        return (response.data as any)?.data || response.data as any;
     },
 
     // Get media by ID
     getById: async (id: string): Promise<MediaResponse> => {
         const response = await apiClient.get<MediaResponse>(`/media/${id}`);
-        return response.data;
+        return (response.data as any)?.data || response.data as any;
     },
 
     // Delete media
     delete: async (id: string): Promise<{ message: string }> => {
         const response = await apiClient.delete<{ message: string }>(`/media/${id}`);
-        return response.data;
+        return (response.data as any)?.data || response.data as any;
     },
 };

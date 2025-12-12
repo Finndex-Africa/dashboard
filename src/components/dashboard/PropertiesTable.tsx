@@ -153,7 +153,7 @@ export function PropertiesTable({
                                     onClick={() => onView?.(record)}
                                 />
                             </Tooltip>
-                            <Tooltip title="Edit">
+                            <Tooltip title={record.status === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
                                 <Button
                                     type="text"
                                     icon={<EditOutlined />}

@@ -148,7 +148,7 @@ export function ServicesTable({
                                     onClick={() => onView?.(record)}
                                 />
                             </Tooltip>
-                            <Tooltip title="Edit">
+                            <Tooltip title={record.verificationStatus === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
                                 <Button
                                     type="text"
                                     icon={<EditOutlined />}

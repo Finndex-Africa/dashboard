@@ -140,9 +140,17 @@ export default function ServicesPage() {
             setSubmitting(true);
 
             if (editingService) {
-                // For editing, just update the service
-                await servicesApi.update(editingService._id, values as any);
-                showToast.success('Service updated successfully');
+                // For editing, update the service
+                const updateData = { ...values };
+                // If service was rejected, change verificationStatus to pending for resubmission
+                if (editingService.verificationStatus === 'rejected') {
+                    updateData.verificationStatus = 'pending';
+                    await servicesApi.update(editingService._id, updateData as any);
+                    showToast.success('Service updated and resubmitted for approval');
+                } else {
+                    await servicesApi.update(editingService._id, updateData as any);
+                    showToast.success('Service updated successfully');
+                }
             } else {
                 // Step 1: Create service without images
                 const response = await servicesApi.create(values as any);

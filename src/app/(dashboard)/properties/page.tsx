@@ -128,8 +128,16 @@ export default function PropertiesPage() {
 
             // Handle update
             if (editingProperty) {
-                await propertiesApi.update(editingProperty._id, values);
-                showToast.success('Property updated successfully');
+                // If property was rejected, change status to pending for resubmission
+                const updateData = { ...values };
+                if (editingProperty.status === 'rejected') {
+                    updateData.status = 'pending';
+                    await propertiesApi.update(editingProperty._id, updateData);
+                    showToast.success('Property updated and resubmitted for approval');
+                } else {
+                    await propertiesApi.update(editingProperty._id, updateData);
+                    showToast.success('Property updated successfully');
+                }
                 setIsAddModalOpen(false);
                 setEditingProperty(null);
                 fetchProperties();
@@ -144,6 +152,7 @@ export default function PropertiesPage() {
             let imageUrls: string[] = [];
             if (files.length > 0) {
                 try {
+                    console.log(`📤 Uploading ${files.length} images...`);
                     // uploadResponse is MediaResponse[] directly
                     const uploadedMedia = await mediaApi.uploadMultiple(
                         files,
@@ -152,9 +161,11 @@ export default function PropertiesPage() {
                     );
                     imageUrls = uploadedMedia.map(media => media.url);
                     console.log('✅ Images uploaded successfully:', imageUrls);
-                } catch (uploadError) {
+                } catch (uploadError: any) {
                     console.error('Failed to upload images:', uploadError);
-                    showToast.warning('Property created but image upload failed. You can add images later.');
+                    const errorMessage = uploadError?.response?.data?.message || uploadError?.message || 'Unknown error';
+                    console.error('Upload error details:', errorMessage);
+                    showToast.warning(`Property created but image upload failed: ${errorMessage}. You can add images later.`);
                 }
             }
 

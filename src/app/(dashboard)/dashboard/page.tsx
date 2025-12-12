@@ -9,32 +9,10 @@ import AgentDashboard from '@/components/dashboard/AgentDashboard';
 import ServiceProviderDashboard from '@/components/dashboard/ServiceProviderDashboard';
 
 export default function DashboardPage() {
-    const { user } = useAuth();
-    const [isInitializing, setIsInitializing] = useState(true);
-    const [retryCount, setRetryCount] = useState(0);
+    const { user, isLoading } = useAuth();
 
-    // Check for user data with retries
-    useEffect(() => {
-        // If we have user data, stop initializing immediately
-        if (user) {
-            setIsInitializing(false);
-            return;
-        }
-
-        // Retry checking for user data every 200ms for up to 3 seconds
-        if (retryCount < 15) {
-            const timer = setTimeout(() => {
-                setRetryCount(prev => prev + 1);
-            }, 200);
-            return () => clearTimeout(timer);
-        } else {
-            // After max retries, stop initializing
-            setIsInitializing(false);
-        }
-    }, [user, retryCount]);
-
-    // Show loading spinner while initializing
-    if (!user && isInitializing) {
+    // Show loading spinner while auth is loading
+    if (isLoading || !user) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
                 <Spin size="large" tip="Loading your dashboard..." />

@@ -14,11 +14,11 @@ function AuthTransferContent() {
     useEffect(() => {
         const validateAndStoreToken = async () => {
             if (hasProcessed.current) return;
+            hasProcessed.current = true;
 
             // Check if this is a logout request
             const isLogout = searchParams.get('logout') === 'true';
             if (isLogout) {
-                hasProcessed.current = true;
                 console.log('🚪 Logout request received');
                 // Remove only auth-related storage keys to avoid wiping developer logs
                 localStorage.removeItem('token');
@@ -38,7 +38,6 @@ function AuthTransferContent() {
                 return;
             }
 
-            hasProcessed.current = true;
             console.log('📥 Processing authentication transfer');
             console.log('🔑 Token:', token?.substring(0, 20) + '...');
             console.log('🌐 API URL:', API_URL);
@@ -79,10 +78,9 @@ function AuthTransferContent() {
 
                     console.log('✅ Dispatched auth-updated event, redirecting to dashboard');
 
-                    // Redirect to dashboard with a slight delay to ensure state updates
-                    setTimeout(() => {
-                        router.replace('/dashboard');
-                    }, 100);
+                    // Use window.location for immediate synchronous redirect
+                    // This ensures the cookie is fully set before navigation
+                    window.location.href = '/dashboard';
                 } else {
                     console.error('❌ Invalid token');
                     window.location.href = `${WEBSITE_URL}/routes/login`;
