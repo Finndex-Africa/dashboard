@@ -266,7 +266,7 @@ export default function PropertiesPage() {
     // Filter properties based on search and filters
     const filteredProperties = properties.filter(property => {
         const matchesSearch = property.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-                            property.location?.toLowerCase().includes(searchText.toLowerCase());
+            property.location?.toLowerCase().includes(searchText.toLowerCase());
         const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
         const matchesType = typeFilter === 'all' || property.propertyType === typeFilter;
         return matchesSearch && matchesStatus && matchesType;
@@ -472,9 +472,6 @@ export default function PropertiesPage() {
                             <Select.Option value="all">All Types</Select.Option>
                             <Select.Option value="Apartment">Apartment</Select.Option>
                             <Select.Option value="House">House</Select.Option>
-                            <Select.Option value="Commercial">Commercial</Select.Option>
-                            <Select.Option value="Land">Land</Select.Option>
-                            <Select.Option value="Other">Other</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={24} md={24} lg={6}>
@@ -594,9 +591,9 @@ export default function PropertiesPage() {
                         <Descriptions.Item label="Status">
                             <Tag color={
                                 selectedProperty.status === 'approved' ? 'green' :
-                                selectedProperty.status === 'rented' ? 'blue' :
-                                selectedProperty.status === 'rejected' ? 'red' :
-                                selectedProperty.status === 'archived' ? 'gray' : 'orange'
+                                    selectedProperty.status === 'rented' ? 'blue' :
+                                        selectedProperty.status === 'rejected' ? 'red' :
+                                            selectedProperty.status === 'archived' ? 'gray' : 'orange'
                             }>
                                 {selectedProperty.status.charAt(0).toUpperCase() + selectedProperty.status.slice(1)}
                             </Tag>
@@ -650,13 +647,13 @@ export default function PropertiesPage() {
                                 {selectedProperty.petFriendly && <Tag color="magenta">Pet Friendly</Tag>}
                                 {selectedProperty.smoking && <Tag color="orange">Smoking Allowed</Tag>}
                                 {!selectedProperty.wifi && !selectedProperty.airConditioning && !selectedProperty.heating &&
-                                 !selectedProperty.kitchen && !selectedProperty.washer && !selectedProperty.dryer &&
-                                 !selectedProperty.tv && !selectedProperty.workspace && !selectedProperty.parking &&
-                                 !selectedProperty.pool && !selectedProperty.gym && !selectedProperty.elevator &&
-                                 !selectedProperty.balcony && !selectedProperty.garden && !selectedProperty.securitySystem &&
-                                 !selectedProperty.petFriendly && !selectedProperty.smoking && (
-                                    <Text type="secondary">No amenities specified</Text>
-                                )}
+                                    !selectedProperty.kitchen && !selectedProperty.washer && !selectedProperty.dryer &&
+                                    !selectedProperty.tv && !selectedProperty.workspace && !selectedProperty.parking &&
+                                    !selectedProperty.pool && !selectedProperty.gym && !selectedProperty.elevator &&
+                                    !selectedProperty.balcony && !selectedProperty.garden && !selectedProperty.securitySystem &&
+                                    !selectedProperty.petFriendly && !selectedProperty.smoking && (
+                                        <Text type="secondary">No amenities specified</Text>
+                                    )}
                             </Space>
                         </Descriptions.Item>
 

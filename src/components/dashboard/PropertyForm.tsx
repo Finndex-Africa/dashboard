@@ -133,9 +133,6 @@ export function PropertyForm({
                             >
                                 <Select.Option value="Apartment">Apartment</Select.Option>
                                 <Select.Option value="House">House</Select.Option>
-                                <Select.Option value="Commercial">Commercial</Select.Option>
-                                <Select.Option value="Land">Land</Select.Option>
-                                <Select.Option value="Other">Other</Select.Option>
                             </Select>
                         </Form.Item>
                     </Col>

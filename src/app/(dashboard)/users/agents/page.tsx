@@ -101,8 +101,6 @@ export default function AgentsPage() {
             key: 'specialization',
             filters: [
                 { text: 'Residential', value: 'Residential' },
-                { text: 'Commercial', value: 'Commercial' },
-                { text: 'Land', value: 'Land' },
                 { text: 'Luxury', value: 'Luxury' },
             ],
             onFilter: (value: any, record: Agent) => record.specialization === value,
