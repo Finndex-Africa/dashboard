@@ -5,12 +5,14 @@ interface AuthContextType {
     isAuthenticated: boolean;
     user: IUser | null;
     logout: () => void;
+    setUser: (user: IUser | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     isAuthenticated: false,
     user: null,
     logout: () => { },
+    setUser: () => { },
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -26,15 +28,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const token = auth.getToken();
             const currentUser = auth.getUser();
 
+            console.log('🔍 AuthProvider - Token:', token ? 'exists' : 'null');
+            console.log('🔍 AuthProvider - User:', currentUser);
+            console.log('🔍 AuthProvider - User ID:', currentUser?.id);
+            console.log('🔍 AuthProvider - User Role:', currentUser?.role);
+
             if (token && currentUser && currentUser.role) {
+                console.log('✅ Auth valid, setting user');
                 setIsAuthenticated(true);
                 setUser(currentUser);
             } else if (token && !currentUser) {
                 // Token exists but user data is invalid - clear auth
+                console.log('⚠️ Token exists but no user data, logging out');
                 auth.logout();
                 setIsAuthenticated(false);
                 setUser(null);
             } else {
+                console.log('❌ Not authenticated');
                 setIsAuthenticated(false);
                 setUser(null);
             }
@@ -71,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, logout, setUser }}>
             {children}
         </AuthContext.Provider>
     );

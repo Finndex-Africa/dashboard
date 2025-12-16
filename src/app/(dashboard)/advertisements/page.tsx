@@ -61,9 +61,7 @@ export default function AdvertisementsPage() {
                 placement: filterPlacement,
                 limit: 100,
             });
-            // Extract data from ApiSuccessResponse<PaginatedResponse<Advertisement>>
-            // response is { success: true, data: { data: Advertisement[], pagination: {...} } }
-            const advertisementsData = (response as any)?.data?.data || [];
+            const advertisementsData = (response as any)?.data || [];
             setAdvertisements(advertisementsData);
         } catch (error: any) {
             console.error('Failed to fetch advertisements:', error);

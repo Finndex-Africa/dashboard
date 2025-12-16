@@ -12,7 +12,6 @@ import {
     ShopOutlined,
     TeamOutlined,
     MessageOutlined,
-    SettingOutlined,
     LogoutOutlined,
     UserOutlined,
     CalendarOutlined,
@@ -61,12 +60,6 @@ export default function DashboardLayout({
             label: 'Profile',
             icon: <UserOutlined />,
             onClick: () => handleMenuClick('profile'),
-        },
-        {
-            key: 'settings',
-            label: 'Settings',
-            icon: <SettingOutlined />,
-            onClick: () => handleMenuClick('settings'),
         },
         {
             type: 'divider' as const,
@@ -128,12 +121,6 @@ export default function DashboardLayout({
             key: '/messages',
             icon: <MessageOutlined />,
             label: 'Messages',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
-        },
-        {
-            key: '/settings',
-            icon: <SettingOutlined />,
-            label: 'Settings',
             roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
         },
     ];

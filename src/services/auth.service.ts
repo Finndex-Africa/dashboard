@@ -31,6 +31,8 @@ export interface IUser {
     firstName: string;
     lastName: string;
     role: string;
+    avatar?: string;
+    phone?: string;
 }
 
 export interface IJwtPayload {
@@ -147,10 +149,14 @@ export class AuthService {
             const storedUserData = window.localStorage.getItem('user');
             if (storedUserData) {
                 try {
-                    const user = JSON.parse(storedUserData) as IUser;
+                    const user = JSON.parse(storedUserData) as any;
                     // Ensure role is set
                     if (user.role) {
-                        return user;
+                        // Map _id or sub to id if needed
+                        if (!user.id) {
+                            user.id = user._id || user.sub;
+                        }
+                        return user as IUser;
                     }
                 } catch (error) {
                     console.error('Error parsing stored user data:', error);
@@ -179,6 +185,11 @@ export class AuthService {
 
             // Handle both JWT structures: { user: {...} } or direct user data
             let userData = decodedToken.user || decodedToken;
+
+            // Map _id or sub (JWT standard) to id if needed
+            if (!userData.id) {
+                userData.id = userData._id || userData.sub;
+            }
 
             // Map userType to role for consistency, handling multiple possible role field names
             if (!userData.role) {
