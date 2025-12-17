@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Form, Input, Select, DatePicker, InputNumber, Button, Upload, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
+// Use dayjs - Ant Design 5.x uses dayjs internally
+// @ts-ignore - dayjs is provided by antd
 import dayjs from 'dayjs';
 import { advertisementsApi, type Advertisement, type CreateAdvertisementDto } from '@/services/api/advertisements.api';
 import { mediaApi } from '@/services/api/media.api';

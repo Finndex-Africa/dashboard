@@ -33,7 +33,6 @@ export default function DashboardPage() {
                 return <AdminDashboard />;
 
             default:
-                // Log unexpected role for debugging
                 console.warn('Unknown user role:', user.role);
                 break;
         }

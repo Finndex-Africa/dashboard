@@ -15,10 +15,27 @@ import Divider from 'antd/es/divider';
 import { UserOutlined, LikeOutlined, MessageOutlined, WarningOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Review, reviewsApi } from '@/services/api/reviews.api';
 import { useAuth } from '@/providers/AuthProvider';
-import { formatDistanceToNow } from 'date-fns';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+// Helper function to format date distance
+const formatDistanceToNow = (date: Date): string => {
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
+    const years = Math.floor(months / 12);
+    return `${years} year${years !== 1 ? 's' : ''} ago`;
+};
 
 interface ReviewCardProps {
     review: Review;
@@ -93,7 +110,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
 
     const isOwnReview = user?.id === review.userId._id;
     const reviewerName = `${review.userId.firstName} ${review.userId.lastName}`;
-    const reviewDate = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true });
+    const reviewDate = formatDistanceToNow(new Date(review.createdAt));
 
     return (
         <>
@@ -198,7 +215,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                                     {review.ownerReplyAt && (
                                         <div style={{ marginTop: '8px' }}>
                                             <Text type="secondary" style={{ fontSize: '12px' }}>
-                                                {formatDistanceToNow(new Date(review.ownerReplyAt), { addSuffix: true })}
+                                                {formatDistanceToNow(new Date(review.ownerReplyAt))}
                                             </Text>
                                         </div>
                                     )}

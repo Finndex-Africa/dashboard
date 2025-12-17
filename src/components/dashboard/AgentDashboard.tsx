@@ -24,8 +24,8 @@ interface Property {
     type: string;
     price: number;
     status: string;
-    views: number;
-    inquiries: number;
+    views?: number;
+    inquiries?: number;
 }
 
 interface Stats {
@@ -117,11 +117,11 @@ export default function AgentDashboard() {
                 // If booking references a service with a provider
                 const service = b.serviceId;
                 if (service && typeof service === 'object') {
-                    if (service.provider && (service.provider === user?._id || service.provider._id === user?._id)) return true;
+                    if (service.provider && (service.provider === user?.id || service.provider._id === user?.id)) return true;
                 }
 
                 // If booking has a providerId
-                if (b.providerId && (b.providerId === user?._id || b.providerId?._id === user?._id)) return true;
+                if (b.providerId && (b.providerId === user?.id || b.providerId?._id === user?.id)) return true;
 
                 // If booking references a property id (some booking shapes may include propertyId)
                 if (b.propertyId && propertyIds.includes(b.propertyId)) return true;

@@ -4,6 +4,7 @@ import { AuthService, IUser } from '@/services/auth.service';
 interface AuthContextType {
     isAuthenticated: boolean;
     user: IUser | null;
+    isLoading: boolean;
     logout: () => void;
     setUser: (user: IUser | null) => void;
 }
@@ -11,6 +12,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
     isAuthenticated: false,
     user: null,
+    isLoading: true,
     logout: () => { },
     setUser: () => { },
 });
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<IUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const auth = AuthService.getInstance();
 
     useEffect(() => {
@@ -48,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsAuthenticated(false);
                 setUser(null);
             }
+            setIsLoading(false);
         };
 
         checkAuth();
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, logout, setUser }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, isLoading, logout, setUser }}>
             {children}
         </AuthContext.Provider>
     );

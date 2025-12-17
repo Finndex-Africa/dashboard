@@ -16,18 +16,9 @@ import { servicesApi } from '@/services/api/services.api';
 import { bookingsApi } from '@/services/api/bookings.api';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
+import type { Service } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
-
-interface Service {
-    _id: string;
-    title: string;
-    category: string;
-    price: number;
-    status: string;
-    bookings: number;
-    rating: number;
-}
 
 interface Booking {
     _id: string;

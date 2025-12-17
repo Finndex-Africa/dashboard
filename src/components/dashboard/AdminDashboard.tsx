@@ -66,7 +66,6 @@ export default function AdminDashboard() {
     const [users, setUsers] = useState<any[]>([]);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showDebug, setShowDebug] = useState(false);
     const [rawResponses, setRawResponses] = useState<any>(null);
     const [rawError, setRawError] = useState<any>(null);
 
@@ -87,7 +86,6 @@ export default function AdminDashboard() {
 
                 if (!mounted) return;
 
-                // Save raw responses for debugging if needed
                 setRawResponses({
                     propertiesResponse,
                     servicesResponse,
@@ -288,24 +286,7 @@ export default function AdminDashboard() {
                     <Select.Option value="month">This Month</Select.Option>
                     <Select.Option value="year">This Year</Select.Option>
                 </Select>
-                <div style={{ marginLeft: 12 }}>
-                    <Button size="large" onClick={() => setShowDebug(s => !s)} type={showDebug ? 'primary' : 'default'}>
-                        {showDebug ? 'Hide Debug' : 'Show Debug'}
-                    </Button>
-                </div>
             </div>
-
-            {showDebug && (
-                <div className="mb-4">
-                    <Collapse defaultActiveKey={["1"]}>
-                        <Collapse.Panel header={`Raw API Responses`} key="1">
-                            <pre style={{ maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-                                {JSON.stringify({ rawResponses, rawError }, null, 2)}
-                            </pre>
-                        </Collapse.Panel>
-                    </Collapse>
-                </div>
-            )}
 
             {/* Stats Cards */}
             <Row gutter={[16, 16]}>

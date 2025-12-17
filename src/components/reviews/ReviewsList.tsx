@@ -48,8 +48,8 @@ export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsList
                 rating: filterRating,
             });
 
-            setReviews(response.data || []);
-            setTotalPages(response.pagination?.totalPages || 1);
+            setReviews(response.data.data || []);
+            setTotalPages(response.data.pagination?.totalPages || 1);
         } catch (error) {
             console.error('Error fetching reviews:', error);
             message.error('Failed to load reviews');

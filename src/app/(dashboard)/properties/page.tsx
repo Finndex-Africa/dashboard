@@ -399,7 +399,7 @@ export default function PropertiesPage() {
                                         {stat.title}
                                     </Text>
                                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: stat.color }}>
-                                        {stat.prefix}{stat.value.toLocaleString()}
+                                        {(stat as any).prefix}{stat.value.toLocaleString()}
                                     </div>
                                 </div>
                                 <div
