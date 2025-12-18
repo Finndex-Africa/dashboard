@@ -2,6 +2,7 @@ import { apiClient, PaginatedResponse } from '@/lib/api-client';
 import { Notification } from '@/types/dashboard';
 
 export interface NotificationFilters {
+    userId?: string;
     page?: number;
     limit?: number;
     read?: boolean;
@@ -23,6 +24,7 @@ export const notificationsApi = {
     // Get all notifications with filters and pagination
     getAll: async (filters?: NotificationFilters) => {
         const params = new URLSearchParams();
+        if (filters?.userId) params.append('userId', filters.userId);
         if (filters?.page) params.append('page', filters.page.toString());
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.read !== undefined) params.append('read', filters.read.toString());

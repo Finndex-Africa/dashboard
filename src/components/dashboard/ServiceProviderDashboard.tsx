@@ -212,108 +212,113 @@ export default function ServiceProviderDashboard() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-2 sm:p-4">
             <div>
-                <Title level={2}>Service Provider Dashboard</Title>
-                <Text type="secondary">Overview of your services and bookings performance</Text>
+                <Title level={2} style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', margin: 0, marginBottom: '8px' }}>Service Provider Dashboard</Title>
+                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>Overview of your services and bookings performance</Text>
             </div>
 
             {/* Stats Cards */}
-            <Row gutter={16}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Total Services" value={stats.totalServices} prefix={<ShopOutlined />} valueStyle={{ color: '#3f8600' }} />
-                        <Text type="secondary" className="text-xs">{stats.activeServices} active</Text>
+            <Row gutter={[12, 12]}>
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Total Services" value={stats.totalServices} prefix={<ShopOutlined />} valueStyle={{ color: '#3f8600', fontSize: 'clamp(20px, 4vw, 24px)' }} />
+                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>{stats.activeServices} active</Text>
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Total Revenue" value={stats.totalRevenue} prefix={<DollarOutlined />} precision={2} valueStyle={{ color: '#1890ff' }} />
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Total Revenue" value={stats.totalRevenue} prefix={<DollarOutlined />} precision={2} valueStyle={{ color: '#1890ff', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Total Bookings" value={stats.totalBookings} prefix={<CalendarOutlined />} suffix={<RiseOutlined style={{ color: '#52c41a' }} />} valueStyle={{ color: '#722ed1' }} />
-                        <Text type="secondary" className="text-xs">{stats.pendingBookings} pending</Text>
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Total Bookings" value={stats.totalBookings} prefix={<CalendarOutlined />} suffix={<RiseOutlined style={{ color: '#52c41a' }} />} valueStyle={{ color: '#722ed1', fontSize: 'clamp(20px, 4vw, 24px)' }} />
+                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>{stats.pendingBookings} pending</Text>
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Average Rating" value={stats.averageRating} prefix={<StarOutlined />} precision={1} valueStyle={{ color: '#faad14' }} />
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Average Rating" value={stats.averageRating} prefix={<StarOutlined />} precision={1} valueStyle={{ color: '#faad14', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
             </Row>
 
             {/* Quick Stats */}
-            <Row gutter={16}>
+            <Row gutter={[12, 12]}>
                 <Col xs={24} md={12}>
-                    <Card bordered={false} className="bg-blue-50">
-                        <Statistic title="Pending Bookings" value={stats.pendingBookings} valueStyle={{ color: '#1890ff' }} />
+                    <Card className="bg-blue-50">
+                        <Statistic title="Pending Bookings" value={stats.pendingBookings} valueStyle={{ color: '#1890ff', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
                 <Col xs={24} md={12}>
-                    <Card bordered={false} className="bg-green-50">
-                        <Statistic title="Completed Bookings" value={stats.completedBookings} valueStyle={{ color: '#52c41a' }} />
+                    <Card className="bg-green-50">
+                        <Statistic title="Completed Bookings" value={stats.completedBookings} valueStyle={{ color: '#52c41a', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
             </Row>
 
             {/* Services Table */}
-            <Card title={<div className="flex items-center gap-2"><ShopOutlined /><span>My Services</span></div>} extra={<Button type="primary" onClick={() => router.push('/services')}>Add Service</Button>} bordered={false}>
+            <Card title={<div className="flex items-center gap-2"><ShopOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} /><span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>My Services</span></div>} extra={<Button type="primary" onClick={() => router.push('/services')} size="small">Add Service</Button>}>
                 {services.length > 0 ? (
-                    <Table columns={serviceColumns} dataSource={services} rowKey="_id" pagination={{ pageSize: 10 }} />
+                    <div className="overflow-x-auto">
+                        <Table columns={serviceColumns} dataSource={services} rowKey="_id" pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+                    </div>
                 ) : (
                     <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No services yet. Start by adding your first service!" />
                 )}
             </Card>
 
             {/* Recent Bookings */}
-            <Card title={<div className="flex items-center gap-2"><CalendarOutlined /><span>Recent Bookings</span></div>} bordered={false}>
+            <Card title={<div className="flex items-center gap-2"><CalendarOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} /><span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>Recent Bookings</span></div>}>
                 {bookingsLoading ? (
                     <div className="flex justify-center items-center h-40"><Spin /></div>
                 ) : bookings.length > 0 ? (
-                    <Table
-                        dataSource={bookings}
-                        rowKey="_id"
-                        pagination={{ pageSize: 5 }}
-                        columns={[
-                            {
-                                title: 'Service',
-                                dataIndex: ['serviceId', 'title'],
-                                key: 'service',
-                                render: (title: string) => title || <Text type="secondary" italic>Service not specified</Text>,
-                            },
-                            {
-                                title: 'Client',
-                                dataIndex: 'clientId',
-                                key: 'client',
-                                render: (client: any) => {
-                                    if (typeof client === 'object' && client !== null) {
-                                        return `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || 'Unknown';
-                                    }
-                                    return 'Unknown';
+                    <div className="overflow-x-auto">
+                        <Table
+                            dataSource={bookings}
+                            rowKey="_id"
+                            pagination={{ pageSize: 5 }}
+                            scroll={{ x: 'max-content' }}
+                            columns={[
+                                {
+                                    title: 'Service',
+                                    dataIndex: ['serviceId', 'title'],
+                                    key: 'service',
+                                    render: (title: string) => title || <Text type="secondary" italic>Service not specified</Text>,
                                 },
-                            },
-                            {
-                                title: 'Date',
-                                dataIndex: 'scheduledDate',
-                                key: 'scheduledDate',
-                                render: (date: string) => new Date(date).toLocaleString(),
-                            },
-                            {
-                                title: 'Status',
-                                dataIndex: 'status',
-                                key: 'status',
-                                render: (status: string) => getStatusTag(status),
-                            },
-                            {
-                                title: 'Total',
-                                dataIndex: 'totalPrice',
-                                key: 'total',
-                                render: (p: number) => `$${(p || 0).toLocaleString()}`,
-                            },
-                        ]}
-                    />
+                                {
+                                    title: 'Client',
+                                    dataIndex: 'clientId',
+                                    key: 'client',
+                                    render: (client: any) => {
+                                        if (typeof client === 'object' && client !== null) {
+                                            return `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || 'Unknown';
+                                        }
+                                        return 'Unknown';
+                                    },
+                                },
+                                {
+                                    title: 'Date',
+                                    dataIndex: 'scheduledDate',
+                                    key: 'scheduledDate',
+                                    render: (date: string) => new Date(date).toLocaleString(),
+                                },
+                                {
+                                    title: 'Status',
+                                    dataIndex: 'status',
+                                    key: 'status',
+                                    render: (status: string) => getStatusTag(status),
+                                },
+                                {
+                                    title: 'Total',
+                                    dataIndex: 'totalPrice',
+                                    key: 'total',
+                                    render: (p: number) => `$${(p || 0).toLocaleString()}`,
+                                },
+                            ]}
+                        />
+                    </div>
                 ) : (
                     <Empty description="No recent bookings" />
                 )}

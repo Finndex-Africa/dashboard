@@ -16,13 +16,15 @@ const { Title, Text } = Typography;
 
 interface Booking {
     _id: string;
-    serviceId: {
+    serviceId?: {
         title: string;
         category: string;
-    };
+    } | null;
     scheduledDate: string;
     status: string;
     totalPrice: number;
+    serviceAddress?: string;
+    serviceLocation?: string;
 }
 
 interface Notification {
@@ -91,25 +93,42 @@ export default function HomeSeekerDashboard() {
             title: 'Service',
             dataIndex: ['serviceId', 'title'],
             key: 'service',
-            render: (text: string, record: Booking) => (
-                <div>
-                    <Text strong>
-                        {text || <Text type="secondary" italic>Service not specified</Text>}
-                    </Text>
-                    <br />
-                    <Text type="secondary" className="text-xs">
-                        {record.serviceId && typeof record.serviceId === 'object' && record.serviceId.category
-                            ? record.serviceId.category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
-                            : <Text type="secondary" italic className="text-xs">Category unknown</Text>
-                        }
-                    </Text>
-                </div>
-            ),
+            ellipsis: true,
+            render: (text: string, record: Booking) => {
+                // Check if it's a property booking or service booking
+                const isPropertyBooking = !record.serviceId && record.serviceAddress;
+
+                if (isPropertyBooking) {
+                    return (
+                        <div className="min-w-0">
+                            <Text strong className="block truncate">Property Viewing</Text>
+                            <Text type="secondary" className="text-xs block truncate">
+                                {record.serviceAddress || 'Location not specified'}
+                            </Text>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="min-w-0">
+                        <Text strong className="block truncate">
+                            {text || <Text type="secondary" italic>Service not specified</Text>}
+                        </Text>
+                        <Text type="secondary" className="text-xs block truncate">
+                            {record.serviceId && typeof record.serviceId === 'object' && record.serviceId.category
+                                ? record.serviceId.category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                                : <Text type="secondary" italic className="text-xs">Category unknown</Text>
+                            }
+                        </Text>
+                    </div>
+                );
+            },
         },
         {
             title: 'Scheduled Date',
             dataIndex: 'scheduledDate',
             key: 'scheduledDate',
+            responsive: ['sm'] as any,
             render: (date: string) => new Date(date).toLocaleDateString(),
         },
         {
@@ -122,6 +141,7 @@ export default function HomeSeekerDashboard() {
             title: 'Total Price',
             dataIndex: 'totalPrice',
             key: 'totalPrice',
+            responsive: ['md'] as any,
             render: (price: number) => `$${price.toFixed(2)}`,
         },
     ];
@@ -187,28 +207,28 @@ export default function HomeSeekerDashboard() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-2 sm:p-4">
             <div>
-                <Title level={2}>Welcome Back!</Title>
-                <Text type="secondary">
+                <Title level={2} style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', margin: 0, marginBottom: '8px' }}>Welcome Back!</Title>
+                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>
                     Here's an overview of your bookings and notifications
                 </Text>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 {stats.map((stat, index) => (
                     <Card key={index} className={stat.color} bordered={false}>
                         <div className="flex items-center justify-between">
-                            <div>
-                                <Text type="secondary" className="text-sm">
+                            <div className="flex-1 min-w-0">
+                                <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 13px)', display: 'block' }}>
                                     {stat.title}
                                 </Text>
-                                <div className="text-3xl font-bold mt-2">
+                                <div className="font-bold mt-2" style={{ fontSize: 'clamp(24px, 5vw, 32px)' }}>
                                     {stat.value}
                                 </div>
                             </div>
-                            <div>{stat.icon}</div>
+                            <div className="flex-shrink-0 ml-2">{stat.icon}</div>
                         </div>
                     </Card>
                 ))}
@@ -218,19 +238,27 @@ export default function HomeSeekerDashboard() {
             <Card
                 title={
                     <div className="flex items-center gap-2">
-                        <CalendarOutlined />
-                        <span>My Bookings</span>
+                        <CalendarOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} />
+                        <span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>My Bookings</span>
                     </div>
                 }
-                bordered={false}
             >
                 {bookings.length > 0 ? (
-                    <Table
-                        columns={bookingColumns}
-                        dataSource={bookings}
-                        rowKey="_id"
-                        pagination={{ pageSize: 5 }}
-                    />
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <Table
+                            columns={bookingColumns}
+                            dataSource={bookings}
+                            rowKey="_id"
+                            pagination={{
+                                pageSize: 5,
+                                simple: true,
+                                responsive: true,
+                            }}
+                            scroll={{ x: 400 }}
+                            size="small"
+                            className="mobile-table"
+                        />
+                    </div>
                 ) : (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -243,19 +271,23 @@ export default function HomeSeekerDashboard() {
             <Card
                 title={
                     <div className="flex items-center gap-2">
-                        <BellOutlined />
-                        <span>Recent Notifications</span>
+                        <BellOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} />
+                        <span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>Recent Notifications</span>
                     </div>
                 }
-                bordered={false}
             >
                 {notifications.length > 0 ? (
-                    <Table
-                        columns={notificationColumns}
-                        dataSource={notifications.slice(0, 5)}
-                        rowKey="_id"
-                        pagination={false}
-                    />
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <Table
+                            columns={notificationColumns}
+                            dataSource={notifications.slice(0, 5)}
+                            rowKey="_id"
+                            pagination={false}
+                            scroll={{ x: 300 }}
+                            size="small"
+                            className="mobile-table"
+                        />
+                    </div>
                 ) : (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}

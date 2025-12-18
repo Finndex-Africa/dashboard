@@ -2,6 +2,7 @@ import { apiClient, PaginatedResponse } from '@/lib/api-client';
 import { Property } from '@/types/dashboard';
 
 export interface PropertyFilters {
+    userId?: string;
     page?: number;
     limit?: number;
     propertyType?: string;
@@ -34,6 +35,7 @@ export const propertiesApi = {
     // Get all properties with filters and pagination
     getAll: async (filters?: PropertyFilters) => {
         const params = new URLSearchParams();
+        if (filters?.userId) params.append('userId', filters.userId);
         if (filters?.page) params.append('page', filters.page.toString());
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.propertyType) params.append('propertyType', filters.propertyType);

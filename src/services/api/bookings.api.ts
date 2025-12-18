@@ -8,6 +8,7 @@ export interface BookingFilters {
     userId?: string;
     serviceId?: string;
     providerId?: string;
+    sort?: string;
 }
 
 export interface CreateBookingDto {
@@ -34,6 +35,7 @@ export const bookingsApi = {
         if (filters?.userId) params.append('userId', filters.userId);
         if (filters?.serviceId) params.append('serviceId', filters.serviceId);
         if (filters?.providerId) params.append('providerId', filters.providerId);
+        if (filters?.sort) params.append('sort', filters.sort);
 
         return apiClient.get<PaginatedResponse<Booking>>(`/bookings?${params.toString()}`);
     },

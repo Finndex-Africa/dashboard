@@ -213,100 +213,105 @@ export default function AgentDashboard() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-2 sm:p-4">
             <div>
-                <Title level={2}>Property Management Dashboard</Title>
-                <Text type="secondary">Overview of your property listings and performance</Text>
+                <Title level={2} style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', margin: 0, marginBottom: '8px' }}>Property Management Dashboard</Title>
+                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>Overview of your property listings and performance</Text>
             </div>
 
             {/* Stats Cards */}
-            <Row gutter={16}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Total Properties" value={stats.totalProperties} prefix={<HomeOutlined />} valueStyle={{ color: '#3f8600' }} />
+            <Row gutter={[12, 12]}>
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Total Properties" value={stats.totalProperties} prefix={<HomeOutlined />} valueStyle={{ color: '#3f8600', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Portfolio Value" value={stats.totalValue} prefix={<DollarOutlined />} precision={0} valueStyle={{ color: '#1890ff' }} />
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Portfolio Value" value={stats.totalValue} prefix={<DollarOutlined />} precision={0} valueStyle={{ color: '#1890ff', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Total Views" value={stats.totalViews} prefix={<EyeOutlined />} suffix={<RiseOutlined style={{ color: '#52c41a' }} />} valueStyle={{ color: '#722ed1' }} />
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Total Views" value={stats.totalViews} prefix={<EyeOutlined />} suffix={<RiseOutlined style={{ color: '#52c41a' }} />} valueStyle={{ color: '#722ed1', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Inquiries" value={stats.totalInquiries} prefix={<MessageOutlined />} valueStyle={{ color: '#cf1322' }} />
+                <Col xs={24} sm={12} md={12} lg={6}>
+                    <Card>
+                        <Statistic title="Inquiries" value={stats.totalInquiries} prefix={<MessageOutlined />} valueStyle={{ color: '#cf1322', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
             </Row>
 
             {/* Quick Stats */}
-            <Row gutter={16}>
+            <Row gutter={[12, 12]}>
                 <Col xs={24} md={12}>
-                    <Card bordered={false} className="bg-green-50">
-                        <Statistic title="Active Listings" value={stats.activeListings} valueStyle={{ color: '#3f8600' }} />
+                    <Card className="bg-green-50">
+                        <Statistic title="Active Listings" value={stats.activeListings} valueStyle={{ color: '#3f8600', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
                 <Col xs={24} md={12}>
-                    <Card bordered={false} className="bg-orange-50">
-                        <Statistic title="Pending Approval" value={stats.pendingApproval} valueStyle={{ color: '#fa8c16' }} />
+                    <Card className="bg-orange-50">
+                        <Statistic title="Pending Approval" value={stats.pendingApproval} valueStyle={{ color: '#fa8c16', fontSize: 'clamp(20px, 4vw, 24px)' }} />
                     </Card>
                 </Col>
             </Row>
 
             {/* Properties Table */}
-            <Card title={<div className="flex items-center gap-2"><HomeOutlined /><span>My Properties</span></div>} extra={<Button type="primary" onClick={() => router.push('/properties')}>Add Property</Button>} bordered={false}>
+            <Card title={<div className="flex items-center gap-2"><HomeOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} /><span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>My Properties</span></div>} extra={<Button type="primary" onClick={() => router.push('/properties')} size="small">Add Property</Button>}>
                 {properties.length > 0 ? (
-                    <Table columns={propertyColumns} dataSource={properties} rowKey="_id" pagination={{ pageSize: 10 }} />
+                    <div className="overflow-x-auto">
+                        <Table columns={propertyColumns} dataSource={properties} rowKey="_id" pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
+                    </div>
                 ) : (
                     <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No properties yet. Start by adding your first property!" />
                 )}
             </Card>
 
             {/* Recent Bookings */}
-            <Card title={<div className="flex items-center gap-2"><CalendarOutlined /><span>Recent Bookings</span></div>} bordered={false}>
+            <Card title={<div className="flex items-center gap-2"><CalendarOutlined style={{ fontSize: 'clamp(14px, 3vw, 16px)' }} /><span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>Recent Bookings</span></div>}>
                 {bookingsLoading ? (
                     <div className="flex justify-center items-center h-40"><Spin /></div>
                 ) : bookings.length > 0 ? (
-                    <Table
-                        dataSource={bookings}
-                        rowKey={(r: any) => r._id}
-                        pagination={{ pageSize: 5 }}
-                        columns={[
-                            {
-                                title: 'Customer',
-                                dataIndex: 'userId',
-                                key: 'user',
-                                render: (u: any) => (typeof u === 'object' ? u.name || u.email : (u || 'Guest')),
-                            },
-                            {
-                                title: 'Service',
-                                dataIndex: 'serviceId',
-                                key: 'service',
-                                render: (s: any) => (typeof s === 'object' ? s.title || s.name : (s || 'Service')),
-                            },
-                            {
-                                title: 'Date',
-                                dataIndex: 'scheduledDate',
-                                key: 'date',
-                                render: (d: string) => new Date(d).toLocaleString(),
-                            },
-                            {
-                                title: 'Status',
-                                dataIndex: 'status',
-                                key: 'status',
-                            },
-                            {
-                                title: 'Total',
-                                dataIndex: 'totalPrice',
-                                key: 'total',
-                                render: (p: number) => `$${(p || 0).toLocaleString()}`,
-                            },
-                        ]}
-                    />
+                    <div className="overflow-x-auto">
+                        <Table
+                            dataSource={bookings}
+                            rowKey={(r: any) => r._id}
+                            pagination={{ pageSize: 5 }}
+                            scroll={{ x: 'max-content' }}
+                            columns={[
+                                {
+                                    title: 'Customer',
+                                    dataIndex: 'userId',
+                                    key: 'user',
+                                    render: (u: any) => (typeof u === 'object' ? u.name || u.email : (u || 'Guest')),
+                                },
+                                {
+                                    title: 'Service',
+                                    dataIndex: 'serviceId',
+                                    key: 'service',
+                                    render: (s: any) => (typeof s === 'object' ? s.title || s.name : (s || 'Service')),
+                                },
+                                {
+                                    title: 'Date',
+                                    dataIndex: 'scheduledDate',
+                                    key: 'date',
+                                    render: (d: string) => new Date(d).toLocaleString(),
+                                },
+                                {
+                                    title: 'Status',
+                                    dataIndex: 'status',
+                                    key: 'status',
+                                },
+                                {
+                                    title: 'Total',
+                                    dataIndex: 'totalPrice',
+                                    key: 'total',
+                                    render: (p: number) => `$${(p || 0).toLocaleString()}`,
+                                },
+                            ]}
+                        />
+                    </div>
                 ) : (
                     <Empty description="No recent bookings for your properties" />
                 )}

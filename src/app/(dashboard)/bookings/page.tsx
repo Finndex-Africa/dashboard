@@ -145,7 +145,7 @@ export default function BookingsPage() {
             onOk: async () => {
                 try {
                     setCancelLoading(true);
-                    await bookingsApi.cancel(booking._id);
+                    await bookingsApi.cancel(booking._id, 'Cancelled by customer');
                     showToast.success('Booking cancelled successfully');
                     fetchBookings();
                 } catch (error: any) {
@@ -270,16 +270,30 @@ export default function BookingsPage() {
             title: 'Service/Property',
             dataIndex: 'serviceId',
             key: 'serviceId',
-            render: (service: any) => (
-                <div>
-                    <div className="font-medium text-gray-900">
-                        {service && typeof service === 'object' ? service.title : 'N/A'}
+            render: (service: any, record: Booking) => {
+                // Check if it's a property booking (no serviceId but has serviceAddress)
+                const isPropertyBooking = !service && record.serviceAddress;
+
+                if (isPropertyBooking) {
+                    return (
+                        <div>
+                            <div className="font-medium text-gray-900">Property Viewing</div>
+                            <div className="text-sm text-gray-500">{record.serviceAddress}</div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div>
+                        <div className="font-medium text-gray-900">
+                            {service && typeof service === 'object' ? service.title : 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            {service && typeof service === 'object' && service.category ? service.category : ''}
+                        </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                        {service && typeof service === 'object' && service.category ? service.category : ''}
-                    </div>
-                </div>
-            ),
+                );
+            },
         },
         {
             title: 'Scheduled Date',
@@ -530,8 +544,15 @@ export default function BookingsPage() {
                             <div className="font-medium">
                                 {selectedBooking.serviceId && typeof selectedBooking.serviceId === 'object'
                                     ? selectedBooking.serviceId.title
-                                    : 'N/A'}
+                                    : selectedBooking.serviceAddress
+                                        ? 'Property Viewing'
+                                        : 'N/A'}
                             </div>
+                            {selectedBooking.serviceAddress && (
+                                <div className="text-sm text-gray-500 mt-1">
+                                    {selectedBooking.serviceAddress}
+                                </div>
+                            )}
                         </div>
                         <div>
                             <Text type="secondary">Customer</Text>

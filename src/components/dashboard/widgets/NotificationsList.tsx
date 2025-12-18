@@ -13,7 +13,8 @@ export default function NotificationsList({ userId }: { userId: string }) {
             try {
                 setLoading(true);
                 const response = await notificationsApi.getAll({ userId, limit: 5 });
-                setNotifications(response.data || []);
+                const notificationsData = (response as any)?.data?.data || response.data || [];
+                setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
             } catch (error) {
                 console.error('Error fetching notifications:', error);
             } finally {

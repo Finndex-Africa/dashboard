@@ -2,6 +2,7 @@ import { apiClient, PaginatedResponse } from '@/lib/api-client';
 import { Service } from '@/types/dashboard';
 
 export interface ServiceFilters {
+    providerId?: string;
     page?: number;
     limit?: number;
     category?: string;
@@ -35,6 +36,7 @@ export const servicesApi = {
     // Get all services with filters and pagination
     getAll: async (filters?: ServiceFilters) => {
         const params = new URLSearchParams();
+        if (filters?.providerId) params.append('providerId', filters.providerId);
         if (filters?.page) params.append('page', filters.page.toString());
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.category) params.append('category', filters.category);

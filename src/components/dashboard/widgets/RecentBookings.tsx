@@ -32,7 +32,8 @@ export default function RecentBookings({ userId, userRole }: RecentBookingsProps
                     limit: 5,
                     sort: '-createdAt'
                 });
-                setBookings(response.data || []);
+                const bookingsData = (response as any)?.data?.data || response.data || [];
+                setBookings(Array.isArray(bookingsData) ? bookingsData : []);
             } catch (error) {
                 console.error('Error fetching bookings:', error);
             } finally {

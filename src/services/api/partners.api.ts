@@ -37,7 +37,7 @@ export const partnersApi = {
 
   // Update partner
   update: async (id: string, partnerData: Partial<Partner>) => {
-    return apiClient.put<Partner>(`/partners/${id}`, partnerData);
+    return apiClient.patch<Partner>(`/partners/${id}`, partnerData);
   },
 
   // Deactivate partner

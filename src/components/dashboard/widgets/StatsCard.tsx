@@ -37,7 +37,7 @@ const STAT_CONFIG: Record<string, {
         color: '#1890ff',
         fetchData: async (userId, userRole) => {
             const response = await propertiesApi.getAll({ userId, limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.TOTAL_BOOKINGS]: {
@@ -46,7 +46,7 @@ const STAT_CONFIG: Record<string, {
         color: '#52c41a',
         fetchData: async (userId) => {
             const response = await bookingsApi.getAll({ userId, limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.TOTAL_REVENUE]: {
@@ -55,7 +55,7 @@ const STAT_CONFIG: Record<string, {
         color: '#faad14',
         fetchData: async (userId) => {
             const response = await bookingsApi.getAll({ userId, limit: 100 });
-            const bookings = response.data || [];
+            const bookings = (response.data as any).data || [];
             return bookings.reduce((sum: number, b: any) => sum + (b.totalPrice || 0), 0);
         },
     },
@@ -74,7 +74,7 @@ const STAT_CONFIG: Record<string, {
         color: '#722ed1',
         fetchData: async (userId) => {
             const response = await servicesApi.getAll({ providerId: userId, limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.ACTIVE_LISTINGS]: {
@@ -83,7 +83,7 @@ const STAT_CONFIG: Record<string, {
         color: '#52c41a',
         fetchData: async (userId) => {
             const response = await propertiesApi.getAll({ userId, status: 'approved', limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.PENDING_APPROVALS]: {
@@ -92,7 +92,7 @@ const STAT_CONFIG: Record<string, {
         color: '#faad14',
         fetchData: async () => {
             const response = await propertiesApi.getAll({ status: 'pending', limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.TOTAL_USERS]: {
@@ -101,7 +101,7 @@ const STAT_CONFIG: Record<string, {
         color: '#1890ff',
         fetchData: async () => {
             const response = await usersApi.getAll({ limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
     [DASHBOARD_WIDGETS.SAVED_PROPERTIES]: {
@@ -119,7 +119,7 @@ const STAT_CONFIG: Record<string, {
         color: '#1890ff',
         fetchData: async (userId) => {
             const response = await bookingsApi.getAll({ userId, status: 'pending', limit: 1 });
-            return response.pagination?.totalItems || 0;
+            return (response.data as any).pagination?.totalItems || 0;
         },
     },
 };
