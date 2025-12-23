@@ -8,7 +8,9 @@ export default function HomePage() {
     const router = useRouter();
 
     useEffect(() => {
-        router.push('/dashboard');
+        // Middleware will handle role-based redirect
+        // This page should rarely be hit directly
+        router.push('/properties');
     }, [router]);
 
     return <Loading />;

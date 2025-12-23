@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getRoleRedirectPath, getUserRoleFromToken, canAccessDashboard } from '@/lib/role-redirects';
 
 export function middleware(request: NextRequest) {
     // Get the pathname of the request (e.g. /, /protected, /admin)
@@ -14,10 +15,20 @@ export function middleware(request: NextRequest) {
     // Get the current path
     const url = request.nextUrl.clone();
 
-    // If the path is public and user is logged in, redirect to dashboard
+    // If the path is public and user is logged in, redirect based on role
     if (isPublicPath && token && path !== '/auth-transfer') {
-        url.pathname = '/dashboard';
+        const role = getUserRoleFromToken(token);
+        url.pathname = getRoleRedirectPath(role);
         return NextResponse.redirect(url);
+    }
+
+    // Block non-admin users from accessing /dashboard
+    if (path === '/dashboard' && token) {
+        const role = getUserRoleFromToken(token);
+        if (!canAccessDashboard(role)) {
+            url.pathname = getRoleRedirectPath(role);
+            return NextResponse.redirect(url);
+        }
     }
 
     // If the path is protected and user is not logged in, redirect to website login

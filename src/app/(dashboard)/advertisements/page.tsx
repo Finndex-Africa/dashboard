@@ -235,7 +235,7 @@ export default function AdvertisementsPage() {
                 subTitle="Only administrators can access the advertisements management page."
                 extra={
                     <Button type="primary" onClick={() => router.push('/dashboard')}>
-                        Go to Dashboard
+                        Go to Admin Dashboard
                     </Button>
                 }
             />

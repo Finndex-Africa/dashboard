@@ -6,7 +6,7 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -16,8 +16,10 @@ interface ServicesTableProps {
     onView?: (service: Service) => void;
     onEdit?: (service: Service) => void;
     onDelete?: (service: Service) => void;
-    onApprove?: (service: Service) => void;
+    onVerify?: (service: Service) => void;
     onReject?: (service: Service) => void;
+    onSaveToggle?: (serviceId: string) => void;
+    savedIds?: string[];
     approvingId?: string | null;
 }
 
@@ -27,8 +29,10 @@ export function ServicesTable({
     onView,
     onEdit,
     onDelete,
-    onApprove,
+    onVerify,
     onReject,
+    onSaveToggle,
+    savedIds = [],
     approvingId,
 }: ServicesTableProps) {
     const getStatusColor = (status: Service['status']) => {
@@ -111,21 +115,34 @@ export function ServicesTable({
             key: 'actions',
             render: (_, record) => (
                 <Space size="small">
-                    {record.verificationStatus === 'pending' && onApprove && onReject ? (
+                    {/* Home Seeker: Save/Unsave */}
+                    {onSaveToggle && (
+                        <Tooltip title={savedIds.includes(record._id) ? 'Unsave' : 'Save'}>
+                            <Button
+                                type="text"
+                                icon={savedIds.includes(record._id) ? <HeartFilled /> : <HeartOutlined />}
+                                onClick={() => onSaveToggle(record._id)}
+                                style={{ color: savedIds.includes(record._id) ? '#ff4d4f' : undefined }}
+                            />
+                        </Tooltip>
+                    )}
+
+                    {/* Admin: Verify/Reject pending services */}
+                    {record.verificationStatus === 'pending' && onVerify && onReject ? (
                         <>
-                            <Tooltip title="Approve">
+                            <Tooltip title="Verify">
                                 <Button
                                     type="primary"
                                     size="small"
                                     icon={<CheckOutlined />}
                                     loading={approvingId === record._id}
-                                    onClick={() => onApprove(record)}
+                                    onClick={() => onVerify(record)}
                                     style={{
                                         background: '#43e97b',
                                         borderColor: '#43e97b',
                                     }}
                                 >
-                                    Approve
+                                    Verify
                                 </Button>
                             </Tooltip>
                             <Tooltip title="Reject">
@@ -141,28 +158,34 @@ export function ServicesTable({
                         </>
                     ) : (
                         <>
-                            <Tooltip title="View">
-                                <Button
-                                    type="text"
-                                    icon={<EyeOutlined />}
-                                    onClick={() => onView?.(record)}
-                                />
-                            </Tooltip>
-                            <Tooltip title={record.verificationStatus === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
-                                <Button
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    onClick={() => onEdit?.(record)}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => onDelete?.(record)}
-                                />
-                            </Tooltip>
+                            {onView && (
+                                <Tooltip title="View">
+                                    <Button
+                                        type="text"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => onView(record)}
+                                    />
+                                </Tooltip>
+                            )}
+                            {onEdit && (
+                                <Tooltip title={record.verificationStatus === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
+                                    <Button
+                                        type="text"
+                                        icon={<EditOutlined />}
+                                        onClick={() => onEdit(record)}
+                                    />
+                                </Tooltip>
+                            )}
+                            {onDelete && (
+                                <Tooltip title="Delete">
+                                    <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => onDelete(record)}
+                                    />
+                                </Tooltip>
+                            )}
                         </>
                     )}
                 </Space>

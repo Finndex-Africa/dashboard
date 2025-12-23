@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getRoleRedirectPath, getUserRoleFromToken } from '@/lib/role-redirects';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
@@ -76,11 +77,15 @@ function AuthTransferContent() {
                     // Dispatch custom event to notify AuthProvider immediately
                     window.dispatchEvent(new Event('auth-updated'));
 
-                    console.log('✅ Dispatched auth-updated event, redirecting to dashboard');
+                    // Determine redirect based on user role
+                    const userRole = getUserRoleFromToken(token);
+                    const redirectPath = getRoleRedirectPath(userRole);
+
+                    console.log('✅ Dispatched auth-updated event, redirecting to', redirectPath);
 
                     // Use window.location for immediate synchronous redirect
                     // This ensures the cookie is fully set before navigation
-                    window.location.href = '/dashboard';
+                    window.location.href = redirectPath;
                 } else {
                     console.error('❌ Invalid token');
                     window.location.href = `${WEBSITE_URL}/routes/login`;

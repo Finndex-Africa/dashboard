@@ -5,7 +5,7 @@ import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
-import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import type { Property } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -17,6 +17,8 @@ interface PropertiesTableProps {
     onDelete?: (property: Property) => void;
     onApprove?: (property: Property) => void;
     onReject?: (property: Property) => void;
+    onSaveToggle?: (propertyId: string) => void;
+    savedIds?: string[];
     approvingId?: string | null;
 }
 
@@ -28,6 +30,8 @@ export function PropertiesTable({
     onDelete,
     onApprove,
     onReject,
+    onSaveToggle,
+    savedIds = [],
     approvingId,
 }: PropertiesTableProps) {
     const getStatusColor = (status: Property['status']) => {
@@ -116,6 +120,19 @@ export function PropertiesTable({
             key: 'actions',
             render: (_, record) => (
                 <Space size="small">
+                    {/* Home Seeker: Save/Unsave */}
+                    {onSaveToggle && (
+                        <Tooltip title={savedIds.includes(record._id) ? 'Unsave' : 'Save'}>
+                            <Button
+                                type="text"
+                                icon={savedIds.includes(record._id) ? <HeartFilled /> : <HeartOutlined />}
+                                onClick={() => onSaveToggle(record._id)}
+                                style={{ color: savedIds.includes(record._id) ? '#ff4d4f' : undefined }}
+                            />
+                        </Tooltip>
+                    )}
+
+                    {/* Admin: Approve/Reject pending properties */}
                     {record.status === 'pending' && onApprove && onReject ? (
                         <>
                             <Tooltip title="Approve">
@@ -146,28 +163,34 @@ export function PropertiesTable({
                         </>
                     ) : (
                         <>
-                            <Tooltip title="View">
-                                <Button
-                                    type="text"
-                                    icon={<EyeOutlined />}
-                                    onClick={() => onView?.(record)}
-                                />
-                            </Tooltip>
-                            <Tooltip title={record.status === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
-                                <Button
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    onClick={() => onEdit?.(record)}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => onDelete?.(record)}
-                                />
-                            </Tooltip>
+                            {onView && (
+                                <Tooltip title="View">
+                                    <Button
+                                        type="text"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => onView(record)}
+                                    />
+                                </Tooltip>
+                            )}
+                            {onEdit && (
+                                <Tooltip title={record.status === 'rejected' ? 'Edit & Resubmit' : 'Edit'}>
+                                    <Button
+                                        type="text"
+                                        icon={<EditOutlined />}
+                                        onClick={() => onEdit(record)}
+                                    />
+                                </Tooltip>
+                            )}
+                            {onDelete && (
+                                <Tooltip title="Delete">
+                                    <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => onDelete(record)}
+                                    />
+                                </Tooltip>
+                            )}
                         </>
                     )}
                 </Space>

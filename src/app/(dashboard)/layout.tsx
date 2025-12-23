@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Layout from 'antd/es/layout';
 import Menu from 'antd/es/menu';
 import Dropdown from 'antd/es/dropdown';
+import Drawer from 'antd/es/drawer';
 import Space from 'antd/es/space';
 import Avatar from 'antd/es/avatar';
+import Button from 'antd/es/button';
 import {
     HomeOutlined,
     AppstoreOutlined,
@@ -17,20 +19,23 @@ import {
     CalendarOutlined,
     BellOutlined,
     TrophyOutlined,
+    MenuOutlined,
+    CloseOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { designTokens } from '@/config/theme';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '@/providers/AuthProvider';
+import { getRoleRedirectPath } from '@/lib/role-redirects';
 
-const { Sider, Header } = Layout;
+const { Header, Content } = Layout;
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const [collapsed, setCollapsed] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const { user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -48,28 +53,28 @@ export default function DashboardLayout({
         window.location.href = websiteUrl;
     };
 
-    const userMenuItems = [
-        {
-            key: 'home',
-            label: 'Home',
+    // User dropdown menu items (top-right profile) - role-aware
+    const userDropdownItems = [
+        // Only show Dashboard for admin
+        ...(user?.role === 'admin' ? [{
+            key: 'dashboard',
+            label: 'Dashboard',
             icon: <HomeOutlined />,
-            onClick: () => handleHomeClick(),
-        },
+            onClick: () => router.push('/dashboard'),
+        }] : []),
         {
             key: 'profile',
             label: 'Profile',
             icon: <UserOutlined />,
-            onClick: () => handleMenuClick('profile'),
+            onClick: () => router.push('/profile'),
         },
         {
             type: 'divider' as const,
         },
         {
             key: 'logout',
-            label: 'Logout',
-            icon: <LogoutOutlined />,
+            label: 'Log out',
             onClick: () => handleLogout(),
-            danger: true,
         },
     ];
 
@@ -78,20 +83,20 @@ export default function DashboardLayout({
         {
             key: '/dashboard',
             icon: <HomeOutlined />,
-            label: 'Overview',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
+            label: 'Dashboard',
+            roles: ['admin'], // ONLY admin has dashboard
         },
         {
             key: '/properties',
             icon: <AppstoreOutlined />,
             label: 'Properties',
-            roles: ['landlord', 'agent', 'admin'],
+            roles: ['home_seeker', 'landlord', 'agent', 'admin'], // Everyone sees properties
         },
         {
             key: '/services',
             icon: <ShopOutlined />,
             label: 'Services',
-            roles: ['service_provider', 'admin'],
+            roles: ['home_seeker', 'service_provider', 'admin'], // Home seekers can browse services
         },
         {
             key: '/bookings',
@@ -128,7 +133,7 @@ export default function DashboardLayout({
     // Filter menu items based on user role
     const menuItems = user?.role
         ? allMenuItems.filter(item => item.roles.includes(user.role)).map(({ roles, ...item }) => item)
-        : [{ key: '/dashboard', icon: <HomeOutlined />, label: 'Overview' }]; // Show at least Overview while loading
+        : [];
 
     const handleLogout = () => {
         // Clear dashboard auth data (only auth keys)
@@ -183,87 +188,152 @@ export default function DashboardLayout({
                     },
                 }}
             />
-            <Layout>
-                <Sider
-                    collapsible
-                    collapsed={collapsed}
-                    onCollapse={setCollapsed}
+
+            <Layout style={{ minHeight: '100vh' }}>
+                {/* Airbnb-style Header */}
+                <Header
                     style={{
-                        overflow: 'auto',
-                        height: '100vh',
-                        position: 'fixed',
-                        left: 0,
+                        position: 'sticky',
                         top: 0,
-                        bottom: 0,
-                        backgroundColor: '#fff',
-                        borderRight: '1px solid #f0f0f0',
+                        zIndex: 10,
+                        width: '100%',
+                        padding: '0 24px',
+                        background: '#fff',
+                        borderBottom: '1px solid #ebebeb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        height: '80px',
                     }}
-                    theme="light"
                 >
-                    <div className="h-16 flex items-center justify-center border-b border-gray-100 px-4">
-                        {collapsed ? (
-                            <img
-                                src="/images/logos/logo2.png"
-                                alt="Finndex Africa"
-                                className="h-8 w-8 object-contain"
-                            />
-                        ) : (
-                            <img
-                                src="/images/logos/logo1.png"
-                                alt="Finndex Africa"
-                                className="h-8 object-contain"
-                            />
-                        )}
-                    </div>
-                    <Menu
-                        theme="light"
-                        selectedKeys={[pathname]}
-                        mode="inline"
-                        items={menuItems}
-                        onClick={({ key }) => router.push(key)}
-                        style={{
-                            height: 'calc(100vh - 64px)',
-                            borderRight: 0,
-                            display: 'flex',
-                            flexDirection: 'column',
-                        }}
-                    />
-                </Sider>
-                <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
-                    <Header
-                        style={{
-                            padding: '16px 32px',
-                            background: '#fff',
-                            boxShadow: designTokens.shadows.base,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            height: '72px',
+                    {/* Logo */}
+                    <div
+                        className="cursor-pointer flex items-center"
+                        onClick={() => {
+                            const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
+                            router.push(redirectPath);
                         }}
                     >
-                        <Dropdown menu={{ items: userMenuItems }}>
-                            <Space className="cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-all">
+                        <img
+                            src="/images/logos/logo1.png"
+                            alt="Finndex Africa"
+                            className="h-10 object-contain"
+                        />
+                    </div>
+
+                    {/* Right side: Notifications + User Menu */}
+                    <div className="flex items-center gap-2">
+                        {/* Burger Menu Button */}
+                        <Button
+                            type="text"
+                            icon={<MenuOutlined style={{ fontSize: '18px' }} />}
+                            onClick={() => setDrawerOpen(true)}
+                            style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '50%',
+                                border: '1px solid #ddd',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        />
+
+                        {/* User Avatar Dropdown */}
+                        <Dropdown menu={{ items: userDropdownItems }} trigger={['click']}>
+                            <div
+                                className="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-full border border-gray-300 hover:shadow-md transition-all"
+                                style={{ height: '42px' }}
+                            >
+                                <MenuOutlined style={{ fontSize: '14px', color: '#717171' }} />
                                 <Avatar
                                     src={user?.avatar}
                                     icon={!user?.avatar && <UserOutlined />}
-                                    size={40}
+                                    size={28}
                                     style={{
-                                        backgroundColor: '#6366f1',
-                                        border: '2px solid #f0f0f0'
+                                        backgroundColor: '#717171',
                                     }}
                                 />
-                                <div className="hidden md:block">
-                                    <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '18px' }}>
-                                        {`${user?.firstName || user?.email?.split('@')[0] || 'User'}${user?.lastName ? ' ' + user.lastName : ''}`}
-                                    </div>
-                                </div>
-                            </Space>
+                            </div>
                         </Dropdown>
-                    </Header>
-                    <div className="p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
+                    </div>
+                </Header>
+
+                {/* Airbnb-style Drawer Menu */}
+                <Drawer
+                    title={null}
+                    placement="right"
+                    onClose={() => setDrawerOpen(false)}
+                    open={drawerOpen}
+                    width={320}
+                    closable={false}
+                    styles={{
+                        body: { padding: 0 },
+                        header: { display: 'none' },
+                    }}
+                >
+                    {/* Drawer Header */}
+                    <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Avatar
+                                src={user?.avatar}
+                                icon={!user?.avatar && <UserOutlined />}
+                                size={48}
+                                style={{ backgroundColor: '#6366f1' }}
+                            />
+                            <div>
+                                <div style={{ fontWeight: 600, fontSize: '16px' }}>
+                                    {`${user?.firstName || user?.email?.split('@')[0] || 'User'}${user?.lastName ? ' ' + user.lastName : ''}`}
+                                </div>
+                                <div style={{ fontSize: '14px', color: '#717171' }}>
+                                    {user?.role?.replace('_', ' ') || 'User'}
+                                </div>
+                            </div>
+                        </div>
+                        <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            onClick={() => setDrawerOpen(false)}
+                        />
+                    </div>
+
+                    {/* Drawer Menu Items */}
+                    <Menu
+                        mode="vertical"
+                        selectedKeys={[pathname]}
+                        onClick={({ key }) => {
+                            router.push(key);
+                            setDrawerOpen(false);
+                        }}
+                        items={menuItems}
+                        style={{
+                            border: 'none',
+                            fontSize: '16px',
+                        }}
+                    />
+
+                    {/* Drawer Footer */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
+                        <Button
+                            block
+                            size="large"
+                            onClick={handleLogout}
+                            style={{
+                                borderRadius: '8px',
+                                fontWeight: 500,
+                            }}
+                        >
+                            <LogoutOutlined /> Log out
+                        </Button>
+                    </div>
+                </Drawer>
+
+                {/* Main Content */}
+                <Content style={{ background: '#f7f7f7', minHeight: 'calc(100vh - 80px)' }}>
+                    <div className="max-w-7xl mx-auto px-6 py-8">
                         {children}
                     </div>
-                </Layout>
+                </Content>
             </Layout>
         </>
     );

@@ -11,6 +11,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/services/auth.service';
+import { getRoleRedirectPath, getUserRoleFromToken } from '@/lib/role-redirects';
 
 export function LoginForm() {
     const [loading, setLoading] = useState(false);
@@ -48,8 +49,17 @@ export function LoginForm() {
             // Initialize axios interceptors
             auth.setupAxiosInterceptors();
 
-            // Redirect to dashboard
-            router.push('/dashboard');
+            // Get token and determine role-based redirect
+            const token = auth.getToken();
+            if (!token) {
+                router.push('/properties');
+                router.refresh();
+                return;
+            }
+
+            const userRole = getUserRoleFromToken(token);
+            const redirectPath = getRoleRedirectPath(userRole);
+            router.push(redirectPath);
             router.refresh(); // Force a refresh of the page
         } catch (error: any) {
             // Error is already handled in auth.service

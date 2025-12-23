@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
@@ -17,28 +20,30 @@ import Form from 'antd/es/form';
 import DatePicker from 'antd/es/date-picker';
 import InputNumber from 'antd/es/input-number';
 import TextArea from 'antd/es/input/TextArea';
-import Spin from 'antd/es/spin';
-import {
-    CalendarOutlined,
-    CheckCircleOutlined,
-    ClockCircleOutlined,
-    EyeOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    SearchOutlined,
-    StopOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, EditOutlined, StopOutlined } from '@ant-design/icons';
 import { bookingsApi } from '@/services/api/bookings.api';
 import type { Booking } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-export default function BookingsPage() {
+type BookingType = 'property' | 'service' | 'all';
+type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rejected' | 'all';
+
+function BookingsPageContent() {
     const { user } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Query params
+    const typeParam = (searchParams.get('type') as BookingType) || 'all';
+    const statusParam = (searchParams.get('status') as BookingStatus) || 'all';
+
+    // State
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -47,33 +52,36 @@ export default function BookingsPage() {
     const [editLoading, setEditLoading] = useState(false);
     const [cancelLoading, setCancelLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [form] = Form.useForm();
 
     useEffect(() => {
         if (user) {
             fetchBookings();
         }
-    }, [user]);
+    }, [user, typeParam, statusParam]);
 
     const fetchBookings = async () => {
+        if (!user?.role) return;
+
         try {
             setLoading(true);
             let response;
 
-            // Use role-based API endpoints
-            if (user?.role === 'home_seeker') {
-                // Home seekers see only their own bookings
-                response = await bookingsApi.getMyBookings({ page: 1, limit: 100 });
-            } else if (user?.role === 'service_provider') {
-                // Service providers see bookings for their services
-                response = await bookingsApi.getProviderBookings({ page: 1, limit: 100 });
+            // Role-based data fetching
+            if (user.role === 'home_seeker') {
+                // Home seekers: own bookings only
+                response = await bookingsApi.getMyBookings({ page: 1, limit: 1000 });
+            } else if (user.role === 'service_provider') {
+                // Service providers: bookings for own services
+                response = await bookingsApi.getProviderBookings({ page: 1, limit: 1000 });
+            } else if (user.role === 'agent' || user.role === 'landlord') {
+                // Agents: property bookings only (if booking type exists for properties)
+                response = await bookingsApi.getAll({ page: 1, limit: 1000 });
             } else {
-                // Admins, landlords, and agents see all bookings
-                response = await bookingsApi.getAll({ page: 1, limit: 100 });
+                // Admin: all bookings
+                response = await bookingsApi.getAll({ page: 1, limit: 1000 });
             }
 
-            // Extract data from paginated response
             const bookingsData = (response as any)?.data?.data || response.data || [];
             setBookings(Array.isArray(bookingsData) ? bookingsData : []);
         } catch (error: any) {
@@ -87,6 +95,29 @@ export default function BookingsPage() {
         }
     };
 
+    // Filter bookings
+    const filteredBookings = bookings.filter(booking => {
+        // Search filter
+        if (searchText) {
+            const search = searchText.toLowerCase();
+            const serviceTitle = typeof booking.serviceId === 'object' && booking.serviceId?.title
+                ? booking.serviceId.title.toLowerCase()
+                : '';
+            if (!serviceTitle.includes(search)) return false;
+        }
+
+        // Type filter (property vs service)
+        if (typeParam !== 'all') {
+            // Future: Check booking type when property bookings are added
+            // For now, all bookings are service bookings
+        }
+
+        // Status filter
+        if (statusParam !== 'all' && booking.status !== statusParam) return false;
+
+        return true;
+    });
+
     const handleView = (booking: Booking) => {
         setSelectedBooking(booking);
         setViewModalOpen(true);
@@ -94,11 +125,8 @@ export default function BookingsPage() {
 
     const handleEdit = (booking: Booking) => {
         setSelectedBooking(booking);
-        // Don't set the scheduledDate field - let user clear and re-pick it
-        // This avoids DatePicker validation issues
         form.setFieldsValue({
             duration: booking.duration,
-            contactPhone: booking.contactPhone,
             serviceLocation: booking.serviceLocation,
             serviceAddress: booking.serviceAddress,
             notes: booking.notes,
@@ -106,50 +134,41 @@ export default function BookingsPage() {
         setEditModalOpen(true);
     };
 
-    const handleEditSubmit = async (values: any) => {
+    const handleUpdateBooking = async (values: any) => {
         if (!selectedBooking) return;
 
         try {
             setEditLoading(true);
-            const updateData: any = {
-                duration: values.duration,
-                contactPhone: values.contactPhone,
-                serviceLocation: values.serviceLocation,
-                serviceAddress: values.serviceAddress,
-                notes: values.notes,
-            };
+            await bookingsApi.update(selectedBooking._id, {
+                ...values,
+                scheduledDate: values.scheduledDate?.toISOString(),
+            });
 
-            // Only include scheduledDate if it was modified
-            if (values.scheduledDate) {
-                updateData.scheduledDate = values.scheduledDate.toISOString ? values.scheduledDate.toISOString() : new Date(values.scheduledDate).toISOString();
-            }
-
-            await bookingsApi.update(selectedBooking._id, updateData);
             showToast.success('Booking updated successfully');
             setEditModalOpen(false);
+            form.resetFields();
+            setSelectedBooking(null);
             fetchBookings();
         } catch (error: any) {
-            console.error('Failed to update booking:', error);
             showToast.error(error.response?.data?.message || 'Failed to update booking');
         } finally {
             setEditLoading(false);
         }
     };
 
-    const handleCancel = (booking: Booking) => {
+    const handleCancelBooking = async (booking: Booking) => {
         Modal.confirm({
             title: 'Cancel Booking',
-            content: 'Are you sure you want to cancel this booking? This action cannot be undone.',
-            okText: 'Cancel Booking',
+            content: 'Are you sure you want to cancel this booking?',
+            okText: 'Yes, Cancel Booking',
             okType: 'danger',
             onOk: async () => {
                 try {
                     setCancelLoading(true);
-                    await bookingsApi.cancel(booking._id, 'Cancelled by customer');
+                    await bookingsApi.cancel(booking._id, 'Cancelled by user');
                     showToast.success('Booking cancelled successfully');
                     fetchBookings();
                 } catch (error: any) {
-                    console.error('Failed to cancel booking:', error);
                     showToast.error(error.response?.data?.message || 'Failed to cancel booking');
                 } finally {
                     setCancelLoading(false);
@@ -158,149 +177,49 @@ export default function BookingsPage() {
         });
     };
 
-    const handleDelete = (booking: Booking) => {
-        Modal.confirm({
-            title: 'Delete Booking',
-            content: 'Are you sure you want to delete this booking?',
-            okText: 'Delete',
-            okType: 'danger',
-            onOk: async () => {
-                try {
-                    await bookingsApi.delete(booking._id);
-                    showToast.success('Booking deleted successfully');
-                    fetchBookings();
-                } catch (error: any) {
-                    console.error('Failed to delete booking:', error);
-                    showToast.error('Failed to delete booking');
-                }
-            },
-        });
-    };
-
-    // Filter bookings
-    const filteredBookings = bookings.filter(booking => {
-        const matchesSearch = searchText === '' ||
-            (typeof booking.serviceId === 'object' && booking.serviceId?.title?.toLowerCase().includes(searchText.toLowerCase()));
-        const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
-    const totalBookings = bookings.length;
-    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
-    const totalRevenue = bookings
-        .filter(b => b.status === 'completed' || b.status === 'confirmed')
-        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-    const stats = [
-        {
-            title: 'Total Bookings',
-            value: totalBookings,
-            icon: <CalendarOutlined />,
-            color: '#667eea',
-            bgColor: '#667eea15',
-        },
-        {
-            title: 'Confirmed',
-            value: confirmedBookings,
-            icon: <CheckCircleOutlined />,
-            color: '#43e97b',
-            bgColor: '#43e97b15',
-        },
-        {
-            title: 'Pending',
-            value: pendingBookings,
-            icon: <ClockCircleOutlined />,
-            color: '#ffa94d',
-            bgColor: '#ffa94d15',
-        },
-        {
-            title: 'Total Revenue',
-            value: `$${totalRevenue.toLocaleString()}`,
-            icon: <CheckCircleOutlined />,
-            color: '#f093fb',
-            bgColor: '#f093fb15',
-        },
-    ];
-
     const getStatusColor = (status: Booking['status']) => {
         switch (status) {
-            case 'pending':
-                return 'orange';
-            case 'confirmed':
-                return 'blue';
-            case 'in_progress':
-                return 'cyan';
-            case 'completed':
-                return 'green';
-            case 'cancelled':
-                return 'red';
-            case 'rejected':
-                return 'volcano';
-            default:
-                return 'default';
+            case 'confirmed': return 'green';
+            case 'pending': return 'orange';
+            case 'in_progress': return 'blue';
+            case 'completed': return 'cyan';
+            case 'cancelled': return 'red';
+            case 'rejected': return 'volcano';
+            default: return 'default';
         }
-    };
-
-    const getStatusLabel = (status: Booking['status']) => {
-        return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
     };
 
     const getPaymentStatusColor = (status: Booking['paymentStatus']) => {
         switch (status) {
-            case 'completed':
-                return 'green';
-            case 'pending':
-                return 'orange';
-            case 'failed':
-                return 'red';
-            case 'refunded':
-                return 'blue';
-            default:
-                return 'default';
+            case 'completed': return 'green';
+            case 'pending': return 'orange';
+            case 'failed': return 'red';
+            case 'refunded': return 'purple';
+            default: return 'default';
         }
-    };
-
-    const formatLabel = (text: string) => {
-        return text.charAt(0).toUpperCase() + text.slice(1).replace('_', ' ');
     };
 
     const columns: ColumnsType<Booking> = [
         {
-            title: 'Service/Property',
+            title: 'Service',
             dataIndex: 'serviceId',
-            key: 'serviceId',
-            render: (service: any, record: Booking) => {
-                // Check if it's a property booking (no serviceId but has serviceAddress)
-                const isPropertyBooking = !service && record.serviceAddress;
-
-                if (isPropertyBooking) {
-                    return (
-                        <div>
-                            <div className="font-medium text-gray-900">Property Viewing</div>
-                            <div className="text-sm text-gray-500">{record.serviceAddress}</div>
-                        </div>
-                    );
-                }
-
-                return (
-                    <div>
-                        <div className="font-medium text-gray-900">
-                            {service && typeof service === 'object' ? service.title : 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                            {service && typeof service === 'object' && service.category ? service.category : ''}
-                        </div>
+            key: 'service',
+            render: (service: any) => (
+                <div>
+                    <div className="font-medium">
+                        {typeof service === 'object' ? service?.title : 'N/A'}
                     </div>
-                );
-            },
+                    <div className="text-sm text-gray-500">
+                        {typeof service === 'object' ? service?.category : ''}
+                    </div>
+                </div>
+            ),
         },
         {
             title: 'Scheduled Date',
             dataIndex: 'scheduledDate',
             key: 'scheduledDate',
-            sorter: (a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime(),
-            render: (date) => new Date(date).toLocaleDateString('en-US', {
+            render: (date) => new Date(date).toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -312,179 +231,112 @@ export default function BookingsPage() {
             title: 'Duration',
             dataIndex: 'duration',
             key: 'duration',
-            render: (duration) => `${duration} ${duration === 1 ? 'hour' : 'hours'}`,
-        },
-        {
-            title: 'Customer',
-            dataIndex: 'userId',
-            key: 'userId',
-            render: (user: any) => (
-                <div>
-                    <div className="font-medium text-gray-900">
-                        {typeof user === 'object' ? user.name : 'N/A'}
-                    </div>
-                </div>
-            ),
+            render: (duration) => `${duration} hours`,
         },
         {
             title: 'Total Price',
             dataIndex: 'totalPrice',
             key: 'totalPrice',
-            sorter: (a, b) => a.totalPrice - b.totalPrice,
-            render: (price) => `$${price.toLocaleString()}`,
+            render: (price) => `$${price?.toLocaleString() || 0}`,
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
             render: (status: Booking['status']) => (
-                <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
+                <Tag color={getStatusColor(status)}>
+                    {status.toUpperCase().replace('_', ' ')}
+                </Tag>
             ),
         },
         {
-            title: 'Created',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date) => new Date(date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-            }),
+            title: 'Payment',
+            dataIndex: 'paymentStatus',
+            key: 'paymentStatus',
+            render: (status: Booking['paymentStatus']) => (
+                <Tag color={getPaymentStatusColor(status)}>
+                    {status?.toUpperCase() || 'N/A'}
+                </Tag>
+            ),
         },
         {
             title: 'Actions',
             key: 'actions',
-            width: 120,
             render: (_, record) => (
                 <Space size="small">
                     <Tooltip title="View">
-                        <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleView(record)}
-                        />
+                        <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
                     </Tooltip>
                     {record.status === 'pending' && (
-                        <Tooltip title="Edit">
-                            <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                onClick={() => handleEdit(record)}
-                            />
-                        </Tooltip>
+                        <>
+                            <Tooltip title="Edit">
+                                <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+                            </Tooltip>
+                            <Tooltip title="Cancel">
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<StopOutlined />}
+                                    onClick={() => handleCancelBooking(record)}
+                                    loading={cancelLoading}
+                                />
+                            </Tooltip>
+                        </>
                     )}
-                    {['pending', 'confirmed'].includes(record.status) && (
-                        <Tooltip title="Cancel">
-                            <Button
-                                type="text"
-                                danger
-                                icon={<StopOutlined />}
-                                loading={cancelLoading}
-                                onClick={() => handleCancel(record)}
-                            />
-                        </Tooltip>
-                    )}
-                    <Tooltip title="Delete">
-                        <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete(record)}
-                        />
-                    </Tooltip>
                 </Space>
             ),
         },
     ];
 
+    const handleFilterChange = (key: 'type' | 'status', value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value === 'all') {
+            params.delete(key);
+        } else {
+            params.set(key, value);
+        }
+        router.push(`/bookings?${params.toString()}`);
+    };
+
     return (
         <div className="space-y-6">
-            {/* Modern Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <Title level={2} className="mb-1" style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent'
-                    }}>
-                        Bookings
-                    </Title>
-                    <Text type="secondary">Manage service bookings and appointments</Text>
-                </div>
+            {/* Header */}
+            <div>
+                <Title level={2} className="mb-1">Bookings</Title>
+                <Text type="secondary">Manage your booking requests</Text>
             </div>
 
-            {/* Compact Statistics */}
-            <Row gutter={[16, 16]}>
-                {stats.map((stat, index) => (
-                    <Col xs={12} sm={12} lg={6} key={index}>
-                        <Card
-                            className="hover:shadow-lg transition-all duration-300"
-                            style={{
-                                borderRadius: '12px',
-                                border: '1px solid #f0f0f0',
-                            }}
-                            styles={{ body: { padding: '20px' } }}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                                        {stat.title}
-                                    </Text>
-                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: stat.color }}>
-                                        {stat.value}
-                                    </div>
-                                </div>
-                                <div
-                                    style={{
-                                        width: '48px',
-                                        height: '48px',
-                                        borderRadius: '12px',
-                                        backgroundColor: stat.bgColor,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '24px',
-                                        color: stat.color,
-                                    }}
-                                >
-                                    {stat.icon}
-                                </div>
-                            </div>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
-
-            {/* Search and Filters */}
-            <Card
-                style={{
-                    borderRadius: '12px',
-                    border: '1px solid #f0f0f0',
-                }}
-                styles={{ body: { padding: '20px' } }}
-            >
+            {/* Filters */}
+            <Card>
                 <Row gutter={[16, 16]}>
-                    <Col xs={24} md={16} lg={14}>
+                    <Col xs={24} md={8}>
                         <Search
-                            placeholder="Search bookings by service name..."
+                            placeholder="Search by service..."
                             allowClear
                             size="large"
-                            prefix={<SearchOutlined style={{ color: '#667eea' }} />}
+                            prefix={<SearchOutlined />}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
-                            style={{
-                                borderRadius: '8px',
-                            }}
                         />
                     </Col>
-                    <Col xs={12} md={8} lg={6}>
+                    <Col xs={12} md={4}>
                         <Select
                             size="large"
-                            value={statusFilter}
-                            onChange={setStatusFilter}
-                            style={{ width: '100%', borderRadius: '8px' }}
-                            placeholder="Status"
+                            value={typeParam}
+                            onChange={(value) => handleFilterChange('type', value)}
+                            style={{ width: '100%' }}
+                        >
+                            <Select.Option value="all">All Types</Select.Option>
+                            <Select.Option value="service">Service</Select.Option>
+                            <Select.Option value="property">Property</Select.Option>
+                        </Select>
+                    </Col>
+                    <Col xs={12} md={4}>
+                        <Select
+                            size="large"
+                            value={statusParam}
+                            onChange={(value) => handleFilterChange('status', value)}
+                            style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Status</Select.Option>
                             <Select.Option value="pending">Pending</Select.Option>
@@ -492,26 +344,13 @@ export default function BookingsPage() {
                             <Select.Option value="in_progress">In Progress</Select.Option>
                             <Select.Option value="completed">Completed</Select.Option>
                             <Select.Option value="cancelled">Cancelled</Select.Option>
-                            <Select.Option value="rejected">Rejected</Select.Option>
                         </Select>
-                    </Col>
-                    <Col xs={12} md={24} lg={4}>
-                        <div className="flex items-center justify-end gap-2">
-                            <Text type="secondary" style={{ fontSize: '14px' }}>
-                                Showing {filteredBookings.length} of {bookings.length}
-                            </Text>
-                        </div>
                     </Col>
                 </Row>
             </Card>
 
             {/* Bookings Table */}
-            <Card
-                style={{
-                    borderRadius: '12px',
-                    border: '1px solid #f0f0f0',
-                }}
-            >
+            <Card>
                 <Table
                     columns={columns}
                     dataSource={filteredBookings}
@@ -519,7 +358,7 @@ export default function BookingsPage() {
                     rowKey="_id"
                     pagination={{
                         pageSize: 10,
-                        showTotal: (total) => `Total ${total} bookings`,
+                        showTotal: (total) => `${total} bookings`,
                         showSizeChanger: true,
                     }}
                 />
@@ -527,84 +366,42 @@ export default function BookingsPage() {
 
             {/* View Modal */}
             <Modal
-                title={<div style={{ fontSize: '18px', fontWeight: 600 }}>Booking Details</div>}
+                title="Booking Details"
                 open={viewModalOpen}
-                onCancel={() => setViewModalOpen(false)}
-                footer={[
-                    <Button key="close" size="large" onClick={() => setViewModalOpen(false)} style={{ borderRadius: '8px' }}>
-                        Close
-                    </Button>,
-                ]}
+                onCancel={() => {
+                    setViewModalOpen(false);
+                    setSelectedBooking(null);
+                }}
+                footer={null}
                 width={600}
             >
                 {selectedBooking && (
-                    <div className="space-y-4" style={{ marginTop: '20px' }}>
+                    <div className="space-y-4">
                         <div>
-                            <Text type="secondary">Service/Property</Text>
+                            <Text type="secondary">Service</Text>
                             <div className="font-medium">
-                                {selectedBooking.serviceId && typeof selectedBooking.serviceId === 'object'
-                                    ? selectedBooking.serviceId.title
-                                    : selectedBooking.serviceAddress
-                                        ? 'Property Viewing'
-                                        : 'N/A'}
-                            </div>
-                            {selectedBooking.serviceAddress && (
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {selectedBooking.serviceAddress}
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <Text type="secondary">Customer</Text>
-                            <div className="font-medium">
-                                {selectedBooking.userId && typeof selectedBooking.userId === 'object'
-                                    ? selectedBooking.userId.name
+                                {typeof selectedBooking.serviceId === 'object'
+                                    ? selectedBooking.serviceId?.title
                                     : 'N/A'}
                             </div>
                         </div>
                         <div>
                             <Text type="secondary">Scheduled Date</Text>
-                            <div className="font-medium">
-                                {new Date(selectedBooking.scheduledDate).toLocaleDateString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </div>
+                            <div>{new Date(selectedBooking.scheduledDate).toLocaleString()}</div>
                         </div>
                         <div>
                             <Text type="secondary">Duration</Text>
-                            <div className="font-medium">{selectedBooking.duration} {selectedBooking.duration === 1 ? 'hour' : 'hours'}</div>
+                            <div>{selectedBooking.duration} hours</div>
                         </div>
-                        <div>
-                            <Text type="secondary">Contact Phone</Text>
-                            <div className="font-medium">{selectedBooking.contactPhone}</div>
-                        </div>
-                        {selectedBooking.serviceLocation && (
-                            <div>
-                                <Text type="secondary">Service Location</Text>
-                                <div className="font-medium">{selectedBooking.serviceLocation}</div>
-                            </div>
-                        )}
-                        {selectedBooking.serviceAddress && (
-                            <div>
-                                <Text type="secondary">Service Address</Text>
-                                <div className="font-medium">{selectedBooking.serviceAddress}</div>
-                            </div>
-                        )}
                         <div>
                             <Text type="secondary">Total Price</Text>
-                            <div className="font-medium text-lg">
-                                ${selectedBooking.totalPrice.toLocaleString()}
-                            </div>
+                            <div>${selectedBooking.totalPrice?.toLocaleString()}</div>
                         </div>
                         <div>
                             <Text type="secondary">Status</Text>
                             <div>
                                 <Tag color={getStatusColor(selectedBooking.status)}>
-                                    {getStatusLabel(selectedBooking.status)}
+                                    {selectedBooking.status.toUpperCase()}
                                 </Tag>
                             </div>
                         </div>
@@ -612,14 +409,14 @@ export default function BookingsPage() {
                             <Text type="secondary">Payment Status</Text>
                             <div>
                                 <Tag color={getPaymentStatusColor(selectedBooking.paymentStatus)}>
-                                    {formatLabel(selectedBooking.paymentStatus as string)}
+                                    {selectedBooking.paymentStatus?.toUpperCase() || 'N/A'}
                                 </Tag>
                             </div>
                         </div>
                         {selectedBooking.notes && (
                             <div>
                                 <Text type="secondary">Notes</Text>
-                                <div className="font-medium">{selectedBooking.notes}</div>
+                                <div>{selectedBooking.notes}</div>
                             </div>
                         )}
                     </div>
@@ -628,55 +425,49 @@ export default function BookingsPage() {
 
             {/* Edit Modal */}
             <Modal
-                title={<div style={{ fontSize: '18px', fontWeight: 600 }}>Edit Booking</div>}
+                title="Edit Booking"
                 open={editModalOpen}
-                onCancel={() => setEditModalOpen(false)}
-                width={600}
-                footer={[
-                    <Button key="cancel" onClick={() => setEditModalOpen(false)} style={{ borderRadius: '8px' }}>
-                        Cancel
-                    </Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        loading={editLoading}
-                        onClick={() => form.submit()}
-                        style={{ borderRadius: '8px' }}
-                    >
-                        Save Changes
-                    </Button>,
-                ]}
+                onOk={() => form.submit()}
+                onCancel={() => {
+                    setEditModalOpen(false);
+                    form.resetFields();
+                    setSelectedBooking(null);
+                }}
+                confirmLoading={editLoading}
             >
-                {selectedBooking && (
-                    <Spin spinning={editLoading}>
-                        <Form
-                            form={form}
-                            layout="vertical"
-                            onFinish={handleEditSubmit}
-                            style={{ marginTop: '20px' }}
-                        >
-                            <Form.Item label="Scheduled Date" name="scheduledDate" rules={[{ required: true }]}>
-                                <DatePicker showTime style={{ width: '100%' }} />
-                            </Form.Item>
-                            <Form.Item label="Duration (hours)" name="duration" rules={[{ required: true }]}>
-                                <InputNumber min={1} style={{ width: '100%' }} />
-                            </Form.Item>
-                            <Form.Item label="Contact Phone" name="contactPhone" rules={[{ required: true }]}>
-                                <Input />
-                            </Form.Item>
-                            <Form.Item label="Service Location" name="serviceLocation">
-                                <Input />
-                            </Form.Item>
-                            <Form.Item label="Service Address" name="serviceAddress">
-                                <Input />
-                            </Form.Item>
-                            <Form.Item label="Notes" name="notes">
-                                <TextArea rows={3} />
-                            </Form.Item>
-                        </Form>
-                    </Spin>
-                )}
+                <Form form={form} layout="vertical" onFinish={handleUpdateBooking}>
+                    <Form.Item name="scheduledDate" label="Scheduled Date">
+                        <DatePicker showTime style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="duration" label="Duration (hours)">
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="serviceLocation" label="Service Location">
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="serviceAddress" label="Service Address">
+                        <TextArea rows={2} />
+                    </Form.Item>
+                    <Form.Item name="notes" label="Notes">
+                        <TextArea rows={3} />
+                    </Form.Item>
+                </Form>
             </Modal>
         </div>
+    );
+}
+
+export default function BookingsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <BookingsPageContent />
+        </Suspense>
     );
 }

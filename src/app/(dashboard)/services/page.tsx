@@ -1,109 +1,162 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
+import Statistic from 'antd/es/statistic';
 import Input from 'antd/es/input';
 import Select from 'antd/es/select';
-import Tag from 'antd/es/tag';
-import Descriptions from 'antd/es/descriptions';
-import Image from 'antd/es/image';
-import Space from 'antd/es/space';
+import Tabs from 'antd/es/tabs';
+import Modal from 'antd/es/modal';
 import {
     PlusOutlined,
     ToolOutlined,
     CheckCircleOutlined,
     ClockCircleOutlined,
-    StarOutlined,
     SearchOutlined,
 } from '@ant-design/icons';
 import { ServicesTable } from '@/components/dashboard/ServicesTable';
-import { ServiceForm } from '@/components/dashboard/ServiceForm';
 import type { Service } from '@/types/dashboard';
 import { servicesApi } from '@/services/api/services.api';
-import { mediaApi } from '@/services/api/media.api';
-import Modal from 'antd/es/modal';
-import message from 'antd/es/message';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
-import Result from 'antd/es/result';
-import Statistic from 'antd/es/statistic';
+import {
+    canCreateService,
+    canModerateServices,
+    isHomeSeeker,
+    isServiceProvider,
+    getDefaultServiceView,
+    getDefaultServiceTab,
+    savedServicesManager,
+    type ServiceView,
+    type ServiceTab,
+} from '@/lib/services-utils';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { TextArea } = Input;
 
-export default function ServicesPage() {
+function ServicesPageContent() {
     const { user } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Query params
+    const viewParam = (searchParams.get('view') as ServiceView) || null;
+    const tabParam = (searchParams.get('tab') as ServiceTab) || null;
+
+    // State
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-    const [editingService, setEditingService] = useState<Service | null>(null);
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
-    const [submitting, setSubmitting] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [savedIds, setSavedIds] = useState<string[]>([]);
 
-    // Check if user has access to this page
-    const hasAccess = user?.role === 'service_provider' || user?.role === 'admin';
+    // Determine current view/tab based on role and query params
+    const isHS = user?.role && isHomeSeeker(user.role);
+    const isSP = user?.role && isServiceProvider(user.role);
     const isAdmin = user?.role === 'admin';
 
+    // For home_seekers: use tab, for others: use view
+    const currentTab = isHS ? (tabParam || getDefaultServiceTab()) : 'active';
+    const currentView = !isHS ? (viewParam || getDefaultServiceView(user?.role || 'home_seeker')) : 'all';
+
+    // Fetch services on mount and when view/tab changes
     useEffect(() => {
-        if (hasAccess) {
-            fetchServices();
-        }
-    }, [hasAccess]);
-
-    const fetchServices = async () => {
-        try {
-            setLoading(true);
-            let allServices: Service[] = [];
-
-            // Admin: Fetch ALL services with pagination
-            if (isAdmin) {
-                let currentPage = 1;
-                let hasMore = true;
-
-                while (hasMore) {
-                    const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
-
-                    // Handle both response formats
-                    let pageData: Service[] = [];
-                    let pagination: any = null;
-
-                    if (Array.isArray(response?.data)) {
-                        pageData = response.data as Service[];
-                    } else if (response?.data?.data) {
-                        pageData = response.data.data || [];
-                        pagination = response.data.pagination;
-                    }
-
-                    allServices = [...allServices, ...pageData];
-
-                    if (!pagination || currentPage >= pagination.totalPages) {
-                        hasMore = false;
-                        continue;
-                    }
-                    currentPage++;
-                }
-            } else {
-                // Service Provider: Fetch only their own services
-                const response = await servicesApi.getMyServices();
-                allServices = Array.isArray(response.data) ? response.data : [];
+        if (user?.role) {
+            // Handle default redirects
+            if (isHS && !tabParam) {
+                router.replace(`/services?tab=${getDefaultServiceTab()}`);
+                return;
+            }
+            if (!isHS && !viewParam) {
+                const defaultView = getDefaultServiceView(user.role);
+                router.replace(`/services?view=${defaultView}`);
+                return;
             }
 
-            setServices(allServices);
-            console.log(`Fetched ${allServices.length} services`);
+            fetchServices();
+        }
+    }, [user, currentView, currentTab]);
+
+    // Load saved services for home_seekers
+    useEffect(() => {
+        if (isHS) {
+            setSavedIds(savedServicesManager.getSavedIds());
+        }
+    }, [isHS]);
+
+    const fetchServices = async () => {
+        if (!user?.role) return;
+
+        try {
+            setLoading(true);
+            let fetchedServices: Service[] = [];
+
+            if (isHS) {
+                // Home seekers: fetch verified/active services only
+                const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                fetchedServices = allServices.filter((s: Service) =>
+                    s.verificationStatus === 'verified' && s.status === 'active'
+                );
+            } else if (isAdmin) {
+                // Admin: fetch based on view
+                if (currentView === 'all') {
+                    // Fetch all services with pagination
+                    let currentPage = 1;
+                    let hasMore = true;
+                    const allServices: Service[] = [];
+
+                    while (hasMore) {
+                        const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
+                        const pageData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                        allServices.push(...pageData);
+
+                        const pagination = response.data?.pagination;
+                        if (!pagination || currentPage >= pagination.totalPages) {
+                            hasMore = false;
+                        } else {
+                            currentPage++;
+                        }
+                    }
+                    fetchedServices = allServices;
+                } else {
+                    // Admin viewing "mine" or "pending" - fallback to all
+                    const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                }
+            } else if (isSP) {
+                // Service Providers: fetch based on view
+                if (currentView === 'mine') {
+                    const response = await servicesApi.getMyServices();
+                    fetchedServices = Array.isArray(response.data) ? response.data : [];
+                } else if (currentView === 'all') {
+                    // Browse all verified services
+                    const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                    const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                    fetchedServices = allServices.filter((s: Service) =>
+                        s.verificationStatus === 'verified' && s.status === 'active'
+                    );
+                } else if (currentView === 'pending') {
+                    const response = await servicesApi.getMyServices();
+                    const myServices = Array.isArray(response.data) ? response.data : [];
+                    fetchedServices = myServices.filter((s: Service) => s.verificationStatus === 'pending');
+                }
+            }
+
+            setServices(fetchedServices);
         } catch (error: any) {
             console.error('Failed to fetch services:', error);
             if (error.response?.status !== 404) {
@@ -115,119 +168,65 @@ export default function ServicesPage() {
         }
     };
 
+    // Filter services for display
+    const filteredServices = services.filter(service => {
+        // Home seeker: filter by tab (active vs saved)
+        if (isHS && currentTab === 'saved') {
+            if (!savedIds.includes(service._id)) return false;
+        }
+
+        // Search filter
+        if (searchText) {
+            const search = searchText.toLowerCase();
+            const matchesTitle = service.title?.toLowerCase().includes(search);
+            const matchesDescription = service.description?.toLowerCase().includes(search);
+            if (!matchesTitle && !matchesDescription) return false;
+        }
+
+        // Status filter
+        if (statusFilter !== 'all' && service.status !== statusFilter) return false;
+
+        // Category filter
+        if (categoryFilter !== 'all' && service.category !== categoryFilter) return false;
+
+        return true;
+    });
+
+    // Calculate stats (only for view=mine)
+    const stats = {
+        total: services.length,
+        verified: services.filter(s => s.verificationStatus === 'verified').length,
+        pending: services.filter(s => s.verificationStatus === 'pending').length,
+        rejected: services.filter(s => s.verificationStatus === 'rejected').length,
+    };
+
+    // Handlers
     const handleDelete = async (service: Service) => {
-        try {
-            await servicesApi.delete(service._id);
-            showToast.success('Service deleted successfully');
-            fetchServices();
-        } catch (error: any) {
-            showToast.error(error.response?.data?.message || 'Failed to delete service');
-        }
-    };
-
-    const handleAddService = () => {
-        setEditingService(null);
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (service: Service) => {
-        setEditingService(service);
-        setIsModalOpen(true);
-    };
-
-    const handleSubmit = async (values: Partial<Service>, files: File[]) => {
-        try {
-            setSubmitting(true);
-
-            if (editingService) {
-                // For editing, update the service
-                const updateData = { ...values };
-                // If service was rejected, change verificationStatus to pending for resubmission
-                if (editingService.verificationStatus === 'rejected') {
-                    updateData.verificationStatus = 'pending';
-                    await servicesApi.update(editingService._id, updateData as any);
-                    showToast.success('Service updated and resubmitted for approval');
-                } else {
-                    await servicesApi.update(editingService._id, updateData as any);
-                    showToast.success('Service updated successfully');
+        Modal.confirm({
+            title: 'Delete Service',
+            content: 'Are you sure you want to delete this service?',
+            okText: 'Delete',
+            okType: 'danger',
+            onOk: async () => {
+                try {
+                    await servicesApi.delete(service._id);
+                    showToast.success('Service deleted successfully');
+                    fetchServices();
+                } catch (error) {
+                    showToast.error('Failed to delete service');
                 }
-            } else {
-                // Step 1: Create service without images
-                const response = await servicesApi.create(values as any);
-                const createdService = response.data;
-
-                // Step 2: Upload images via backend API to Digital Ocean Spaces
-                let imageUrls: string[] = [];
-                if (files.length > 0) {
-                    try {
-                        // uploadedMedia is MediaResponse[] directly
-                        const uploadedMedia = await mediaApi.uploadMultiple(
-                            files,
-                            'services',
-                            createdService._id
-                        );
-                        imageUrls = uploadedMedia.map(media => media.url);
-                        console.log('✅ Images uploaded successfully:', imageUrls);
-                    } catch (uploadError) {
-                        console.error('Failed to upload images:', uploadError);
-                        showToast.warning('Service created but image upload failed. You can add images later.');
-                    }
-                }
-
-                // Step 3: Update service with image URLs if any were uploaded
-                if (imageUrls.length > 0) {
-                    await servicesApi.update(createdService._id, { images: imageUrls } as any);
-                }
-
-                showToast.success('Service created successfully');
-            }
-
-            setIsModalOpen(false);
-            setEditingService(null); // Reset editing service
-            fetchServices();
-        } catch (error: any) {
-            showToast.error(error.response?.data?.message || 'Failed to save service');
-        } finally {
-            setSubmitting(false);
-        }
+            },
+        });
     };
 
-    const handleCancel = () => {
-        setIsModalOpen(false);
-        setEditingService(null);
-    };
-
-    const handleApproveClick = async (service: Service) => {
+    const handleVerify = async (service: Service) => {
         try {
-            // Fetch fresh service data to avoid stale state
-            const response = await servicesApi.getById(service._id);
-            setSelectedService(response.data);
-            setIsViewModalOpen(true);
-        } catch (error: any) {
-            message.error('Failed to load service details');
-        }
-    };
-
-    const handleApproveConfirm = async () => {
-        if (!selectedService) return;
-
-        // Check if service is already verified
-        if (selectedService.verificationStatus === 'verified') {
-            message.warning('This service is already verified');
-            setIsViewModalOpen(false);
+            setActionLoading(service._id);
+            await servicesApi.verify(service._id);
+            showToast.success('Service verified successfully');
             fetchServices();
-            return;
-        }
-
-        try {
-            setActionLoading(selectedService._id);
-            await servicesApi.verify(selectedService._id);
-            message.success('Service approved successfully');
-            setIsViewModalOpen(false);
-            setSelectedService(null);
-            fetchServices();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || 'Failed to approve service');
+        } catch (error) {
+            showToast.error('Failed to verify service');
         } finally {
             setActionLoading(null);
         }
@@ -235,446 +234,218 @@ export default function ServicesPage() {
 
     const handleRejectClick = (service: Service) => {
         setSelectedService(service);
-        setRejectionReason('');
         setIsRejectModalOpen(true);
     };
 
     const handleRejectSubmit = async () => {
-        if (!selectedService) return;
-
-        if (!rejectionReason.trim()) {
-            message.error('Please provide a rejection reason');
+        if (!selectedService || !rejectionReason.trim()) {
+            showToast.error('Please provide a rejection reason');
             return;
         }
 
         try {
             setActionLoading(selectedService._id);
             await servicesApi.reject(selectedService._id, rejectionReason);
-            message.success('Service rejected successfully. An email has been sent to the creator.');
+            showToast.success('Service rejected');
             setIsRejectModalOpen(false);
-            setIsViewModalOpen(false);
-            setRejectionReason('');
             setSelectedService(null);
+            setRejectionReason('');
             fetchServices();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || 'Failed to reject service');
+        } catch (error) {
+            showToast.error('Failed to reject service');
         } finally {
             setActionLoading(null);
         }
     };
 
-    // Filter services
-    const filteredServices = services.filter(service => {
-        const matchesSearch = service.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-            service.description?.toLowerCase().includes(searchText.toLowerCase());
+    const handleSaveToggle = (serviceId: string) => {
+        const isSaved = savedServicesManager.toggle(serviceId);
+        setSavedIds(savedServicesManager.getSavedIds());
+        showToast.success(isSaved ? 'Service saved' : 'Service unsaved');
+    };
 
-        // Match status filter - check both status and verificationStatus
-        if (statusFilter === 'all') {
-            return matchesSearch && (categoryFilter === 'all' || service.category === categoryFilter);
+    const handleTabChange = (key: string) => {
+        if (isHS) {
+            router.push(`/services?tab=${key}`);
+        } else {
+            router.push(`/services?view=${key}`);
         }
+    };
 
-        if (statusFilter === 'pending') {
-            const matchesPending = service.verificationStatus === 'pending' || service.status === 'pending';
-            return matchesSearch && matchesPending && (categoryFilter === 'all' || service.category === categoryFilter);
-        }
-
-        if (statusFilter === 'verified') {
-            const matchesVerified = service.verificationStatus === 'verified';
-            return matchesSearch && matchesVerified && (categoryFilter === 'all' || service.category === categoryFilter);
-        }
-
-        const matchesStatus = service.status === statusFilter;
-        const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
-        return matchesSearch && matchesStatus && matchesCategory;
-    });
-
-    const stats = [
-        {
-            title: 'Total Services',
-            value: services.length,
-            icon: <ToolOutlined />,
-            color: '#4facfe',
-            bgColor: '#4facfe15',
-        },
-        {
-            title: 'Verified',
-            value: services.filter(s => s.verificationStatus === 'verified').length,
-            icon: <CheckCircleOutlined />,
-            color: '#43e97b',
-            bgColor: '#43e97b15',
-        },
-        {
-            title: 'Pending',
-            value: services.filter(s => s.verificationStatus === 'pending').length,
-            icon: <ClockCircleOutlined />,
-            color: '#ffa94d',
-            bgColor: '#ffa94d15',
-        },
-        {
-            title: 'Avg Rating',
-            value: services.length > 0
-                ? (services.reduce((sum, s) => sum + (s.rating || 0), 0) / services.length).toFixed(1)
-                : '0.0',
-            icon: <StarOutlined />,
-            color: '#f093fb',
-            bgColor: '#f093fb15',
-        },
-    ];
-
-    // Show access denied for unauthorized users
-    if (!hasAccess) {
-        return (
-            <Result
-                status="403"
-                title="Access Denied"
-                subTitle="You don't have permission to access this page."
-                extra={
-                    <Button type="primary" onClick={() => router.push('/dashboard')}>
-                        Go to Dashboard
-                    </Button>
-                }
-            />
-        );
+    // Render: No access
+    if (!user) {
+        return null; // Auth provider will redirect
     }
 
     return (
         <div className="space-y-6">
-            {/* Modern Header */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <Title level={2} className="mb-1" style={{
-                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent'
-                    }}>
-                        Services
-                    </Title>
-                    <Text type="secondary">Manage property services and providers</Text>
+                    <Title level={2} className="mb-1">Services</Title>
+                    <Text type="secondary">
+                        {isHS && 'Browse available services'}
+                        {isSP && currentView === 'mine' && 'Manage your service listings'}
+                        {isSP && currentView === 'all' && 'Browse all services'}
+                        {isSP && currentView === 'pending' && 'Services awaiting verification'}
+                        {isAdmin && 'Manage all services'}
+                    </Text>
                 </div>
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    size="large"
-                    onClick={handleAddService}
-                    style={{
-                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        height: '44px',
-                        padding: '0 24px',
-                    }}
-                >
-                    Add Service
-                </Button>
+                {canCreateService(user.role) && (
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => router.push('/services/create')}
+                        size="large"
+                    >
+                        Create Service
+                    </Button>
+                )}
             </div>
 
-            {/* Compact Statistics */}
-            <Row gutter={[16, 16]}>
-                {stats.map((stat, index) => (
-                    <Col xs={12} sm={12} lg={6} key={index}>
-                        <Card
-                            className="hover:shadow-lg transition-all duration-300"
-                            style={{
-                                borderRadius: '12px',
-                                border: '1px solid #f0f0f0',
-                            }}
-                            styles={{ body: { padding: '20px' } }}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                                        {stat.title}
-                                    </Text>
-                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: stat.color }}>
-                                        {stat.value}
-                                    </div>
-                                </div>
-                                <div
-                                    style={{
-                                        width: '48px',
-                                        height: '48px',
-                                        borderRadius: '12px',
-                                        backgroundColor: stat.bgColor,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '24px',
-                                        color: stat.color,
-                                    }}
-                                >
-                                    {stat.icon}
-                                </div>
-                            </div>
+            {/* Tabs */}
+            {isHS ? (
+                <Tabs activeKey={currentTab} onChange={handleTabChange}>
+                    <Tabs.TabPane tab="Browse Services" key="active" />
+                    <Tabs.TabPane tab={`Saved (${savedIds.length})`} key="saved" />
+                </Tabs>
+            ) : (isSP || isAdmin) ? (
+                <Tabs activeKey={currentView} onChange={handleTabChange}>
+                    {isSP && <Tabs.TabPane tab="My Services" key="mine" />}
+                    {(isSP || isAdmin) && <Tabs.TabPane tab="All Services" key="all" />}
+                    {isSP && <Tabs.TabPane tab="Pending Verification" key="pending" />}
+                </Tabs>
+            ) : null}
+
+            {/* Contextual Stats (only for view=mine) */}
+            {!isHS && currentView === 'mine' && (
+                <Row gutter={[16, 16]}>
+                    <Col xs={12} sm={8} lg={6}>
+                        <Card>
+                            <Statistic
+                                title="Total Services"
+                                value={stats.total}
+                                prefix={<ToolOutlined />}
+                            />
                         </Card>
                     </Col>
-                ))}
-            </Row>
+                    <Col xs={12} sm={8} lg={6}>
+                        <Card>
+                            <Statistic
+                                title="Verified"
+                                value={stats.verified}
+                                valueStyle={{ color: '#52c41a' }}
+                                prefix={<CheckCircleOutlined />}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={12} sm={8} lg={6}>
+                        <Card>
+                            <Statistic
+                                title="Pending"
+                                value={stats.pending}
+                                valueStyle={{ color: '#faad14' }}
+                                prefix={<ClockCircleOutlined />}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
+            )}
 
             {/* Search and Filters */}
-            <Card
-                style={{
-                    borderRadius: '12px',
-                    border: '1px solid #f0f0f0',
-                }}
-                styles={{ body: { padding: '20px' } }}
-            >
+            <Card>
                 <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12} lg={10}>
+                    <Col xs={24} md={12}>
                         <Search
-                            placeholder="Search services by name or description..."
+                            placeholder="Search by title or description..."
                             allowClear
                             size="large"
-                            prefix={<SearchOutlined style={{ color: '#4facfe' }} />}
+                            prefix={<SearchOutlined />}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
-                            style={{
-                                borderRadius: '8px',
-                            }}
                         />
                     </Col>
-                    <Col xs={12} md={6} lg={4}>
+                    <Col xs={12} md={6}>
                         <Select
                             size="large"
                             value={statusFilter}
                             onChange={setStatusFilter}
-                            style={{ width: '100%', borderRadius: '8px' }}
-                            placeholder="Status"
+                            style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="pending">Pending Approval</Select.Option>
-                            <Select.Option value="verified">Verified</Select.Option>
-                            <Select.Option value="rejected">Rejected</Select.Option>
                             <Select.Option value="active">Active</Select.Option>
                             <Select.Option value="inactive">Inactive</Select.Option>
                         </Select>
                     </Col>
-                    <Col xs={12} md={6} lg={4}>
+                    <Col xs={12} md={6}>
                         <Select
                             size="large"
                             value={categoryFilter}
                             onChange={setCategoryFilter}
-                            style={{ width: '100%', borderRadius: '8px' }}
-                            placeholder="Category"
+                            style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Categories</Select.Option>
-                            <Select.Option value="maintenance">Maintenance</Select.Option>
-                            <Select.Option value="cleaning">Cleaning</Select.Option>
-                            <Select.Option value="security">Security</Select.Option>
-                            <Select.Option value="moving">Moving</Select.Option>
-                            <Select.Option value="landscaping">Landscaping</Select.Option>
-                            <Select.Option value="pest_control">Pest Control</Select.Option>
-                            <Select.Option value="painting">Painting</Select.Option>
-                            <Select.Option value="other">Other</Select.Option>
+                            <Select.Option value="Plumbing">Plumbing</Select.Option>
+                            <Select.Option value="Electrical">Electrical</Select.Option>
+                            <Select.Option value="Cleaning">Cleaning</Select.Option>
+                            <Select.Option value="Moving">Moving</Select.Option>
                         </Select>
-                    </Col>
-                    <Col xs={24} md={24} lg={6}>
-                        <div className="flex items-center justify-end gap-2">
-                            <Text type="secondary" style={{ fontSize: '14px' }}>
-                                Showing {filteredServices.length} of {services.length} services
-                            </Text>
-                        </div>
                     </Col>
                 </Row>
             </Card>
 
             {/* Services Table */}
-            <Card
-                style={{
-                    borderRadius: '12px',
-                    border: '1px solid #f0f0f0',
-                }}
-            >
+            <Card>
                 <ServicesTable
                     services={filteredServices}
                     loading={loading}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onApprove={isAdmin ? handleApproveClick : undefined}
-                    onReject={isAdmin ? handleRejectClick : undefined}
+                    onEdit={(s) => router.push(`/services/${s._id}`)}
+                    onDelete={canCreateService(user.role) ? handleDelete : undefined}
+                    onVerify={canModerateServices(user.role) ? handleVerify : undefined}
+                    onReject={canModerateServices(user.role) ? handleRejectClick : undefined}
+                    onSaveToggle={isHS ? handleSaveToggle : undefined}
+                    savedIds={isHS ? savedIds : undefined}
                     approvingId={actionLoading}
                 />
             </Card>
 
-            {/* Add/Edit Service Modal */}
-            <Modal
-                title={editingService ? 'Edit Service' : 'Add New Service'}
-                open={isModalOpen}
-                onCancel={handleCancel}
-                footer={null}
-                width={800}
-                styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
-            >
-                <ServiceForm
-                    initialValues={editingService || undefined}
-                    onSubmit={handleSubmit}
-                    onCancel={handleCancel}
-                    loading={submitting}
-                />
-            </Modal>
-
-            {/* View Service Details Modal */}
-            {selectedService && (
-                <Modal
-                    title={
-                        <div style={{ fontSize: '18px', fontWeight: 600 }}>
-                            Service Details
-                        </div>
-                    }
-                    open={isViewModalOpen}
-                    onCancel={() => setIsViewModalOpen(false)}
-                    footer={[
-                        <Button
-                            key="close"
-                            size="large"
-                            onClick={() => setIsViewModalOpen(false)}
-                            style={{ borderRadius: '8px' }}
-                        >
-                            Close
-                        </Button>,
-                        selectedService?.verificationStatus === 'pending' && (
-                            <Button
-                                key="reject"
-                                size="large"
-                                danger
-                                onClick={() => {
-                                    setIsViewModalOpen(false);
-                                    setRejectionReason('');
-                                    setIsRejectModalOpen(true);
-                                }}
-                                style={{ borderRadius: '8px' }}
-                            >
-                                Reject
-                            </Button>
-                        ),
-                        selectedService?.verificationStatus === 'pending' && (
-                            <Button
-                                key="approve"
-                                size="large"
-                                type="primary"
-                                onClick={handleApproveConfirm}
-                                loading={actionLoading === selectedService?._id}
-                                style={{
-                                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                                    border: 'none',
-                                    borderRadius: '8px'
-                                }}
-                            >
-                                Approve
-                            </Button>
-                        ),
-                    ]}
-                    width={800}
-                >
-                    <Descriptions bordered column={2} style={{ marginTop: '20px' }}>
-                        <Descriptions.Item label="Service Name" span={2}>
-                            <Text strong>{selectedService.title}</Text>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Category">{selectedService.category}</Descriptions.Item>
-                        <Descriptions.Item label="Status">
-                            <Tag color={
-                                selectedService.verificationStatus === 'verified' ? 'green' :
-                                selectedService.verificationStatus === 'rejected' ? 'red' : 'orange'
-                            }>
-                                {selectedService.verificationStatus
-                                    ? selectedService.verificationStatus.charAt(0).toUpperCase() + selectedService.verificationStatus.slice(1)
-                                    : 'Pending'}
-                            </Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Location" span={2}>{selectedService.location}</Descriptions.Item>
-                        <Descriptions.Item label="Price">
-                            <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
-                                ${selectedService.price?.toLocaleString()} / {selectedService.priceUnit || 'hour'}
-                            </Text>
-                        </Descriptions.Item>
-                        {selectedService.duration && (
-                            <Descriptions.Item label="Duration">{selectedService.duration}</Descriptions.Item>
-                        )}
-                        {selectedService.businessName && (
-                            <Descriptions.Item label="Business Name" span={2}>{selectedService.businessName}</Descriptions.Item>
-                        )}
-                        {selectedService.experience !== undefined && (
-                            <Descriptions.Item label="Experience">{selectedService.experience} years</Descriptions.Item>
-                        )}
-                        {selectedService.verificationNumber && (
-                            <Descriptions.Item label="License Number">{selectedService.verificationNumber}</Descriptions.Item>
-                        )}
-                        {selectedService.phoneNumber && (
-                            <Descriptions.Item label="Phone">{selectedService.phoneNumber}</Descriptions.Item>
-                        )}
-                        {selectedService.whatsappNumber && (
-                            <Descriptions.Item label="WhatsApp">{selectedService.whatsappNumber}</Descriptions.Item>
-                        )}
-                        {selectedService.rating !== undefined && (
-                            <Descriptions.Item label="Rating">
-                                {selectedService.rating} ⭐ ({selectedService.reviewCount || 0} reviews)
-                            </Descriptions.Item>
-                        )}
-                        {selectedService.bookings !== undefined && (
-                            <Descriptions.Item label="Total Bookings">{selectedService.bookings}</Descriptions.Item>
-                        )}
-                        <Descriptions.Item label="Description" span={2}>
-                            {selectedService.description}
-                        </Descriptions.Item>
-
-                        {/* Images */}
-                        {selectedService.images && selectedService.images.length > 0 ? (
-                            <Descriptions.Item label="Images" span={2}>
-                                <Image.PreviewGroup>
-                                    <Space wrap style={{ marginTop: '8px' }}>
-                                        {selectedService.images.map((img, idx) => (
-                                            <Image
-                                                key={idx}
-                                                src={img}
-                                                alt={`Service ${idx + 1}`}
-                                                width={100}
-                                                height={100}
-                                                style={{
-                                                    objectFit: 'cover',
-                                                    borderRadius: '8px',
-                                                }}
-                                                preview={{
-                                                    src: img,
-                                                }}
-                                            />
-                                        ))}
-                                    </Space>
-                                </Image.PreviewGroup>
-                            </Descriptions.Item>
-                        ) : (
-                            <Descriptions.Item label="Images" span={2}>
-                                <Text type="secondary">No images uploaded</Text>
-                            </Descriptions.Item>
-                        )}
-                    </Descriptions>
-                </Modal>
-            )}
-
-            {/* Reject Service Modal */}
+            {/* Rejection Modal (Admin Only) */}
             <Modal
                 title="Reject Service"
                 open={isRejectModalOpen}
+                onOk={handleRejectSubmit}
                 onCancel={() => {
                     setIsRejectModalOpen(false);
+                    setSelectedService(null);
                     setRejectionReason('');
                 }}
-                onOk={handleRejectSubmit}
-                okText="Reject"
-                okButtonProps={{ danger: true, loading: actionLoading === selectedService?._id }}
+                confirmLoading={actionLoading === selectedService?._id}
             >
-                <div style={{ marginTop: '16px' }}>
-                    <Text strong>Rejection Reason:</Text>
-                    <Text type="secondary" style={{ display: 'block', marginTop: '4px', marginBottom: '8px' }}>
-                        This reason will be sent to the service provider via email.
-                    </Text>
-                    <TextArea
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Please provide a clear reason for rejecting this service..."
-                        rows={4}
-                        style={{ marginTop: '8px' }}
-                    />
+                <div style={{ marginBottom: 16 }}>
+                    <Text>Service: <strong>{selectedService?.title}</strong></Text>
                 </div>
+                <TextArea
+                    rows={4}
+                    placeholder="Enter rejection reason (will be sent to the provider via email)..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                />
             </Modal>
         </div>
+    );
+}
+
+export default function ServicesPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ServicesPageContent />
+        </Suspense>
     );
 }
