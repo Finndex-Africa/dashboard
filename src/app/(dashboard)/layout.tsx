@@ -8,6 +8,7 @@ import Drawer from 'antd/es/drawer';
 import Space from 'antd/es/space';
 import Avatar from 'antd/es/avatar';
 import Button from 'antd/es/button';
+import Input from 'antd/es/input';
 import {
     HomeOutlined,
     AppstoreOutlined,
@@ -21,12 +22,15 @@ import {
     TrophyOutlined,
     MenuOutlined,
     CloseOutlined,
+    SearchOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { designTokens } from '@/config/theme';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { getRoleRedirectPath } from '@/lib/role-redirects';
+
+const { Search } = Input;
 
 const { Header, Content } = Layout;
 
@@ -36,6 +40,7 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
     const { user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -51,6 +56,40 @@ export default function DashboardLayout({
     const handleHomeClick = () => {
         const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
         window.location.href = websiteUrl;
+    };
+
+    const handleSearch = (value: string) => {
+        if (!value.trim()) return;
+
+        const searchQuery = encodeURIComponent(value);
+
+        if (pathname.includes('/properties')) {
+            router.push(`/properties?search=${searchQuery}`);
+            setSearchValue('');
+            return;
+        }
+
+        if (pathname.includes('/services')) {
+            router.push(`/services?search=${searchQuery}`);
+            setSearchValue('');
+            return;
+        }
+
+        if (pathname.includes('/users')) {
+            router.push(`/users?search=${searchQuery}`);
+            setSearchValue('');
+            return;
+        }
+
+        if (pathname.includes('/bookings')) {
+            router.push(`/bookings?search=${searchQuery}`);
+            setSearchValue('');
+            return;
+        }
+
+        // Default to searching properties
+        router.push(`/properties?search=${searchQuery}`);
+        setSearchValue('');
     };
 
     // User dropdown menu items (top-right profile) - role-aware
@@ -204,11 +243,12 @@ export default function DashboardLayout({
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         height: '80px',
+                        gap: '24px',
                     }}
                 >
                     {/* Logo */}
                     <div
-                        className="cursor-pointer flex items-center"
+                        className="cursor-pointer flex items-center flex-shrink-0"
                         onClick={() => {
                             const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
                             router.push(redirectPath);
@@ -221,8 +261,24 @@ export default function DashboardLayout({
                         />
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="flex-1 max-w-xl">
+                        <Search
+                            placeholder="Search properties, services, users..."
+                            allowClear
+                            enterButton={<SearchOutlined />}
+                            size="large"
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            onSearch={handleSearch}
+                            style={{
+                                borderRadius: '24px',
+                            }}
+                        />
+                    </div>
+
                     {/* Right side: Notifications + User Menu */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         {/* Burger Menu Button */}
                         <Button
                             type="text"

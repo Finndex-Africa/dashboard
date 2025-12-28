@@ -77,20 +77,20 @@ function PropertiesPageContent() {
 
     // Fetch properties on mount and when view/tab changes
     useEffect(() => {
-        if (user?.role) {
-            // Handle default redirects
-            if (isHS && !tabParam) {
-                router.replace(`/properties?tab=${getDefaultPropertyTab()}`);
-                return;
-            }
-            if (!isHS && !viewParam) {
-                const defaultView = getDefaultPropertyView(user.role);
-                router.replace(`/properties?view=${defaultView}`);
-                return;
-            }
+        if (!user?.role) return;
 
-            fetchProperties();
+        // Handle default redirects
+        if (isHS && !tabParam) {
+            router.replace(`/properties?tab=${getDefaultPropertyTab()}`);
+            return;
         }
+        if (!isHS && !viewParam) {
+            const defaultView = getDefaultPropertyView(user.role);
+            router.replace(`/properties?view=${defaultView}`);
+            return;
+        }
+
+        fetchProperties();
     }, [user, currentView, currentTab]);
 
     // Load saved properties for home_seekers
@@ -101,19 +101,25 @@ function PropertiesPageContent() {
     }, [isHS]);
 
     const fetchProperties = async () => {
-        if (!user?.role) return;
+        if (!user?.role) {
+            console.log('fetchProperties: No user role');
+            return;
+        }
 
         try {
             setLoading(true);
+            console.log('Fetching properties - Role:', user.role, 'View:', currentView, 'Tab:', currentTab);
             let fetchedProperties: Property[] = [];
 
             if (isHS) {
                 // Home seekers: fetch approved properties only
+                console.log('Fetching as Home Seeker');
                 const response = await propertiesApi.getAll({ page: 1, limit: 1000 });
                 const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
             } else if (isAdmin) {
                 // Admin: fetch based on view
+                console.log('Fetching as Admin, view:', currentView);
                 if (currentView === 'all') {
                     // Fetch all properties with pagination
                     let currentPage = 1;
@@ -140,6 +146,7 @@ function PropertiesPageContent() {
                 }
             } else if (isPC) {
                 // Agents/Landlords: fetch based on view
+                console.log('Fetching as Property Creator, view:', currentView);
                 if (currentView === 'mine') {
                     const response = await propertiesApi.getMyProperties();
                     fetchedProperties = Array.isArray(response.data) ? response.data : [];
@@ -155,12 +162,13 @@ function PropertiesPageContent() {
                 }
             }
 
+            console.log('Fetched properties count:', fetchedProperties.length);
             setProperties(fetchedProperties);
         } catch (error: any) {
             console.error('Failed to fetch properties:', error);
-            if (error.response?.status !== 404) {
-                showToast.error('Failed to load properties');
-            }
+            console.error('Error details:', error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to load properties';
+            showToast.error(errorMsg);
             setProperties([]);
         } finally {
             setLoading(false);
