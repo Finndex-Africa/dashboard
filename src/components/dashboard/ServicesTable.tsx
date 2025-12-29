@@ -75,8 +75,8 @@ export function ServicesTable({
             title: 'Price',
             dataIndex: 'price',
             key: 'price',
-            sorter: (a, b) => a.price - b.price,
-            render: (price) => `$${price.toLocaleString()}`,
+            sorter: (a, b) => (a.price ?? 0) - (b.price ?? 0),
+            render: (price) => price ? `$${price.toLocaleString()}` : '-',
         },
         {
             title: 'Rating',

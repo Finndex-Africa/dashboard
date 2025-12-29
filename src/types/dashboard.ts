@@ -50,7 +50,7 @@ export interface Property {
     propertyType: string;
     location: string;
     price: number;
-    status: 'pending' | 'approved' | 'rejected' | 'rented' | 'archived';
+    status: 'pending' | 'approved' | 'rejected' | 'rented' | 'archived' | 'suspended';
     bedrooms?: number;
     bathrooms?: number;
     rooms?: number;

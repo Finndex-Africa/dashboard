@@ -32,7 +32,7 @@ import { getRoleRedirectPath } from '@/lib/role-redirects';
 
 const { Search } = Input;
 
-const { Header, Content } = Layout;
+const { Header, Content, Sider } = Layout;
 
 export default function DashboardLayout({
     children,
@@ -41,6 +41,7 @@ export default function DashboardLayout({
 }) {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
     const { user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -59,48 +60,43 @@ export default function DashboardLayout({
     };
 
     const handleSearch = (value: string) => {
-        if (!value.trim()) return;
+        if (!value.trim() || isSearching) return;
 
+        setIsSearching(true);
         const searchQuery = encodeURIComponent(value);
+
+        // Clear search value and reset loading state after navigation
+        setTimeout(() => {
+            setSearchValue('');
+            setIsSearching(false);
+        }, 500);
 
         if (pathname.includes('/properties')) {
             router.push(`/properties?search=${searchQuery}`);
-            setSearchValue('');
             return;
         }
 
         if (pathname.includes('/services')) {
             router.push(`/services?search=${searchQuery}`);
-            setSearchValue('');
             return;
         }
 
         if (pathname.includes('/users')) {
             router.push(`/users?search=${searchQuery}`);
-            setSearchValue('');
             return;
         }
 
         if (pathname.includes('/bookings')) {
             router.push(`/bookings?search=${searchQuery}`);
-            setSearchValue('');
             return;
         }
 
         // Default to searching properties
         router.push(`/properties?search=${searchQuery}`);
-        setSearchValue('');
     };
 
-    // User dropdown menu items (top-right profile) - role-aware
+    // User dropdown menu items (top-right profile) - Only profile actions, no navigation
     const userDropdownItems = [
-        // Only show Dashboard for admin
-        ...(user?.role === 'admin' ? [{
-            key: 'dashboard',
-            label: 'Dashboard',
-            icon: <HomeOutlined />,
-            onClick: () => router.push('/dashboard'),
-        }] : []),
         {
             key: 'profile',
             label: 'Profile',
@@ -113,6 +109,7 @@ export default function DashboardLayout({
         {
             key: 'logout',
             label: 'Log out',
+            icon: <LogoutOutlined />,
             onClick: () => handleLogout(),
         },
     ];
@@ -229,26 +226,28 @@ export default function DashboardLayout({
             />
 
             <Layout style={{ minHeight: '100vh' }}>
-                {/* Airbnb-style Header */}
-                <Header
+                {/* Desktop Sidebar - Hidden on mobile (md and below) */}
+                <Sider
+                    width={260}
+                    breakpoint="md"
+                    collapsedWidth={0}
+                    trigger={null}
                     style={{
-                        position: 'sticky',
+                        overflow: 'auto',
+                        height: '100vh',
+                        position: 'fixed',
+                        left: 0,
                         top: 0,
-                        zIndex: 10,
-                        width: '100%',
-                        padding: '0 24px',
+                        bottom: 0,
                         background: '#fff',
-                        borderBottom: '1px solid #ebebeb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        height: '80px',
-                        gap: '24px',
+                        borderRight: '1px solid #ebebeb',
+                        zIndex: 11,
                     }}
+                    className="hidden md:block"
                 >
-                    {/* Logo */}
+                    {/* Sidebar Logo */}
                     <div
-                        className="cursor-pointer flex items-center flex-shrink-0"
+                        className="cursor-pointer flex items-center justify-center py-6 px-4 border-b border-gray-200"
                         onClick={() => {
                             const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
                             router.push(redirectPath);
@@ -261,135 +260,204 @@ export default function DashboardLayout({
                         />
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="flex-1 max-w-xl">
-                        <Search
-                            placeholder="Search properties, services, users..."
-                            allowClear
-                            enterButton={<SearchOutlined />}
-                            size="large"
-                            value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value)}
-                            onSearch={handleSearch}
-                            style={{
-                                borderRadius: '24px',
-                            }}
-                        />
-                    </div>
-
-                    {/* Right side: Notifications + User Menu */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* Burger Menu Button */}
-                        <Button
-                            type="text"
-                            icon={<MenuOutlined style={{ fontSize: '18px' }} />}
-                            onClick={() => setDrawerOpen(true)}
-                            style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '50%',
-                                border: '1px solid #ddd',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        />
-
-                        {/* User Avatar Dropdown */}
-                        <Dropdown menu={{ items: userDropdownItems }} trigger={['click']}>
-                            <div
-                                className="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-full border border-gray-300 hover:shadow-md transition-all"
-                                style={{ height: '42px' }}
-                            >
-                                <MenuOutlined style={{ fontSize: '14px', color: '#717171' }} />
-                                <Avatar
-                                    src={user?.avatar}
-                                    icon={!user?.avatar && <UserOutlined />}
-                                    size={28}
-                                    style={{
-                                        backgroundColor: '#717171',
-                                    }}
-                                />
-                            </div>
-                        </Dropdown>
-                    </div>
-                </Header>
-
-                {/* Airbnb-style Drawer Menu */}
-                <Drawer
-                    title={null}
-                    placement="right"
-                    onClose={() => setDrawerOpen(false)}
-                    open={drawerOpen}
-                    width={320}
-                    closable={false}
-                    styles={{
-                        body: { padding: 0 },
-                        header: { display: 'none' },
-                    }}
-                >
-                    {/* Drawer Header */}
-                    <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Avatar
-                                src={user?.avatar}
-                                icon={!user?.avatar && <UserOutlined />}
-                                size={48}
-                                style={{ backgroundColor: '#6366f1' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: 600, fontSize: '16px' }}>
-                                    {`${user?.firstName || user?.email?.split('@')[0] || 'User'}${user?.lastName ? ' ' + user.lastName : ''}`}
-                                </div>
-                                <div style={{ fontSize: '14px', color: '#717171' }}>
-                                    {user?.role?.replace('_', ' ') || 'User'}
-                                </div>
-                            </div>
-                        </div>
-                        <Button
-                            type="text"
-                            icon={<CloseOutlined />}
-                            onClick={() => setDrawerOpen(false)}
-                        />
-                    </div>
-
-                    {/* Drawer Menu Items */}
+                    {/* Sidebar Menu */}
                     <Menu
                         mode="vertical"
                         selectedKeys={[pathname]}
-                        onClick={({ key }) => {
-                            router.push(key);
-                            setDrawerOpen(false);
-                        }}
+                        onClick={({ key }) => router.push(key)}
                         items={menuItems}
                         style={{
                             border: 'none',
-                            fontSize: '16px',
+                            fontSize: '15px',
+                            paddingTop: '16px',
                         }}
                     />
 
-                    {/* Drawer Footer */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
+                    {/* Sidebar Footer - Logout Button */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
                         <Button
                             block
                             size="large"
                             onClick={handleLogout}
+                            icon={<LogoutOutlined />}
                             style={{
                                 borderRadius: '8px',
                                 fontWeight: 500,
                             }}
                         >
-                            <LogoutOutlined /> Log out
+                            Log out
                         </Button>
                     </div>
-                </Drawer>
+                </Sider>
 
-                {/* Main Content */}
-                <Content style={{ background: '#f7f7f7', minHeight: 'calc(100vh - 80px)' }}>
-                    <div className="max-w-7xl mx-auto px-6 py-8">
-                        {children}
-                    </div>
-                </Content>
+                {/* Main Layout - Adjust margin for sidebar on desktop */}
+                <Layout className="md:ml-[260px]">
+                    {/* Header */}
+                    <Header
+                        style={{
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 10,
+                            width: '100%',
+                            padding: '0 24px',
+                            background: '#fff',
+                            borderBottom: '1px solid #ebebeb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            height: '80px',
+                            gap: '24px',
+                        }}
+                    >
+                        {/* Left side: Logo (mobile only) or empty space for balance */}
+                        <div className="flex items-center flex-shrink-0" style={{ minWidth: '200px' }}>
+                            <div
+                                className="cursor-pointer flex items-center md:hidden"
+                                onClick={() => {
+                                    const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
+                                    router.push(redirectPath);
+                                }}
+                            >
+                                <img
+                                    src="/images/logos/logo1.png"
+                                    alt="Finndex Africa"
+                                    className="h-10 object-contain"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Center: Search Bar */}
+                        <div className="flex-1 flex justify-center items-center">
+                            <div className="w-full max-w-xl" style={{ marginTop: '4px' }}>
+                                <Search
+                                    placeholder="Search properties, services, users..."
+                                    allowClear
+                                    enterButton={<SearchOutlined />}
+                                    size="large"
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
+                                    onSearch={handleSearch}
+                                    loading={isSearching}
+                                    disabled={isSearching}
+                                    style={{
+                                        borderRadius: '24px',
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Right side: Burger Menu (mobile only) + User Menu */}
+                        <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: '200px', justifyContent: 'flex-end' }}>
+                            {/* Burger Menu Button - Show only on mobile */}
+                            <Button
+                                type="text"
+                                icon={<MenuOutlined style={{ fontSize: '18px' }} />}
+                                onClick={() => setDrawerOpen(true)}
+                                className="md:hidden flex items-center justify-center"
+                                style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '50%',
+                                    border: '1px solid #ddd',
+                                }}
+                            />
+
+                            {/* User Avatar Dropdown */}
+                            <Dropdown menu={{ items: userDropdownItems }} trigger={['click']}>
+                                <div
+                                    className="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-full border border-gray-300 hover:shadow-md transition-all"
+                                    style={{ height: '42px' }}
+                                >
+                                    <MenuOutlined style={{ fontSize: '14px', color: '#717171' }} />
+                                    <Avatar
+                                        src={user?.avatar}
+                                        icon={!user?.avatar && <UserOutlined />}
+                                        size={28}
+                                        style={{
+                                            backgroundColor: '#717171',
+                                        }}
+                                    />
+                                </div>
+                            </Dropdown>
+                        </div>
+                    </Header>
+
+                    {/* Mobile Drawer Menu */}
+                    <Drawer
+                        title={null}
+                        placement="right"
+                        onClose={() => setDrawerOpen(false)}
+                        open={drawerOpen}
+                        width={320}
+                        closable={false}
+                        styles={{
+                            body: { padding: 0 },
+                            header: { display: 'none' },
+                        }}
+                    >
+                        {/* Drawer Header */}
+                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Avatar
+                                    src={user?.avatar}
+                                    icon={!user?.avatar && <UserOutlined />}
+                                    size={48}
+                                    style={{ backgroundColor: '#6366f1' }}
+                                />
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: '16px' }}>
+                                        {`${user?.firstName || user?.email?.split('@')[0] || 'User'}${user?.lastName ? ' ' + user.lastName : ''}`}
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#717171' }}>
+                                        {user?.role?.replace('_', ' ') || 'User'}
+                                    </div>
+                                </div>
+                            </div>
+                            <Button
+                                type="text"
+                                icon={<CloseOutlined />}
+                                onClick={() => setDrawerOpen(false)}
+                            />
+                        </div>
+
+                        {/* Drawer Menu Items */}
+                        <Menu
+                            mode="vertical"
+                            selectedKeys={[pathname]}
+                            onClick={({ key }) => {
+                                router.push(key);
+                                setDrawerOpen(false);
+                            }}
+                            items={menuItems}
+                            style={{
+                                border: 'none',
+                                fontSize: '16px',
+                            }}
+                        />
+
+                        {/* Drawer Footer */}
+                        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
+                            <Button
+                                block
+                                size="large"
+                                onClick={handleLogout}
+                                style={{
+                                    borderRadius: '8px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <LogoutOutlined /> Log out
+                            </Button>
+                        </div>
+                    </Drawer>
+
+                    {/* Main Content */}
+                    <Content style={{ background: '#f7f7f7', minHeight: 'calc(100vh - 80px)', paddingTop: '32px' }}>
+                        <div className="max-w-7xl mx-auto px-6">
+                            {children}
+                        </div>
+                    </Content>
+                </Layout>
             </Layout>
         </>
     );

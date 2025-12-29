@@ -14,6 +14,8 @@ import Avatar from 'antd/es/avatar';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Modal from 'antd/es/modal';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
 import {
     UserOutlined,
     TeamOutlined,
@@ -29,14 +31,19 @@ import {
 import { Column } from '@ant-design/plots';
 import { usersApi } from '@/services/api/users.api';
 import type { User } from '@/types/users';
+import { useAuth } from '@/providers/AuthProvider';
 
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 export default function UsersPage() {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [verificationFilter, setVerificationFilter] = useState<string>('all');
 
     useEffect(() => {
         fetchUsers();
@@ -81,6 +88,53 @@ export default function UsersPage() {
             },
         });
     };
+
+    const handleToggleVerification = async (user: User) => {
+        // Check if current user is admin
+        if (currentUser?.role !== 'admin') {
+            message.error('Only administrators can verify or unverify users');
+            return;
+        }
+
+        try {
+            if (user.verified) {
+                await usersApi.unverify(user._id);
+                message.success(`${user.firstName} ${user.lastName} has been unverified`);
+            } else {
+                await usersApi.verify(user._id);
+                message.success(`${user.firstName} ${user.lastName} has been verified`);
+            }
+            fetchUsers();
+        } catch (error: any) {
+            console.error('Failed to toggle verification:', error);
+            const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update verification status';
+            message.error(errorMessage);
+        }
+    };
+
+    // Filter users based on search term and verification status
+    const filteredUsers = users.filter(user => {
+        // Search filter
+        if (searchTerm.trim()) {
+            const search = searchTerm.toLowerCase();
+            const matchesSearch = (
+                user.firstName?.toLowerCase().includes(search) ||
+                user.lastName?.toLowerCase().includes(search) ||
+                user.email?.toLowerCase().includes(search) ||
+                user.phone?.toLowerCase().includes(search) ||
+                getRoleLabel(user.userType).toLowerCase().includes(search)
+            );
+            if (!matchesSearch) return false;
+        }
+
+        // Verification filter
+        if (verificationFilter !== 'all') {
+            if (verificationFilter === 'verified' && !user.verified) return false;
+            if (verificationFilter === 'not_verified' && user.verified) return false;
+        }
+
+        return true;
+    });
 
     const totalUsers = users.length;
     const adminUsers = users.filter(u => u.userType === 'admin').length;
@@ -192,19 +246,35 @@ export default function UsersPage() {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_: any, record: User) => (
-                <Space size="small">
-                    <Tooltip title="View">
-                        <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                        <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Edit functionality coming soon')} />
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
-                    </Tooltip>
-                </Space>
-            ),
+            render: (_: any, record: User) => {
+                const isAdmin = currentUser?.role === 'admin';
+
+                return (
+                    <Space size="small">
+                        {isAdmin && (
+                            <Tooltip title={record.verified ? 'Unverify User' : 'Verify User'}>
+                                <Button
+                                    type="text"
+                                    icon={record.verified ? <CloseCircleOutlined /> : <CheckCircleOutlined />}
+                                    onClick={() => handleToggleVerification(record)}
+                                    style={{ color: record.verified ? '#fa8c16' : '#52c41a' }}
+                                />
+                            </Tooltip>
+                        )}
+                        <Tooltip title="View">
+                            <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                            <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Edit functionality coming soon')} />
+                        </Tooltip>
+                        {isAdmin && (
+                            <Tooltip title="Delete">
+                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
+                            </Tooltip>
+                        )}
+                    </Space>
+                );
+            },
         },
     ];
 
@@ -319,8 +389,47 @@ export default function UsersPage() {
                 </Col>
             </Row>
 
+            {/* Search and Filters */}
             <Card>
-                <Table columns={columns} dataSource={users} loading={loading} rowKey="_id" pagination={{ pageSize: 10, showTotal: (total) => `Total ${total} users`, showSizeChanger: true }} />
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} md={16}>
+                        <Search
+                            placeholder="Search by name, email, phone, or role..."
+                            allowClear
+                            size="large"
+                            prefix={<SearchOutlined />}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Select
+                            size="large"
+                            value={verificationFilter}
+                            onChange={setVerificationFilter}
+                            style={{ width: '100%' }}
+                        >
+                            <Select.Option value="all">All Users</Select.Option>
+                            <Select.Option value="verified">Verified</Select.Option>
+                            <Select.Option value="not_verified">Not Verified</Select.Option>
+                        </Select>
+                    </Col>
+                </Row>
+            </Card>
+
+            {/* Users Table */}
+            <Card>
+                <Table
+                    columns={columns}
+                    dataSource={filteredUsers}
+                    loading={loading}
+                    rowKey="_id"
+                    pagination={{
+                        pageSize: 10,
+                        showTotal: (total) => `Total ${total} user${total !== 1 ? 's' : ''}`,
+                        showSizeChanger: true
+                    }}
+                />
             </Card>
 
             <Modal title="User Details" open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
