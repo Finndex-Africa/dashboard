@@ -326,26 +326,6 @@ export default function DashboardLayout({
                             </div>
                         </div>
 
-                        {/* Center: Search Bar */}
-                        <div className="flex-1 flex justify-center items-center">
-                            <div className="w-full max-w-xl" style={{ marginTop: '4px' }}>
-                                <Search
-                                    placeholder="Search properties, services, users..."
-                                    allowClear
-                                    enterButton={<SearchOutlined />}
-                                    size="large"
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    onSearch={handleSearch}
-                                    loading={isSearching}
-                                    disabled={isSearching}
-                                    style={{
-                                        borderRadius: '24px',
-                                    }}
-                                />
-                            </div>
-                        </div>
-
                         {/* Right side: Burger Menu (mobile only) + User Menu */}
                         <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: '200px', justifyContent: 'flex-end' }}>
                             {/* Burger Menu Button - Show only on mobile */}
