@@ -34,7 +34,6 @@ import type { User } from '@/types/users';
 import { useAuth } from '@/providers/AuthProvider';
 
 const { Title, Text } = Typography;
-const { Search } = Input;
 
 export default function UsersPage() {
     const { user: currentUser } = useAuth();
@@ -112,6 +111,29 @@ export default function UsersPage() {
         }
     };
 
+    // Helper functions for role display
+    const getRoleColor = (role: User['userType']) => {
+        switch (role) {
+            case 'admin': return 'red';
+            case 'landlord': return 'blue';
+            case 'agent': return 'green';
+            case 'service_provider': return 'orange';
+            case 'home_seeker': return 'purple';
+            default: return 'default';
+        }
+    };
+
+    const getRoleLabel = (role: User['userType']) => {
+        switch (role) {
+            case 'admin': return 'Admin';
+            case 'landlord': return 'Landlord';
+            case 'agent': return 'Agent';
+            case 'service_provider': return 'Service Provider';
+            case 'home_seeker': return 'Home Seeker';
+            default: return role;
+        }
+    };
+
     // Filter users based on search term and verification status
     const filteredUsers = users.filter(user => {
         // Search filter
@@ -145,27 +167,6 @@ export default function UsersPage() {
     const verifiedUsers = users.filter(u => u.verified).length;
     const activeUsers = users.filter(u => u.status === 'active').length;
 
-    const getRoleColor = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'red';
-            case 'landlord': return 'blue';
-            case 'agent': return 'green';
-            case 'service_provider': return 'orange';
-            case 'home_seeker': return 'purple';
-            default: return 'default';
-        }
-    };
-
-    const getRoleLabel = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'Admin';
-            case 'landlord': return 'Landlord';
-            case 'agent': return 'Agent';
-            case 'service_provider': return 'Service Provider';
-            case 'home_seeker': return 'Home Seeker';
-            default: return role;
-        }
-    };
     const columns = [
         {
             title: 'User',
@@ -393,7 +394,7 @@ export default function UsersPage() {
             <Card>
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={16}>
-                        <Search
+                        <Input
                             placeholder="Search by name, email, phone, or role..."
                             allowClear
                             size="large"
