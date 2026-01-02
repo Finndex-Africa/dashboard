@@ -101,58 +101,36 @@ function PropertiesPageContent() {
     }, [isHS]);
 
     const fetchProperties = async () => {
-        if (!user?.role) {
-            console.log('fetchProperties: No user role');
-            return;
-        }
+        if (!user?.role) return;
 
         try {
             setLoading(true);
-            console.log('Fetching properties - Role:', user.role, 'View:', currentView, 'Tab:', currentTab);
             let fetchedProperties: Property[] = [];
 
             if (isHS) {
-                // Home seekers: fetch approved properties only
-                console.log('Fetching as Home Seeker');
-                const response = await propertiesApi.getAll({ page: 1, limit: 1000 });
+                // Home seekers: fetch approved properties only (REDUCED from 1000 to 50)
+                const response = await propertiesApi.getAll({ page: 1, limit: 50 });
                 const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
             } else if (isAdmin) {
-                // Admin: fetch based on view
-                console.log('Fetching as Admin, view:', currentView);
+                // Admin: fetch based on view (OPTIMIZED - no longer fetches ALL pages)
                 if (currentView === 'all') {
-                    // Fetch all properties with pagination
-                    let currentPage = 1;
-                    let hasMore = true;
-                    const allProps: Property[] = [];
-
-                    while (hasMore) {
-                        const response = await propertiesApi.getAll({ page: currentPage, limit: 100 });
-                        const pageData = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                        allProps.push(...pageData);
-
-                        const pagination = response.data?.pagination;
-                        if (!pagination || currentPage >= pagination.totalPages) {
-                            hasMore = false;
-                        } else {
-                            currentPage++;
-                        }
-                    }
-                    fetchedProperties = allProps;
+                    // Fetch FIRST page only with reasonable limit (REDUCED from 100+ pages to 50)
+                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
+                    fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
-                    // Admin viewing "mine" or "pending" - not typical, fallback to all
-                    const response = await propertiesApi.getAll({ page: 1, limit: 1000 });
+                    // Admin viewing "mine" or "pending"
+                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
                     fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isPC) {
                 // Agents/Landlords: fetch based on view
-                console.log('Fetching as Property Creator, view:', currentView);
                 if (currentView === 'mine') {
                     const response = await propertiesApi.getMyProperties();
                     fetchedProperties = Array.isArray(response.data) ? response.data : [];
                 } else if (currentView === 'all') {
-                    // Browse all approved properties
-                    const response = await propertiesApi.getAll({ page: 1, limit: 1000 });
+                    // Browse all approved properties (REDUCED from 1000 to 50)
+                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
                     const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                     fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
                 } else if (currentView === 'pending') {
@@ -162,7 +140,6 @@ function PropertiesPageContent() {
                 }
             }
 
-            console.log('Fetched properties count:', fetchedProperties.length);
             setProperties(fetchedProperties);
         } catch (error: any) {
             console.error('Failed to fetch properties:', error);

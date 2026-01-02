@@ -20,14 +20,12 @@ function AuthTransferContent() {
             // Check if this is a logout request
             const isLogout = searchParams.get('logout') === 'true';
             if (isLogout) {
-                console.log('🚪 Logout request received');
                 // Remove only auth-related storage keys to avoid wiping developer logs
                 localStorage.removeItem('token');
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('user');
                 localStorage.removeItem('refreshToken');
                 document.cookie = 'token=; path=/; max-age=0';
-                console.log('✅ Dashboard logged out');
                 return;
             }
 
@@ -39,27 +37,26 @@ function AuthTransferContent() {
                 return;
             }
 
-            console.log('📥 Processing authentication transfer');
-            console.log('🔑 Token:', token?.substring(0, 20) + '...');
-            console.log('🌐 API URL:', API_URL);
-
-            // Validate token and get user data
+            // Validate token and get user data with timeout
             try {
+                // Add timeout to prevent indefinite waiting
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
                 const response = await fetch(`${API_URL}/auth/validate-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ token }),
+                    signal: controller.signal,
                 });
 
-                console.log('📡 Response status:', response.status);
+                clearTimeout(timeoutId);
+
                 const data = await response.json();
-                console.log('📦 Response data:', data);
 
                 if (data.success && data.data.valid) {
-                    console.log('✅ Token validated');
-
                     // Clear existing auth data (only auth keys)
                     localStorage.removeItem('token');
                     localStorage.removeItem('authToken');
@@ -72,16 +69,12 @@ function AuthTransferContent() {
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
 
-                    console.log('✅ Authentication complete, stored token and user data');
-
                     // Dispatch custom event to notify AuthProvider immediately
                     window.dispatchEvent(new Event('auth-updated'));
 
                     // Determine redirect based on user role
                     const userRole = getUserRoleFromToken(token);
                     const redirectPath = getRoleRedirectPath(userRole);
-
-                    console.log('✅ Dispatched auth-updated event, redirecting to', redirectPath);
 
                     // Use window.location for immediate synchronous redirect
                     // This ensures the cookie is fully set before navigation
@@ -90,8 +83,17 @@ function AuthTransferContent() {
                     console.error('❌ Invalid token');
                     window.location.href = `${WEBSITE_URL}/routes/login`;
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('❌ Validation failed:', error);
+
+                // Check if it's a timeout error
+                if (error.name === 'AbortError') {
+                    console.error('❌ Request timed out after 10 seconds');
+                    alert('Authentication is taking longer than expected. Please check your connection and try again.');
+                } else {
+                    console.error('❌ Error details:', error.message);
+                }
+
                 window.location.href = `${WEBSITE_URL}/routes/login`;
             }
         };

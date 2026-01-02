@@ -34,7 +34,8 @@ export default function AgentsPage() {
     const fetchAgents = async () => {
         try {
             setLoading(true);
-            const response = await usersApi.getAll({ userType: 'AGENT' });
+            // Added limit: 50 for better performance
+            const response = await usersApi.getAll({ userType: 'AGENT', page: 1, limit: 50 });
 
             // Transform User data to Agent format
             const agentsData: Agent[] = (response.data.data || []).map((user: User) => ({
@@ -53,7 +54,9 @@ export default function AgentsPage() {
             setAgents(agentsData);
         } catch (error: any) {
             console.error('Failed to fetch agents:', error);
-            message.error('Failed to load agents');
+            console.error('Error details:', error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to load agents';
+            message.error(errorMsg);
             setAgents([]);
         } finally {
             setLoading(false);

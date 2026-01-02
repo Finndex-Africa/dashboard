@@ -62,9 +62,16 @@ export function ServiceForm({
             .filter(file => file.originFileObj)
             .map(file => file.originFileObj as File);
 
+        // Remove existingImages field - it's only used for display, not submission
+        // This field can be added by browser autocomplete/cache
+        const { existingImages, ...cleanValues } = values;
+
+        console.log('📸 Files to upload:', filesToUpload.length, filesToUpload);
+        console.log('📋 Form values:', cleanValues);
+
         // Pass form values and files to parent
-        // Parent will create service first, then upload images with service ID
-        onSubmit(values, filesToUpload);
+        // Parent will handle async operations and form reset via modal close
+        onSubmit(cleanValues, filesToUpload);
     };
 
     const handleUploadChange = ({ fileList: newFileList }: any) => {

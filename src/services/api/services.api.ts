@@ -32,6 +32,12 @@ export interface CreateServiceDto {
 
 export interface UpdateServiceDto extends Partial<CreateServiceDto> {}
 
+// Helper to remove unwanted fields from service data
+const sanitizeServiceData = (data: any) => {
+    const { existingImages, images, ...cleanData } = data;
+    return cleanData;
+};
+
 export const servicesApi = {
     // Get all services with filters and pagination
     getAll: async (filters?: ServiceFilters) => {
@@ -80,12 +86,15 @@ export const servicesApi = {
 
     // Create new service
     create: async (data: CreateServiceDto) => {
-        return apiClient.post<Service>('/services', data);
+        const cleanData = sanitizeServiceData(data);
+        console.log('🛡️ Final API sanitization - sending:', cleanData);
+        return apiClient.post<Service>('/services', cleanData);
     },
 
     // Update service
     update: async (id: string, data: UpdateServiceDto) => {
-        return apiClient.patch<Service>(`/services/${id}`, data);
+        const cleanData = sanitizeServiceData(data);
+        return apiClient.patch<Service>(`/services/${id}`, cleanData);
     },
 
     // Delete service

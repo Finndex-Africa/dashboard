@@ -51,13 +51,17 @@ export default function UsersPage() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await usersApi.getAll({ page: 1, limit: 100 });
+            // REDUCED from 100 to 50 for better performance
+            const response = await usersApi.getAll({ page: 1, limit: 50 });
             // API returns { success: true, data: { data: [...], pagination: {...} } }
             const usersData = response.data || [];
-            setUsers(Array.isArray(usersData) ? usersData : []);
+            const users = Array.isArray(usersData) ? usersData : [];
+            setUsers(users);
         } catch (error: any) {
             console.error('Failed to fetch users:', error);
-            message.error('Failed to load users');
+            console.error('Error details:', error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to load users';
+            message.error(errorMsg);
             setUsers([]);
         } finally {
             setLoading(false);

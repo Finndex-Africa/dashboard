@@ -105,36 +105,21 @@ function ServicesPageContent() {
             let fetchedServices: Service[] = [];
 
             if (isHS) {
-                // Home seekers: fetch verified/active services only
-                const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                // Home seekers: fetch verified/active services only (REDUCED from 1000 to 50)
+                const response = await servicesApi.getAll({ page: 1, limit: 50 });
                 const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedServices = allServices.filter((s: Service) =>
                     s.verificationStatus === 'verified' && s.status === 'active'
                 );
             } else if (isAdmin) {
-                // Admin: fetch based on view
+                // Admin: fetch based on view (OPTIMIZED - no longer fetches ALL pages)
                 if (currentView === 'all') {
-                    // Fetch all services with pagination
-                    let currentPage = 1;
-                    let hasMore = true;
-                    const allServices: Service[] = [];
-
-                    while (hasMore) {
-                        const response = await servicesApi.getAll({ page: currentPage, limit: 100 });
-                        const pageData = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                        allServices.push(...pageData);
-
-                        const pagination = response.data?.pagination;
-                        if (!pagination || currentPage >= pagination.totalPages) {
-                            hasMore = false;
-                        } else {
-                            currentPage++;
-                        }
-                    }
-                    fetchedServices = allServices;
+                    // Fetch FIRST page only with reasonable limit (REDUCED from 100+ pages to 50)
+                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
+                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
-                    // Admin viewing "mine" or "pending" - fallback to all
-                    const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                    // Admin viewing "mine" or "pending"
+                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
                     fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isSP) {
@@ -143,8 +128,8 @@ function ServicesPageContent() {
                     const response = await servicesApi.getMyServices();
                     fetchedServices = Array.isArray(response.data) ? response.data : [];
                 } else if (currentView === 'all') {
-                    // Browse all verified services
-                    const response = await servicesApi.getAll({ page: 1, limit: 1000 });
+                    // Browse all verified services (REDUCED from 1000 to 50)
+                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
                     const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                     fetchedServices = allServices.filter((s: Service) =>
                         s.verificationStatus === 'verified' && s.status === 'active'
@@ -159,8 +144,10 @@ function ServicesPageContent() {
             setServices(fetchedServices);
         } catch (error: any) {
             console.error('Failed to fetch services:', error);
+            console.error('Error details:', error.response?.data || error.message);
             if (error.response?.status !== 404) {
-                showToast.error('Failed to load services');
+                const errorMsg = error.response?.data?.message || error.message || 'Failed to load services';
+                showToast.error(errorMsg);
             }
             setServices([]);
         } finally {

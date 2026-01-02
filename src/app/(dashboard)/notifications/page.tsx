@@ -41,13 +41,17 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await notificationsApi.getAll({ page: 1, limit: 100 });
+            // REDUCED from 100 to 30 for better performance
+            const response = await notificationsApi.getAll({ page: 1, limit: 30 });
             const notificationsData = response.data || [];
-            setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
+            const notifications = Array.isArray(notificationsData) ? notificationsData : [];
+            setNotifications(notifications);
         } catch (error: any) {
             console.error('Failed to fetch notifications:', error);
+            console.error('Error details:', error.response?.data || error.message);
             if (error.response?.status !== 404) {
-                message.error('Failed to load notifications');
+                const errorMsg = error.response?.data?.message || error.message || 'Failed to load notifications';
+                message.error(errorMsg);
             }
             setNotifications([]);
         } finally {

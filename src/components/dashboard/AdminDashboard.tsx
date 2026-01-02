@@ -46,6 +46,25 @@ function formatTimeAgo(dateString: string): string {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
+function formatLargeNumber(value: number, prefix: string = ''): string {
+    if (value === 0) return `${prefix}0`;
+
+    const absValue = Math.abs(value);
+
+    if (absValue >= 1_000_000_000) {
+        // Billions
+        return `${prefix}${(value / 1_000_000_000).toFixed(2)}B`;
+    } else if (absValue >= 1_000_000) {
+        // Millions
+        return `${prefix}${(value / 1_000_000).toFixed(2)}M`;
+    } else if (absValue >= 1_000) {
+        // Thousands
+        return `${prefix}${(value / 1_000).toFixed(1)}K`;
+    }
+
+    return `${prefix}${value.toLocaleString()}`;
+}
+
 function getNotificationStatus(type: string): 'success' | 'info' | 'warning' | 'error' | 'default' {
     const statusMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
         'property_approved': 'success',
@@ -68,6 +87,26 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [rawResponses, setRawResponses] = useState<any>(null);
     const [rawError, setRawError] = useState<any>(null);
+    const [selectedYear, setSelectedYear] = useState<number>(2025);
+    const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+    // Fixed year range 2024-2026
+    const availableYears = [2024, 2025, 2026];
+    const availableMonths = [
+        { value: 'all', label: 'All Months' },
+        { value: '0', label: 'January' },
+        { value: '1', label: 'February' },
+        { value: '2', label: 'March' },
+        { value: '3', label: 'April' },
+        { value: '4', label: 'May' },
+        { value: '5', label: 'June' },
+        { value: '6', label: 'July' },
+        { value: '7', label: 'August' },
+        { value: '8', label: 'September' },
+        { value: '9', label: 'October' },
+        { value: '10', label: 'November' },
+        { value: '11', label: 'December' },
+    ];
 
     useEffect(() => {
         let mounted = true;
@@ -76,12 +115,13 @@ export default function AdminDashboard() {
             try {
                 setLoading(true);
 
-                // Fetch data with simple pagination
+                // Fetch data for dashboard overview
+                // Using moderate limits (100) to show meaningful charts while maintaining good performance
                 const [propertiesResponse, servicesResponse, usersResponse, notificationsResponse] = await Promise.all([
                     propertiesApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
                     servicesApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
                     usersApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
-                    notificationsApi.getAll({ limit: 50 }).catch((e) => ({ data: [], __error: e }))
+                    notificationsApi.getAll({ limit: 10 }).catch((e) => ({ data: [], __error: e }))
                 ]);
 
                 if (!mounted) return;
@@ -126,10 +166,15 @@ export default function AdminDashboard() {
         };
     }, []);
 
-    const totalProperties = properties.length;
+    // Use pagination metadata for accurate totals if available, otherwise use length
+    const propertiesTotal = rawResponses?.propertiesResponse?.data?.pagination?.totalItems || properties.length;
+    const servicesTotal = rawResponses?.servicesResponse?.data?.pagination?.totalItems || services.length;
+    const usersTotal = rawResponses?.usersResponse?.data?.pagination?.totalItems || users.length;
+
+    const totalProperties = propertiesTotal;
     const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
-    const totalServices = services.length;
-    const totalUsers = users.length;
+    const totalServices = servicesTotal;
+    const totalUsers = usersTotal;
 
     const statsConfig = [
         {
@@ -167,23 +212,55 @@ export default function AdminDashboard() {
         },
     ];
 
-    // Generate monthly trend data
+    // Generate monthly trend data - Use the selected year and optionally filter by month
     const generateMonthlyData = () => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const currentYear = new Date().getFullYear();
 
-        return months.map((month, index) => {
+        // If a specific month is selected, only show that month
+        if (selectedMonth !== 'all') {
+            const monthIndex = parseInt(selectedMonth);
+            const month = months[monthIndex];
+
             const monthProperties = properties.filter(p => {
+                if (!p.createdAt) return false;
                 const date = new Date(p.createdAt);
-                return date.getMonth() === index && date.getFullYear() === currentYear;
+                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
             });
             const monthServices = services.filter(s => {
+                if (!s.createdAt) return false;
                 const date = new Date(s.createdAt);
-                return date.getMonth() === index && date.getFullYear() === currentYear;
+                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
             });
             const monthUsers = users.filter(u => {
+                if (!u.createdAt) return false;
                 const date = new Date(u.createdAt);
-                return date.getMonth() === index && date.getFullYear() === currentYear;
+                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
+            });
+
+            return [{
+                month,
+                properties: monthProperties.length,
+                services: monthServices.length,
+                users: monthUsers.length,
+            }];
+        }
+
+        // Show all months
+        const result = months.map((month, index) => {
+            const monthProperties = properties.filter(p => {
+                if (!p.createdAt) return false;
+                const date = new Date(p.createdAt);
+                return date.getMonth() === index && date.getFullYear() === selectedYear;
+            });
+            const monthServices = services.filter(s => {
+                if (!s.createdAt) return false;
+                const date = new Date(s.createdAt);
+                return date.getMonth() === index && date.getFullYear() === selectedYear;
+            });
+            const monthUsers = users.filter(u => {
+                if (!u.createdAt) return false;
+                const date = new Date(u.createdAt);
+                return date.getMonth() === index && date.getFullYear() === selectedYear;
             });
 
             return {
@@ -193,13 +270,16 @@ export default function AdminDashboard() {
                 users: monthUsers.length,
             };
         });
+
+        return result;
     };
 
     const monthlyData = generateMonthlyData();
 
     // Property type distribution
     const propertyTypeCounts: Record<string, number> = {};
-    properties.forEach(p => {
+
+    properties.forEach((p) => {
         const type = p.propertyType || 'Other';
         propertyTypeCounts[type] = (propertyTypeCounts[type] || 0) + 1;
     });
@@ -257,8 +337,10 @@ export default function AdminDashboard() {
         label: {
             type: 'inner',
             offset: '-30%',
-            content: '{value}',
-            style: { fontSize: 14, textAlign: 'center' },
+            content: (item: any) => {
+                return `${item.value}`;
+            },
+            style: { fontSize: 14, textAlign: 'center', fill: '#fff' },
         },
         statistic: {
             title: false,
@@ -268,7 +350,23 @@ export default function AdminDashboard() {
             },
         },
         color: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'],
+        legend: {
+            position: 'bottom' as const,
+        },
     };
+
+    // Show loading state
+    if (loading) {
+        return (
+            <div className="space-y-6 p-2">
+                <div className="flex flex-col items-center justify-center" style={{ minHeight: '60vh' }}>
+                    <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+                    <Title level={3} className="mb-2">Loading Dashboard...</Title>
+                    <Text type="secondary">Fetching your data</Text>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 p-2">
@@ -280,12 +378,6 @@ export default function AdminDashboard() {
                     </Title>
                     <Text type="secondary" className="text-sm sm:text-base">Welcome back! Here's what's happening with your platform today.</Text>
                 </div>
-                <Select defaultValue="today" size="large" style={{ width: '100%', maxWidth: 150 }}>
-                    <Select.Option value="today">Today</Select.Option>
-                    <Select.Option value="week">This Week</Select.Option>
-                    <Select.Option value="month">This Month</Select.Option>
-                    <Select.Option value="year">This Year</Select.Option>
-                </Select>
             </div>
 
             {/* Stats Cards */}
@@ -296,50 +388,57 @@ export default function AdminDashboard() {
                         <Col xs={24} sm={12} md={12} lg={6} key={index}>
                             <Card
                                 className="hover:shadow-lg transition-all duration-300"
-                                style={{ borderRadius: '12px', border: '1px solid #f0f0f0' }}
-                                styles={{ body: { padding: '16px' } }}
+                                style={{ borderRadius: '12px', border: '1px solid #f0f0f0', height: '100%' }}
+                                styles={{ body: { padding: '16px', height: '100%' } }}
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 2vw, 12px)', display: 'block', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                                    <div style={{ flex: '1', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                        <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 13px)', display: 'block', marginBottom: '8px' }}>
                                             {stat.title}
                                         </Text>
-                                        <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 'bold', marginBottom: '8px', wordBreak: 'break-word' }}>
-                                            {stat.prefix}{stat.value.toLocaleString()}
+                                        <div style={{
+                                            fontSize: 'clamp(22px, 5vw, 30px)',
+                                            fontWeight: 700,
+                                            marginBottom: '8px',
+                                            wordBreak: 'break-word',
+                                            lineHeight: 1.1,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            {formatLargeNumber(stat.value, stat.prefix)}
                                         </div>
-                                        <div className="flex items-center gap-1 flex-wrap">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', marginTop: 'auto' }}>
                                             {stat.change > 0 ? (
                                                 <>
                                                     <RiseOutlined style={{ color: '#52c41a', fontSize: 'clamp(12px, 2vw, 14px)' }} />
-                                                    <span style={{ color: '#52c41a', fontWeight: 600, fontSize: 'clamp(11px, 2vw, 13px)' }}>{stat.change}%</span>
+                                                    <span style={{ color: '#52c41a', fontWeight: 600, fontSize: 'clamp(12px, 2vw, 14px)' }}>{stat.change}%</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <FallOutlined style={{ color: '#ff4d4f', fontSize: 'clamp(12px, 2vw, 14px)' }} />
-                                                    <span style={{ color: '#ff4d4f', fontWeight: 600, fontSize: 'clamp(11px, 2vw, 13px)' }}>{Math.abs(stat.change)}%</span>
+                                                    <span style={{ color: '#ff4d4f', fontWeight: 600, fontSize: 'clamp(12px, 2vw, 14px)' }}>{Math.abs(stat.change)}%</span>
                                                 </>
                                             )}
-                                            <Text type="secondary" style={{ fontSize: 'clamp(10px, 2vw, 12px)', marginLeft: '4px' }}>vs last month</Text>
+                                            <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 12px)' }}>vs last month</Text>
                                         </div>
                                     </div>
                                     <div
                                         style={{
-                                            width: 'clamp(40px, 10vw, 48px)',
-                                            height: 'clamp(40px, 10vw, 48px)',
-                                            borderRadius: '12px',
+                                            width: 'clamp(48px, 12vw, 56px)',
+                                            height: 'clamp(48px, 12vw, 56px)',
+                                            borderRadius: '14px',
                                             backgroundColor: stat.bgColor,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             flexShrink: 0,
-                                            marginLeft: '8px',
                                         }}
                                     >
                                         <span style={{
                                             background: stat.gradient,
                                             WebkitBackgroundClip: 'text',
                                             WebkitTextFillColor: 'transparent',
-                                            fontSize: 'clamp(20px, 5vw, 24px)',
+                                            fontSize: 'clamp(24px, 6vw, 28px)',
                                         }}>
                                             <Icon />
                                         </span>
@@ -362,10 +461,28 @@ export default function AdminDashboard() {
                             </div>
                         }
                         extra={
-                            <Select defaultValue="2024" style={{ width: '100%', maxWidth: 100 }} size="small">
-                                <Select.Option value="2024">2024</Select.Option>
-                                <Select.Option value="2023">2023</Select.Option>
-                            </Select>
+                            <div className="flex gap-2 flex-wrap">
+                                <Select
+                                    value={selectedYear}
+                                    onChange={setSelectedYear}
+                                    size="small"
+                                    style={{ width: '100%', minWidth: 80, maxWidth: 100 }}
+                                >
+                                    {availableYears.map(year => (
+                                        <Select.Option key={year} value={year}>{year}</Select.Option>
+                                    ))}
+                                </Select>
+                                <Select
+                                    value={selectedMonth}
+                                    onChange={setSelectedMonth}
+                                    size="small"
+                                    style={{ width: '100%', minWidth: 100, maxWidth: 130 }}
+                                >
+                                    {availableMonths.map(month => (
+                                        <Select.Option key={month.value} value={month.value}>{month.label}</Select.Option>
+                                    ))}
+                                </Select>
+                            </div>
                         }
                         style={{ borderRadius: '16px', border: 'none' }}
                         className="shadow-lg"

@@ -56,16 +56,19 @@ export default function AdvertisementsPage() {
     const fetchAdvertisements = async () => {
         try {
             setLoading(true);
+            // REDUCED from 100 to 30 for better performance
             const response = await advertisementsApi.getAll({
                 status: filterStatus,
                 placement: filterPlacement,
-                limit: 100,
+                limit: 30,
             });
             const advertisementsData = (response as any)?.data || [];
             setAdvertisements(advertisementsData);
         } catch (error: any) {
             console.error('Failed to fetch advertisements:', error);
-            message.error('Failed to load advertisements');
+            console.error('Error details:', error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to load advertisements';
+            message.error(errorMsg);
         } finally {
             setLoading(false);
         }

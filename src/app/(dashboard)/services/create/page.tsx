@@ -33,8 +33,14 @@ export default function CreateServicePage() {
         try {
             setSubmitting(true);
 
+            // Remove existingImages field if it exists (browser cache issue)
+            const { existingImages, images, ...cleanValues } = values;
+
+            console.log('🔍 Original values:', values);
+            console.log('🧹 Cleaned values:', cleanValues);
+
             // Step 1: Create service without images
-            const response = await servicesApi.create(values);
+            const response = await servicesApi.create(cleanValues);
             const createdService = response.data;
 
             console.log('✅ Service created:', createdService);

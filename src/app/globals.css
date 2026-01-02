@@ -10,4 +10,125 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+  overflow-x: hidden;
+}
+
+/* Z-index hierarchy to prevent overlapping issues */
+/* Layout hierarchy:
+   - Sidebar: 200
+   - Header: 100
+   - Dropdowns: 150
+   - Modals/Drawers: 1000+
+   - Notifications: 1050
+*/
+
+/* Fix for sticky header to not overlap content */
+.ant-layout-header {
+  z-index: 100 !important;
+}
+
+/* Ensure main content is below header and properly spaced */
+.ant-layout-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure content area children don't get covered by sticky header */
+.ant-layout-content > div {
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure modals and drawers are above everything */
+.ant-modal-root {
+  z-index: 1000 !important;
+}
+
+.ant-modal-wrap {
+  z-index: 1000 !important;
+}
+
+.ant-modal-mask {
+  z-index: 1000 !important;
+}
+
+.ant-modal {
+  z-index: 1001 !important;
+}
+
+.ant-drawer-mask {
+  z-index: 999 !important;
+}
+
+.ant-drawer-content-wrapper {
+  z-index: 999 !important;
+}
+
+.ant-drawer {
+  z-index: 999 !important;
+}
+
+/* Notifications and messages at the top */
+.ant-notification {
+  z-index: 1050 !important;
+}
+
+.ant-message {
+  z-index: 1050 !important;
+}
+
+/* Dropdowns above header but below modals */
+.ant-dropdown {
+  z-index: 150 !important;
+}
+
+.ant-select-dropdown {
+  z-index: 150 !important;
+}
+
+.ant-picker-dropdown {
+  z-index: 150 !important;
+}
+
+.ant-cascader-dropdown {
+  z-index: 150 !important;
+}
+
+/* Tooltips */
+.ant-tooltip {
+  z-index: 160 !important;
+}
+
+/* Popovers */
+.ant-popover {
+  z-index: 170 !important;
+}
+
+.ant-popconfirm {
+  z-index: 170 !important;
+}
+
+/* Image preview (Ant Design Upload) */
+.ant-image-preview-root {
+  z-index: 1100 !important;
+}
+
+.ant-image-preview-wrap {
+  z-index: 1100 !important;
+}
+
+.ant-image-preview-mask {
+  z-index: 1100 !important;
+}
+
+/* Spin (loading overlay) */
+.ant-spin-nested-loading .ant-spin-container {
+  position: relative;
+  z-index: auto;
+}
+
+/* Fix for Upload components inside modals */
+.ant-upload-list {
+  position: relative;
+  z-index: auto;
 }

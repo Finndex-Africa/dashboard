@@ -241,13 +241,13 @@ export default function DashboardLayout({
                         bottom: 0,
                         background: '#fff',
                         borderRight: '1px solid #ebebeb',
-                        zIndex: 11,
+                        zIndex: 200,
                     }}
                     className="hidden md:block"
                 >
                     {/* Sidebar Logo */}
                     <div
-                        className="cursor-pointer flex items-center justify-center py-6 px-4 border-b border-gray-200"
+                        className="cursor-pointer flex py-6 px-4 border-b border-gray-200"
                         onClick={() => {
                             const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
                             router.push(redirectPath);
@@ -291,26 +291,27 @@ export default function DashboardLayout({
                 </Sider>
 
                 {/* Main Layout - Adjust margin for sidebar on desktop */}
-                <Layout className="md:ml-[260px]">
+                <Layout className="md:ml-[260px]" style={{ position: 'relative' }}>
                     {/* Header */}
                     <Header
                         style={{
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
+                            zIndex: 100,
                             width: '100%',
-                            padding: '0 24px',
+                            padding: '0 16px',
                             background: '#fff',
                             borderBottom: '1px solid #ebebeb',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            height: '80px',
-                            gap: '24px',
+                            height: '64px',
+                            gap: '16px',
+                            boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.08)',
                         }}
                     >
-                        {/* Left side: Logo (mobile only) or empty space for balance */}
-                        <div className="flex items-center flex-shrink-0" style={{ minWidth: '200px' }}>
+                        {/* Left side: Logo (mobile only) */}
+                        <div className="flex items-center flex-shrink-0">
                             <div
                                 className="cursor-pointer flex items-center md:hidden"
                                 onClick={() => {
@@ -321,22 +322,22 @@ export default function DashboardLayout({
                                 <img
                                     src="/images/logos/logo1.png"
                                     alt="Finndex Africa"
-                                    className="h-10 object-contain"
+                                    className="h-8 object-contain"
                                 />
                             </div>
                         </div>
 
                         {/* Right side: Burger Menu (mobile only) + User Menu */}
-                        <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: '200px', justifyContent: 'flex-end' }}>
+                        <div className="flex items-center gap-2 flex-shrink-0">
                             {/* Burger Menu Button - Show only on mobile */}
                             <Button
                                 type="text"
-                                icon={<MenuOutlined style={{ fontSize: '18px' }} />}
+                                icon={<MenuOutlined style={{ fontSize: '16px' }} />}
                                 onClick={() => setDrawerOpen(true)}
                                 className="md:hidden flex items-center justify-center"
                                 style={{
-                                    width: '42px',
-                                    height: '42px',
+                                    width: '40px',
+                                    height: '40px',
                                     borderRadius: '50%',
                                     border: '1px solid #ddd',
                                 }}
@@ -345,14 +346,14 @@ export default function DashboardLayout({
                             {/* User Avatar Dropdown */}
                             <Dropdown menu={{ items: userDropdownItems }} trigger={['click']}>
                                 <div
-                                    className="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-full border border-gray-300 hover:shadow-md transition-all"
-                                    style={{ height: '42px' }}
+                                    className="cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all"
+                                    style={{ height: '40px' }}
                                 >
-                                    <MenuOutlined style={{ fontSize: '14px', color: '#717171' }} />
+                                    <MenuOutlined style={{ fontSize: '13px', color: '#717171' }} />
                                     <Avatar
                                         src={user?.avatar}
                                         icon={!user?.avatar && <UserOutlined />}
-                                        size={28}
+                                        size={26}
                                         style={{
                                             backgroundColor: '#717171',
                                         }}
@@ -432,8 +433,16 @@ export default function DashboardLayout({
                     </Drawer>
 
                     {/* Main Content */}
-                    <Content style={{ background: '#f7f7f7', minHeight: 'calc(100vh - 80px)', paddingTop: '32px' }}>
-                        <div className="max-w-7xl mx-auto px-6">
+                    <Content
+                        style={{
+                            background: '#f7f7f7',
+                            minHeight: 'calc(100vh - 64px)',
+                            padding: '40px 20px',
+                            position: 'relative',
+                            zIndex: 1,
+                        }}
+                    >
+                        <div className="max-w-7xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
                             {children}
                         </div>
                     </Content>
