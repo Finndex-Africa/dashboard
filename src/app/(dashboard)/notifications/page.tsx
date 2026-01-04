@@ -47,8 +47,6 @@ export default function NotificationsPage() {
             const notifications = Array.isArray(notificationsData) ? notificationsData : [];
             setNotifications(notifications);
         } catch (error: any) {
-            console.error('Failed to fetch notifications:', error);
-            console.error('Error details:', error.response?.data || error.message);
             if (error.response?.status !== 404) {
                 const errorMsg = error.response?.data?.message || error.message || 'Failed to load notifications';
                 message.error(errorMsg);
@@ -67,7 +65,6 @@ export default function NotificationsPage() {
             message.success('Notification marked as read');
             fetchNotifications();
         } catch (error: any) {
-            console.error('Failed to mark notification as read:', error);
             message.error('Failed to mark notification as read');
         }
     };
@@ -78,7 +75,6 @@ export default function NotificationsPage() {
             message.success('All notifications marked as read');
             fetchNotifications();
         } catch (error: any) {
-            console.error('Failed to mark all as read:', error);
             message.error('Failed to mark all notifications as read');
         }
     };
@@ -95,7 +91,6 @@ export default function NotificationsPage() {
                     message.success('Notification deleted successfully');
                     fetchNotifications();
                 } catch (error: any) {
-                    console.error('Failed to delete notification:', error);
                     message.error('Failed to delete notification');
                 }
             },

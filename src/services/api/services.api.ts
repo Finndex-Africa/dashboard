@@ -32,12 +32,6 @@ export interface CreateServiceDto {
 
 export interface UpdateServiceDto extends Partial<CreateServiceDto> {}
 
-// Helper to remove unwanted fields from service data
-const sanitizeServiceData = (data: any) => {
-    const { existingImages, images, ...cleanData } = data;
-    return cleanData;
-};
-
 export const servicesApi = {
     // Get all services with filters and pagination
     getAll: async (filters?: ServiceFilters) => {
@@ -86,15 +80,20 @@ export const servicesApi = {
 
     // Create new service
     create: async (data: CreateServiceDto) => {
-        const cleanData = sanitizeServiceData(data);
-        console.log('🛡️ Final API sanitization - sending:', cleanData);
-        return apiClient.post<Service>('/services', cleanData);
+        // Final cleanup: remove existingImages if it somehow got through
+        const cleanPayload = { ...data };
+        if ('existingImages' in cleanPayload) {
+            delete (cleanPayload as any).existingImages;
+            console.warn('⚠️ existingImages found in API call, removing it!');
+        }
+        
+        console.log('🚀 Final payload being sent to API:', cleanPayload);
+        return apiClient.post<Service>('/services', cleanPayload);
     },
 
     // Update service
     update: async (id: string, data: UpdateServiceDto) => {
-        const cleanData = sanitizeServiceData(data);
-        return apiClient.patch<Service>(`/services/${id}`, cleanData);
+        return apiClient.patch<Service>(`/services/${id}`, data);
     },
 
     // Delete service

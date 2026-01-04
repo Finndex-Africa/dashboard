@@ -57,21 +57,11 @@ export function ServiceForm({
     }, [initialValues, form]);
 
     const handleSubmit = (values: any) => {
-        // Extract actual File objects from fileList
         const filesToUpload = fileList
             .filter(file => file.originFileObj)
             .map(file => file.originFileObj as File);
 
-        // Remove existingImages field - it's only used for display, not submission
-        // This field can be added by browser autocomplete/cache
-        const { existingImages, ...cleanValues } = values;
-
-        console.log('📸 Files to upload:', filesToUpload.length, filesToUpload);
-        console.log('📋 Form values:', cleanValues);
-
-        // Pass form values and files to parent
-        // Parent will handle async operations and form reset via modal close
-        onSubmit(cleanValues, filesToUpload);
+        onSubmit(values, filesToUpload);
     };
 
     const handleUploadChange = ({ fileList: newFileList }: any) => {
@@ -109,7 +99,7 @@ export function ServiceForm({
                     <Col xs={24}>
                         <Form.Item
                             name="title"
-                            label="Service Name"
+                            label="Service ame"
                             rules={[{ required: true, message: 'Please enter service name' }]}
                         >
                             <Input
@@ -249,13 +239,12 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="price"
-                            label="Price (USD)"
-                            rules={[{ required: true, message: 'Please enter price' }]}
+                            label="Price (USD) - Optional"
                         >
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
-                                placeholder="0"
+                                placeholder="Enter price (optional)"
                                 min={0}
                                 formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                                 parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
@@ -323,7 +312,7 @@ export function ServiceForm({
             {/* Images Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Service Images
+                    Service Images <span style={{ color: '#ff4d4f' }}>*</span>
                 </Text>
                 <Upload
                     listType="picture-card"
@@ -347,7 +336,7 @@ export function ServiceForm({
                     )}
                 </Upload>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to digital ocean.
+                    Upload at least 1 image (up to 10). Max size: 10MB per image. Images will be uploaded to digital ocean.
                 </Text>
             </div>
 

@@ -65,8 +65,6 @@ export default function AdvertisementsPage() {
             const advertisementsData = (response as any)?.data || [];
             setAdvertisements(advertisementsData);
         } catch (error: any) {
-            console.error('Failed to fetch advertisements:', error);
-            console.error('Error details:', error.response?.data || error.message);
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load advertisements';
             message.error(errorMsg);
         } finally {

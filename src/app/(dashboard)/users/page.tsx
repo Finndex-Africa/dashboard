@@ -51,15 +51,13 @@ export default function UsersPage() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            // REDUCED from 100 to 50 for better performance
-            const response = await usersApi.getAll({ page: 1, limit: 50 });
+            // REDUCED to 10 for fastest initial load
+            const response = await usersApi.getAll({ page: 1, limit: 10 });
             // API returns { success: true, data: { data: [...], pagination: {...} } }
             const usersData = response.data || [];
             const users = Array.isArray(usersData) ? usersData : [];
             setUsers(users);
         } catch (error: any) {
-            console.error('Failed to fetch users:', error);
-            console.error('Error details:', error.response?.data || error.message);
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load users';
             message.error(errorMsg);
             setUsers([]);
@@ -85,7 +83,6 @@ export default function UsersPage() {
                     message.success('User deleted successfully');
                     fetchUsers();
                 } catch (error: any) {
-                    console.error('Failed to delete user:', error);
                     message.error('Failed to delete user');
                 }
             },
@@ -109,7 +106,6 @@ export default function UsersPage() {
             }
             fetchUsers();
         } catch (error: any) {
-            console.error('Failed to toggle verification:', error);
             const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update verification status';
             message.error(errorMessage);
         }

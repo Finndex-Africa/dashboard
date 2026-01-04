@@ -118,9 +118,9 @@ export default function AdminDashboard() {
                 // Fetch data for dashboard overview
                 // Using moderate limits (100) to show meaningful charts while maintaining good performance
                 const [propertiesResponse, servicesResponse, usersResponse, notificationsResponse] = await Promise.all([
-                    propertiesApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
-                    servicesApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
-                    usersApi.getAll({ page: 1, limit: 100 }).catch((e) => ({ data: [], __error: e })),
+                    propertiesApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
+                    servicesApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
+                    usersApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
                     notificationsApi.getAll({ limit: 10 }).catch((e) => ({ data: [], __error: e }))
                 ]);
 

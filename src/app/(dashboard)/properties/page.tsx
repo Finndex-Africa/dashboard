@@ -77,7 +77,9 @@ function PropertiesPageContent() {
 
     // Fetch properties on mount and when view/tab changes
     useEffect(() => {
-        if (!user?.role) return;
+        if (!user?.role) {
+            return;
+        }
 
         // Handle default redirects
         if (isHS && !tabParam) {
@@ -91,7 +93,7 @@ function PropertiesPageContent() {
         }
 
         fetchProperties();
-    }, [user, currentView, currentTab]);
+    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS]);
 
     // Load saved properties for home_seekers
     useEffect(() => {
@@ -101,26 +103,28 @@ function PropertiesPageContent() {
     }, [isHS]);
 
     const fetchProperties = async () => {
-        if (!user?.role) return;
+        if (!user?.role) {
+            return;
+        }
 
         try {
             setLoading(true);
             let fetchedProperties: Property[] = [];
 
             if (isHS) {
-                // Home seekers: fetch approved properties only (REDUCED from 1000 to 50)
-                const response = await propertiesApi.getAll({ page: 1, limit: 50 });
+                // Home seekers: fetch approved properties only (REDUCED to 10 for fastest loading)
+                const response = await propertiesApi.getAll({ page: 1, limit: 10 });
                 const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
             } else if (isAdmin) {
-                // Admin: fetch based on view (OPTIMIZED - no longer fetches ALL pages)
+                // Admin: fetch based on view (REDUCED to 10 for fastest loading)
                 if (currentView === 'all') {
-                    // Fetch FIRST page only with reasonable limit (REDUCED from 100+ pages to 50)
-                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
+                    // Fetch FIRST page only with minimal limit for fast initial load
+                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
                     fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
                     // Admin viewing "mine" or "pending"
-                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
+                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
                     fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isPC) {
@@ -129,8 +133,8 @@ function PropertiesPageContent() {
                     const response = await propertiesApi.getMyProperties();
                     fetchedProperties = Array.isArray(response.data) ? response.data : [];
                 } else if (currentView === 'all') {
-                    // Browse all approved properties (REDUCED from 1000 to 50)
-                    const response = await propertiesApi.getAll({ page: 1, limit: 50 });
+                    // Browse all approved properties (REDUCED to 10 for fastest loading)
+                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
                     const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                     fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
                 } else if (currentView === 'pending') {
@@ -142,8 +146,6 @@ function PropertiesPageContent() {
 
             setProperties(fetchedProperties);
         } catch (error: any) {
-            console.error('Failed to fetch properties:', error);
-            console.error('Error details:', error.response?.data || error.message);
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load properties';
             showToast.error(errorMsg);
             setProperties([]);

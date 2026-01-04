@@ -74,21 +74,23 @@ function ServicesPageContent() {
 
     // Fetch services on mount and when view/tab changes
     useEffect(() => {
-        if (user?.role) {
-            // Handle default redirects
-            if (isHS && !tabParam) {
-                router.replace(`/services?tab=${getDefaultServiceTab()}`);
-                return;
-            }
-            if (!isHS && !viewParam) {
-                const defaultView = getDefaultServiceView(user.role);
-                router.replace(`/services?view=${defaultView}`);
-                return;
-            }
-
-            fetchServices();
+        if (!user?.role) {
+            return;
         }
-    }, [user, currentView, currentTab]);
+
+        // Handle default redirects
+        if (isHS && !tabParam) {
+            router.replace(`/services?tab=${getDefaultServiceTab()}`);
+            return;
+        }
+        if (!isHS && !viewParam) {
+            const defaultView = getDefaultServiceView(user.role);
+            router.replace(`/services?view=${defaultView}`);
+            return;
+        }
+
+        fetchServices();
+    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS]);
 
     // Load saved services for home_seekers
     useEffect(() => {
@@ -98,28 +100,30 @@ function ServicesPageContent() {
     }, [isHS]);
 
     const fetchServices = async () => {
-        if (!user?.role) return;
+        if (!user?.role) {
+            return;
+        }
 
         try {
             setLoading(true);
             let fetchedServices: Service[] = [];
 
             if (isHS) {
-                // Home seekers: fetch verified/active services only (REDUCED from 1000 to 50)
-                const response = await servicesApi.getAll({ page: 1, limit: 50 });
+                // Home seekers: fetch verified/active services only (REDUCED to 10 for fastest loading)
+                const response = await servicesApi.getAll({ page: 1, limit: 10 });
                 const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedServices = allServices.filter((s: Service) =>
                     s.verificationStatus === 'verified' && s.status === 'active'
                 );
             } else if (isAdmin) {
-                // Admin: fetch based on view (OPTIMIZED - no longer fetches ALL pages)
+                // Admin: fetch based on view (REDUCED to 10 for fastest loading)
                 if (currentView === 'all') {
-                    // Fetch FIRST page only with reasonable limit (REDUCED from 100+ pages to 50)
-                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
+                    // Fetch FIRST page only with minimal limit for fast initial load
+                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
                     fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
                     // Admin viewing "mine" or "pending"
-                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
+                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
                     fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isSP) {
@@ -128,8 +132,8 @@ function ServicesPageContent() {
                     const response = await servicesApi.getMyServices();
                     fetchedServices = Array.isArray(response.data) ? response.data : [];
                 } else if (currentView === 'all') {
-                    // Browse all verified services (REDUCED from 1000 to 50)
-                    const response = await servicesApi.getAll({ page: 1, limit: 50 });
+                    // Browse all verified services (REDUCED to 10 for fastest loading)
+                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
                     const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                     fetchedServices = allServices.filter((s: Service) =>
                         s.verificationStatus === 'verified' && s.status === 'active'
@@ -143,8 +147,6 @@ function ServicesPageContent() {
 
             setServices(fetchedServices);
         } catch (error: any) {
-            console.error('Failed to fetch services:', error);
-            console.error('Error details:', error.response?.data || error.message);
             if (error.response?.status !== 404) {
                 const errorMsg = error.response?.data?.message || error.message || 'Failed to load services';
                 showToast.error(errorMsg);

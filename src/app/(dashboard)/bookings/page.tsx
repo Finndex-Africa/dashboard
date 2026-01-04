@@ -70,24 +70,22 @@ function BookingsPageContent() {
             // Role-based data fetching (REDUCED from 1000 to 50 for all roles)
             if (user.role === 'home_seeker') {
                 // Home seekers: own bookings only
-                response = await bookingsApi.getMyBookings({ page: 1, limit: 50 });
+                response = await bookingsApi.getMyBookings({ page: 1, limit: 10 });
             } else if (user.role === 'service_provider') {
                 // Service providers: bookings for own services
-                response = await bookingsApi.getProviderBookings({ page: 1, limit: 50 });
+                response = await bookingsApi.getProviderBookings({ page: 1, limit: 10 });
             } else if (user.role === 'agent' || user.role === 'landlord') {
                 // Agents: property bookings only
-                response = await bookingsApi.getAll({ page: 1, limit: 50 });
+                response = await bookingsApi.getAll({ page: 1, limit: 10 });
             } else {
                 // Admin: all bookings
-                response = await bookingsApi.getAll({ page: 1, limit: 50 });
+                response = await bookingsApi.getAll({ page: 1, limit: 10 });
             }
 
             const bookingsData = (response as any)?.data?.data || response.data || [];
             const bookings = Array.isArray(bookingsData) ? bookingsData : [];
             setBookings(bookings);
         } catch (error: any) {
-            console.error('Failed to fetch bookings:', error);
-            console.error('Error details:', error.response?.data || error.message);
             if (error.response?.status !== 404) {
                 const errorMsg = error.response?.data?.message || error.message || 'Failed to load bookings';
                 showToast.error(errorMsg);

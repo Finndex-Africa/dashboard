@@ -59,16 +59,10 @@ export function PropertyForm({
     }, [initialValues, form]);
 
     const handleSubmit = (values: any) => {
-        // Extract actual File objects from fileList
         const filesToUpload = fileList
             .filter(file => file.originFileObj)
             .map(file => file.originFileObj as File);
 
-        console.log('📸 Files to upload:', filesToUpload.length, filesToUpload);
-        console.log('📋 Form values:', values);
-
-        // Pass form values and files to parent
-        // Parent will handle async operations and form reset via modal close
         onSubmit(values, filesToUpload);
     };
 

@@ -33,42 +33,55 @@ export default function CreateServicePage() {
         try {
             setSubmitting(true);
 
-            // Remove existingImages field if it exists (browser cache issue)
-            const { existingImages, images, ...cleanValues } = values;
-
-            console.log('🔍 Original values:', values);
-            console.log('🧹 Cleaned values:', cleanValues);
-
-            // Step 1: Create service without images
-            const response = await servicesApi.create(cleanValues);
-            const createdService = response.data;
-
-            console.log('✅ Service created:', createdService);
-
-            // Step 2: Upload images if any
+            // Step 1: Upload images to Digital Ocean FIRST
+            let uploadedUrls: string[] = [];
             if (files.length > 0) {
-                console.log('📸 Uploading', files.length, 'images...');
-
-                const uploadedUrls: string[] = [];
                 for (const file of files) {
                     try {
                         const imageUrl = await mediaApi.upload(file, 'services');
                         uploadedUrls.push(imageUrl);
-                        console.log('✅ Uploaded:', imageUrl);
                     } catch (error) {
-                        console.error('❌ Failed to upload image:', error);
                         showToast.error('Failed to upload some images');
                     }
                 }
-
-                // Step 3: Update service with image URLs
-                if (uploadedUrls.length > 0) {
-                    await servicesApi.update(createdService._id, {
-                        images: uploadedUrls,
-                    });
-                    console.log('✅ Service images updated');
-                }
             }
+
+            // Step 2: Prepare clean data - BUILD FROM SCRATCH (safest approach)
+            const cleanData: any = {
+                title: values.title,
+                category: values.category,
+                description: values.description,
+                location: values.location,
+            };
+
+            // Add optional fields only if they exist
+            if (values.businessName) cleanData.businessName = values.businessName;
+            if (values.experience !== undefined && values.experience !== null) cleanData.experience = Number(values.experience);
+            if (values.phoneNumber) cleanData.phoneNumber = values.phoneNumber;
+            if (values.whatsappNumber) cleanData.whatsappNumber = values.whatsappNumber;
+            if (values.verificationNumber) cleanData.verificationNumber = values.verificationNumber;
+            if (values.priceUnit) cleanData.priceUnit = values.priceUnit;
+            if (values.duration) cleanData.duration = values.duration;
+
+            // Handle price (optional, defaults to 0)
+            if (values.price !== undefined && values.price !== null && values.price !== '') {
+                cleanData.price = Number(values.price);
+                if (cleanData.price < 0) cleanData.price = 0;
+            } else {
+                cleanData.price = 0;
+            }
+
+            // Add uploaded image URLs (required)
+            if (uploadedUrls.length > 0) {
+                cleanData.images = uploadedUrls;
+            } else {
+                showToast.error('At least 1 image is required');
+                setSubmitting(false);
+                return;
+            }
+
+            // Step 3: Create service with images already included
+            const response = await servicesApi.create(cleanData);
 
             showToast.success('Service created successfully');
 
@@ -76,7 +89,6 @@ export default function CreateServicePage() {
             const defaultView = user?.role ? getDefaultServiceView(user.role) : 'mine';
             router.push(`/services?view=${defaultView}`);
         } catch (error: any) {
-            console.error('Failed to create service:', error);
             showToast.error(error.response?.data?.message || 'Failed to create service');
         } finally {
             setSubmitting(false);
