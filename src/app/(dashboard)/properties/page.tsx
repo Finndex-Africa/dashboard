@@ -245,6 +245,32 @@ function PropertiesPageContent() {
         }
     };
 
+    const handleUnpublish = async (property: Property) => {
+        try {
+            setActionLoading(property._id);
+            await propertiesApi.unpublish(property._id);
+            showToast.success('Property unpublished successfully');
+            fetchProperties();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to unpublish property');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRepublish = async (property: Property) => {
+        try {
+            setActionLoading(property._id);
+            await propertiesApi.republish(property._id);
+            showToast.success('Property republished successfully');
+            fetchProperties();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to republish property');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const handleSaveToggle = (propertyId: string) => {
         const isSaved = savedPropertiesManager.toggle(propertyId);
         setSavedIds(savedPropertiesManager.getSavedIds());
@@ -373,6 +399,7 @@ function PropertiesPageContent() {
                             <Select.Option value="pending">Pending</Select.Option>
                             <Select.Option value="rented">Rented</Select.Option>
                             <Select.Option value="rejected">Rejected</Select.Option>
+                            <Select.Option value="suspended">Suspended</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={6}>
@@ -399,6 +426,8 @@ function PropertiesPageContent() {
                     onDelete={canCreateProperty(user.role) ? handleDelete : undefined}
                     onApprove={canModerateProperties(user.role) ? handleApprove : undefined}
                     onReject={canModerateProperties(user.role) ? handleRejectClick : undefined}
+                    onUnpublish={canCreateProperty(user.role) ? handleUnpublish : undefined}
+                    onRepublish={canCreateProperty(user.role) ? handleRepublish : undefined}
                     onSaveToggle={isHS ? handleSaveToggle : undefined}
                     savedIds={isHS ? savedIds : undefined}
                     approvingId={actionLoading}

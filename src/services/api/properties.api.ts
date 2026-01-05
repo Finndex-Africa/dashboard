@@ -88,6 +88,16 @@ export const propertiesApi = {
         return apiClient.patch<Property>(`/properties/${id}/reject`, { rejectionReason });
     },
 
+    // Unpublish property (Owner or Admin) - change status to suspended
+    unpublish: async (id: string) => {
+        return apiClient.patch<Property>(`/properties/${id}/unpublish`, {});
+    },
+
+    // Republish property (Owner or Admin) - restore suspended property to approved
+    republish: async (id: string) => {
+        return apiClient.patch<Property>(`/properties/${id}/republish`, {});
+    },
+
     // Get property statistics for landlord/agent
     getMyStats: async () => {
         return apiClient.get<{
