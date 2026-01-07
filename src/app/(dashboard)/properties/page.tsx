@@ -255,10 +255,29 @@ function PropertiesPageContent() {
     const handleUnpublish = async (property: Property) => {
         try {
             setActionLoading(property._id);
+            // Optimistically update the local state immediately for instant UI feedback
+            setProperties(prevProperties =>
+                prevProperties.map(p =>
+                    p._id === property._id
+                        ? { ...p, status: 'suspended' as const }
+                        : p
+                )
+            );
+            
             await propertiesApi.unpublish(property._id);
             showToast.success('Property unpublished successfully');
-            fetchProperties();
+            
+            // Refresh to ensure consistency with backend
+            await fetchProperties();
         } catch (error: any) {
+            // Revert optimistic update on error
+            setProperties(prevProperties =>
+                prevProperties.map(p =>
+                    p._id === property._id
+                        ? { ...p, status: property.status }
+                        : p
+                )
+            );
             showToast.error(error.response?.data?.message || 'Failed to unpublish property');
         } finally {
             setActionLoading(null);
@@ -268,10 +287,29 @@ function PropertiesPageContent() {
     const handleRepublish = async (property: Property) => {
         try {
             setActionLoading(property._id);
+            // Optimistically update the local state immediately for instant UI feedback
+            setProperties(prevProperties =>
+                prevProperties.map(p =>
+                    p._id === property._id
+                        ? { ...p, status: 'approved' as const }
+                        : p
+                )
+            );
+            
             await propertiesApi.republish(property._id);
             showToast.success('Property republished successfully');
-            fetchProperties();
+            
+            // Refresh to ensure consistency with backend
+            await fetchProperties();
         } catch (error: any) {
+            // Revert optimistic update on error
+            setProperties(prevProperties =>
+                prevProperties.map(p =>
+                    p._id === property._id
+                        ? { ...p, status: property.status }
+                        : p
+                )
+            );
             showToast.error(error.response?.data?.message || 'Failed to republish property');
         } finally {
             setActionLoading(null);

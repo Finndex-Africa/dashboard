@@ -20,7 +20,7 @@ export interface Service {
     price: number;
     priceUnit?: string;
     duration?: string;
-    status: 'pending' | 'active' | 'rejected' | 'inactive';
+    status: 'pending' | 'active' | 'rejected' | 'inactive' | 'suspended';
     verificationStatus?: 'pending' | 'verified' | 'rejected';
     rating?: number;
     reviewCount?: number;

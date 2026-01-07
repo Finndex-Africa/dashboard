@@ -84,10 +84,8 @@ export const servicesApi = {
         const cleanPayload = { ...data };
         if ('existingImages' in cleanPayload) {
             delete (cleanPayload as any).existingImages;
-            console.warn('⚠️ existingImages found in API call, removing it!');
         }
         
-        console.log('🚀 Final payload being sent to API:', cleanPayload);
         return apiClient.post<Service>('/services', cleanPayload);
     },
 
@@ -114,6 +112,16 @@ export const servicesApi = {
     // Reject service (Admin only)
     reject: async (id: string, rejectionReason: string) => {
         return apiClient.patch<Service>(`/services/${id}/reject`, { rejectionReason });
+    },
+
+    // Unpublish service (Owner or Admin) - change status to suspended
+    unpublish: async (id: string) => {
+        return apiClient.patch<Service>(`/services/${id}/unpublish`, {});
+    },
+
+    // Republish service (Owner or Admin) - restore suspended service to active
+    republish: async (id: string) => {
+        return apiClient.patch<Service>(`/services/${id}/republish`, {});
     },
 
     // Mark as featured (Admin only)

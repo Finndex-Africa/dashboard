@@ -6,7 +6,7 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -18,6 +18,8 @@ interface ServicesTableProps {
     onDelete?: (service: Service) => void;
     onVerify?: (service: Service) => void;
     onReject?: (service: Service) => void;
+    onUnpublish?: (service: Service) => void;
+    onRepublish?: (service: Service) => void;
     onSaveToggle?: (serviceId: string) => void;
     savedIds?: string[];
     approvingId?: string | null;
@@ -31,6 +33,8 @@ export function ServicesTable({
     onDelete,
     onVerify,
     onReject,
+    onUnpublish,
+    onRepublish,
     onSaveToggle,
     savedIds = [],
     approvingId,
@@ -45,6 +49,8 @@ export function ServicesTable({
                 return 'orange';
             case 'rejected':
                 return 'volcano';
+            case 'suspended':
+                return 'orange';
             default:
                 return 'default';
         }
@@ -93,6 +99,7 @@ export function ServicesTable({
                 { text: 'Inactive', value: 'inactive' },
                 { text: 'Pending', value: 'pending' },
                 { text: 'Rejected', value: 'rejected' },
+                { text: 'Suspended', value: 'suspended' },
             ],
             onFilter: (value, record) => record.status === value,
             render: (status: Service['status']) => (
@@ -173,6 +180,26 @@ export function ServicesTable({
                                         type="text"
                                         icon={<EditOutlined />}
                                         onClick={() => onEdit(record)}
+                                    />
+                                </Tooltip>
+                            )}
+                            {record.status === 'active' && onUnpublish && (
+                                <Tooltip title="Unpublish">
+                                    <Button
+                                        type="text"
+                                        icon={<EyeInvisibleOutlined />}
+                                        onClick={() => onUnpublish(record)}
+                                        loading={approvingId === record._id}
+                                    />
+                                </Tooltip>
+                            )}
+                            {record.status === 'suspended' && onRepublish && (
+                                <Tooltip title="Republish">
+                                    <Button
+                                        type="text"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => onRepublish(record)}
+                                        loading={approvingId === record._id}
                                     />
                                 </Tooltip>
                             )}

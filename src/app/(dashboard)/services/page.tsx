@@ -254,6 +254,70 @@ function ServicesPageContent() {
         }
     };
 
+    const handleUnpublish = async (service: Service) => {
+        try {
+            setActionLoading(service._id);
+            // Optimistically update the local state immediately for instant UI feedback
+            setServices(prevServices =>
+                prevServices.map(s =>
+                    s._id === service._id
+                        ? { ...s, status: 'suspended' as const }
+                        : s
+                )
+            );
+            
+            await servicesApi.unpublish(service._id);
+            showToast.success('Service unpublished successfully');
+            
+            // Refresh to ensure consistency with backend
+            await fetchServices();
+        } catch (error: any) {
+            // Revert optimistic update on error
+            setServices(prevServices =>
+                prevServices.map(s =>
+                    s._id === service._id
+                        ? { ...s, status: service.status }
+                        : s
+                )
+            );
+            showToast.error(error.response?.data?.message || 'Failed to unpublish service');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRepublish = async (service: Service) => {
+        try {
+            setActionLoading(service._id);
+            // Optimistically update the local state immediately for instant UI feedback
+            setServices(prevServices =>
+                prevServices.map(s =>
+                    s._id === service._id
+                        ? { ...s, status: 'active' as const }
+                        : s
+                )
+            );
+            
+            await servicesApi.republish(service._id);
+            showToast.success('Service republished successfully');
+            
+            // Refresh to ensure consistency with backend
+            await fetchServices();
+        } catch (error: any) {
+            // Revert optimistic update on error
+            setServices(prevServices =>
+                prevServices.map(s =>
+                    s._id === service._id
+                        ? { ...s, status: service.status }
+                        : s
+                )
+            );
+            showToast.error(error.response?.data?.message || 'Failed to republish service');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const handleSaveToggle = (serviceId: string) => {
         const isSaved = savedServicesManager.toggle(serviceId);
         setSavedIds(savedServicesManager.getSavedIds());
@@ -371,6 +435,7 @@ function ServicesPageContent() {
                             <Select.Option value="all">All Status</Select.Option>
                             <Select.Option value="active">Active</Select.Option>
                             <Select.Option value="inactive">Inactive</Select.Option>
+                            <Select.Option value="suspended">Suspended</Select.Option>
                         </Select>
                     </Col>
                     <Col xs={12} md={6}>
@@ -399,6 +464,8 @@ function ServicesPageContent() {
                     onDelete={canCreateService(user.role) ? handleDelete : undefined}
                     onVerify={canModerateServices(user.role) ? handleVerify : undefined}
                     onReject={canModerateServices(user.role) ? handleRejectClick : undefined}
+                    onUnpublish={canCreateService(user.role) ? handleUnpublish : undefined}
+                    onRepublish={canCreateService(user.role) ? handleRepublish : undefined}
                     onSaveToggle={isHS ? handleSaveToggle : undefined}
                     savedIds={isHS ? savedIds : undefined}
                     approvingId={actionLoading}

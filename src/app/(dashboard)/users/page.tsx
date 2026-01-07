@@ -51,12 +51,54 @@ export default function UsersPage() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            // REDUCED to 10 for fastest initial load
-            const response = await usersApi.getAll({ page: 1, limit: 10 });
-            // API returns { success: true, data: { data: [...], pagination: {...} } }
-            const usersData = response.data || [];
-            const users = Array.isArray(usersData) ? usersData : [];
-            setUsers(users);
+            
+            // Fetch ALL users by fetching all pages for accurate statistics
+            // Backend controller returns: { success: true, data: [...], pagination: {...} }
+            // API client returns: { success: true, data: [...], pagination: {...} } (same structure)
+            let allUsers: User[] = [];
+            let currentPage = 1;
+            let hasMorePages = true;
+            const pageSize = 100; // Fetch 100 at a time
+            
+            while (hasMorePages) {
+                const response = await usersApi.getAll({ page: currentPage, limit: pageSize });
+                
+                // Backend returns: { success: true, data: User[], pagination: {...} }
+                // Handle both possible structures (direct array or nested)
+                let pageUsers: User[] = [];
+                
+                if (Array.isArray(response.data)) {
+                    // Direct array structure (backend format)
+                    pageUsers = response.data;
+                } else if (response.data?.data && Array.isArray(response.data.data)) {
+                    // Nested structure (if wrapped)
+                    pageUsers = response.data.data;
+                } else {
+                    // Fallback
+                    pageUsers = [];
+                }
+                
+                allUsers = [...allUsers, ...pageUsers];
+                
+                // Check pagination - backend returns pagination at root level
+                const pagination = (response as any).pagination || response.data?.pagination;
+                if (pagination) {
+                    hasMorePages = currentPage < pagination.totalPages;
+                    currentPage++;
+                } else {
+                    // If no pagination info, stop if we got fewer than pageSize results
+                    hasMorePages = pageUsers.length === pageSize;
+                    currentPage++;
+                }
+                
+                // Safety limit to prevent infinite loops
+                if (currentPage > 100) {
+                    console.warn('Reached safety limit of 100 pages while fetching users');
+                    break;
+                }
+            }
+            
+            setUsers(allUsers);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load users';
             message.error(errorMsg);
