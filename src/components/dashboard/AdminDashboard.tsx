@@ -117,9 +117,10 @@ export default function AdminDashboard() {
 
                 // Fetch data for dashboard overview
                 // Using moderate limits (100) to show meaningful charts while maintaining good performance
+                // Admin should use admin endpoints to see ALL data without restrictions
                 const [propertiesResponse, servicesResponse, usersResponse, notificationsResponse] = await Promise.all([
-                    propertiesApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
-                    servicesApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
+                    propertiesApi.getAllAdminProperties({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
+                    servicesApi.getAllAdminServices({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
                     usersApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
                     notificationsApi.getAll({ limit: 10 }).catch((e) => ({ data: [], __error: e }))
                 ]);
@@ -133,11 +134,11 @@ export default function AdminDashboard() {
                     notificationsResponse,
                 });
 
-                // Extract data from paginated responses
-                const propertiesData = (propertiesResponse as any)?.data?.data || propertiesResponse.data || [];
-                const servicesData = (servicesResponse as any)?.data?.data || servicesResponse.data || [];
-                const usersData = (usersResponse as any)?.data?.data || usersResponse.data || [];
-                const notificationsData = (notificationsResponse as any)?.data?.data || notificationsResponse.data || [];
+                // Extract data from paginated responses - use same pattern as properties/services pages
+                const propertiesData = Array.isArray(propertiesResponse?.data) ? propertiesResponse.data : propertiesResponse?.data?.data || [];
+                const servicesData = Array.isArray(servicesResponse?.data) ? servicesResponse.data : servicesResponse?.data?.data || [];
+                const usersData = Array.isArray(usersResponse?.data) ? usersResponse.data : usersResponse?.data?.data || [];
+                const notificationsData = Array.isArray(notificationsResponse?.data) ? notificationsResponse.data : notificationsResponse?.data?.data || [];
 
                 setProperties(Array.isArray(propertiesData) ? propertiesData : []);
                 setServices(Array.isArray(servicesData) ? servicesData : []);

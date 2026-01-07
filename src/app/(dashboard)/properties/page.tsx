@@ -117,14 +117,21 @@ function PropertiesPageContent() {
                 const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
             } else if (isAdmin) {
-                // Admin: fetch based on view (REDUCED to 10 for fastest loading)
+                // Admin: fetch ALL properties with no restrictions using admin endpoint
                 if (currentView === 'all') {
-                    // Fetch FIRST page only with minimal limit for fast initial load
-                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
+                    // Admin "all" view: use admin endpoint to see ALL properties regardless of status
+                    const response = await propertiesApi.getAllAdminProperties({ page: 1, limit: 10 });
+                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
+                    fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                } else if (currentView === 'pending') {
+                    // Admin viewing pending: use admin-specific endpoint
+                    const response = await propertiesApi.getPendingProperties(1, 10);
+                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
                     fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
-                    // Admin viewing "mine" or "pending"
-                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
+                    // Admin viewing "mine" - still use admin endpoint but could filter by user if needed
+                    const response = await propertiesApi.getAllAdminProperties({ page: 1, limit: 10 });
+                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
                     fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isPC) {

@@ -133,4 +133,19 @@ export const servicesApi = {
             averageRating: number;
         }>('/services/provider/stats');
     },
+
+    // Get all services (Admin only) - no restrictions
+    getAllAdminServices: async (filters?: { page?: number; limit?: number; status?: string; search?: string }) => {
+        const params = new URLSearchParams();
+        if (filters?.page) params.append('page', filters.page.toString());
+        if (filters?.limit) params.append('limit', filters.limit.toString());
+        if (filters?.status) params.append('status', filters.status);
+        if (filters?.search) params.append('search', filters.search);
+        return apiClient.get<PaginatedResponse<Service>>(`/admin/services?${params.toString()}`);
+    },
+
+    // Get pending services (Admin only)
+    getPendingServices: async (page: number = 1, limit: number = 20) => {
+        return apiClient.get<PaginatedResponse<Service>>(`/admin/services/pending?page=${page}&limit=${limit}`);
+    },
 };

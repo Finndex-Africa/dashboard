@@ -116,14 +116,21 @@ function ServicesPageContent() {
                     s.verificationStatus === 'verified' && s.status === 'active'
                 );
             } else if (isAdmin) {
-                // Admin: fetch based on view (REDUCED to 10 for fastest loading)
+                // Admin: fetch ALL services with no restrictions using admin endpoint
                 if (currentView === 'all') {
-                    // Fetch FIRST page only with minimal limit for fast initial load
-                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
+                    // Admin "all" view: use admin endpoint to see ALL services regardless of status
+                    const response = await servicesApi.getAllAdminServices({ page: 1, limit: 10 });
+                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
+                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                } else if (currentView === 'pending') {
+                    // Admin viewing pending: use admin-specific endpoint
+                    const response = await servicesApi.getPendingServices(1, 10);
+                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
                     fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 } else {
-                    // Admin viewing "mine" or "pending"
-                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
+                    // Admin viewing "mine" - still use admin endpoint but could filter by user if needed
+                    const response = await servicesApi.getAllAdminServices({ page: 1, limit: 10 });
+                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
                     fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
                 }
             } else if (isSP) {

@@ -82,8 +82,6 @@ export default function DashboardPage() {
                     const pageData = response?.data || [];
                     const pagination = response?.pagination;
 
-                    console.log(`${entityName} - Page ${currentPage}: ${pageData.length} items, Total: ${pagination?.totalItems || 'unknown'}`);
-
                     allData = [...allData, ...pageData];
 
                     // Check if there are more pages
@@ -97,7 +95,6 @@ export default function DashboardPage() {
 
                     currentPage++;
                 } catch (error) {
-                    console.error(`Error fetching ${entityName} page ${currentPage}:`, error);
                     return allData;
                 }
             }
@@ -112,21 +109,15 @@ export default function DashboardPage() {
                 setLoading(true);
 
                 // Fetch ALL data by getting all pages
+                // Admin should use admin endpoints to see ALL data without restrictions
                 const [propertiesData, servicesData, usersData, notificationsData] = await Promise.all([
-                    fetchAllPages(propertiesApi.getAll, 'properties'),
-                    fetchAllPages(servicesApi.getAll, 'services'),
+                    fetchAllPages((params: any) => propertiesApi.getAllAdminProperties({ ...params, limit: 100 }), 'properties'),
+                    fetchAllPages((params: any) => servicesApi.getAllAdminServices({ ...params, limit: 100 }), 'services'),
                     fetchAllPages(usersApi.getAll, 'users'),
                     fetchAllPages((params: any) => notificationsApi.getAll({ ...params, limit: 50 }), 'notifications'),
                 ]);
 
                 if (!mounted) return;
-
-                console.log('Fetched ALL Data:', {
-                    properties: propertiesData.length,
-                    services: servicesData.length,
-                    users: usersData.length,
-                    notifications: notificationsData.length,
-                });
 
                 setProperties(propertiesData);
                 setServices(servicesData);
@@ -134,7 +125,6 @@ export default function DashboardPage() {
                 setNotifications(notificationsData);
             } catch (error: any) {
                 if (!mounted) return;
-                console.error('Failed to fetch dashboard data:', error);
                 if (error.response?.status !== 404) {
                     message.error('Failed to load dashboard data');
                 }
