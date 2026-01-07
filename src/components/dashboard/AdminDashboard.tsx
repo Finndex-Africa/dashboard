@@ -87,11 +87,11 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [rawResponses, setRawResponses] = useState<any>(null);
     const [rawError, setRawError] = useState<any>(null);
-    const [selectedYear, setSelectedYear] = useState<number>(2025);
+    const [selectedYear, setSelectedYear] = useState<number>(2026);
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
     // Fixed year range 2024-2026
-    const availableYears = [2024, 2025, 2026];
+    const availableYears = [2024, 2026, 2026];
     const availableMonths = [
         { value: 'all', label: 'All Months' },
         { value: '0', label: 'January' },
