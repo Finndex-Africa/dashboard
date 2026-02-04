@@ -254,7 +254,7 @@ export default function DashboardLayout({
                         }}
                     >
                         <img
-                            src="/images/logos/logo1.png"
+                            src="/images/logos/Finndex Africa Updated Logo.png"
                             alt="Finndex Africa"
                             className="h-10 object-contain"
                         />
@@ -320,7 +320,7 @@ export default function DashboardLayout({
                                 }}
                             >
                                 <img
-                                    src="/images/logos/logo1.png"
+                                    src="/images/logos/Finndex Africa Updated Logo.png"
                                     alt="Finndex Africa"
                                     className="h-8 object-contain"
                                 />
