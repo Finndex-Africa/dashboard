@@ -1,9 +1,19 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { LayoutClientWrapper } from '@/components/LayoutClientWrapper'
 
-const inter = Inter({ subsets: ['latin'] })
+// Whitney (same as main site): Bold for headings, Medium for body
+const whitneyBold = localFont({
+    src: '../../../frontend/Whitney-Font/whitney-bold.otf',
+    variable: '--font-whitney-bold',
+    display: 'swap',
+})
+const whitneyMedium = localFont({
+    src: '../../../frontend/Whitney-Font/whitney-medium.otf',
+    variable: '--font-whitney-medium',
+    display: 'swap',
+})
 
 export const metadata: Metadata = {
     title: 'Finndex Dashboard',
@@ -25,7 +35,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className={inter.className}>
+            <body className={`${whitneyBold.variable} ${whitneyMedium.variable} font-body antialiased`}>
                 <LayoutClientWrapper>
                     {children}
                 </LayoutClientWrapper>

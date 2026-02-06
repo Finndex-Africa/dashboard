@@ -281,7 +281,7 @@ export default function AdvertisementsPage() {
                             title="Total Impressions"
                             value={totalImpressions}
                             prefix={<EyeOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
+                            valueStyle={{ color: '#0000FF' }}
                         />
                     </Card>
                 </Col>

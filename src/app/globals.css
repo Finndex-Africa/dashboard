@@ -5,12 +5,31 @@
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  /* Brand primary blue - single source, same as frontend (frontend globals.css --primary-blue) */
+  --primary-blue: #0000FF;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
   overflow-x: hidden;
+  font-family: var(--font-whitney-medium), -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-whitney-bold), sans-serif;
+}
+
+/* Ant Design: same font as main site */
+.ant-layout,
+.ant-menu,
+.ant-btn,
+.ant-card,
+.ant-table,
+.ant-typography,
+.ant-form,
+.ant-input {
+  font-family: var(--font-whitney-medium), -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 /* Z-index hierarchy to prevent overlapping issues */

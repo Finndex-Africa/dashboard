@@ -183,7 +183,7 @@ export default function ProfilePage() {
                             src={avatarUrl}
                             icon={!avatarUrl && <UserOutlined />}
                             style={{
-                                backgroundColor: '#1890ff',
+                                backgroundColor: '#0000FF',
                                 fontSize: '48px'
                             }}
                         />

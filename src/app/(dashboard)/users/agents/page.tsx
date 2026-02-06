@@ -177,8 +177,8 @@ export default function AgentsPage() {
                                 <p className="text-gray-500 text-sm mb-2">Total Agents</p>
                                 <Statistic value={agents.length} valueStyle={{ fontSize: '24px', fontWeight: 'bold' }} />
                             </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1890ff20' }}>
-                                <TeamOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#0000FF20' }}>
+                                <TeamOutlined style={{ fontSize: 24, color: '#0000FF' }} />
                             </div>
                         </div>
                     </Card>

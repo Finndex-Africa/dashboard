@@ -153,7 +153,7 @@ export default function NotificationsPage() {
     const getNotificationIcon = (type: Notification['type']) => {
         switch (type) {
             case 'info':
-                return <InfoCircleOutlined style={{ fontSize: 20, color: '#1890ff' }} />;
+                return <InfoCircleOutlined style={{ fontSize: 20, color: '#0000FF' }} />;
             case 'success':
                 return <CheckCircleOutlined style={{ fontSize: 20, color: '#52c41a' }} />;
             case 'warning':
@@ -161,14 +161,14 @@ export default function NotificationsPage() {
             case 'error':
                 return <CloseCircleOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />;
             default:
-                return <InfoCircleOutlined style={{ fontSize: 20, color: '#1890ff' }} />;
+                return <InfoCircleOutlined style={{ fontSize: 20, color: '#0000FF' }} />;
         }
     };
 
     const getNotificationColor = (type: Notification['type']) => {
         switch (type) {
             case 'info':
-                return '#1890ff20';
+                return '#0000FF20';
             case 'success':
                 return '#52c41a20';
             case 'warning':
@@ -176,7 +176,7 @@ export default function NotificationsPage() {
             case 'error':
                 return '#ff4d4f20';
             default:
-                return '#1890ff20';
+                return '#0000FF20';
         }
     };
 

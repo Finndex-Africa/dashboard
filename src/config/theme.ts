@@ -1,7 +1,9 @@
+import { PRIMARY_BLUE } from './colors.js';
+
 export const designTokens = {
   colors: {
-    brand: '#1890FF',
-    primary: '#1890FF',
+    brand: PRIMARY_BLUE,
+    primary: PRIMARY_BLUE,
     success: '#52C41A',
     warning: '#FAAD14',
     error: '#FF4D4F',
@@ -45,7 +47,8 @@ export const designTokens = {
     xxl: '1600px'
   },
   fonts: {
-    primary: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    primary: 'var(--font-whitney-medium), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    heading: 'var(--font-whitney-bold), sans-serif',
     monospace: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace'
   },
   fontWeights: {

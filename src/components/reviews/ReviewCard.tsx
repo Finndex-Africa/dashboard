@@ -127,7 +127,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                         size={48}
                         src={review.userId.avatar}
                         icon={!review.userId.avatar && <UserOutlined />}
-                        style={{ backgroundColor: '#1890ff' }}
+                        style={{ backgroundColor: '#0000FF' }}
                     />
 
                     {/* Review Content */}
@@ -176,7 +176,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                                 type="text"
                                 icon={<LikeOutlined />}
                                 onClick={handleMarkHelpful}
-                                style={{ color: isHelpful ? '#1890ff' : undefined }}
+                                style={{ color: isHelpful ? '#0000FF' : undefined }}
                             >
                                 Helpful ({helpfulCount})
                             </Button>

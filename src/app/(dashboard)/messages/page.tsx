@@ -104,7 +104,7 @@ const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
                             strong
                             className="text-base"
                             style={{
-                                color: isActive ? '#1890ff' : '#262626',
+                                color: isActive ? '#0000FF' : '#262626',
                                 fontSize: '15px'
                             }}
                         >

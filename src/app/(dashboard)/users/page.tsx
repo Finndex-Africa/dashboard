@@ -215,7 +215,7 @@ export default function UsersPage() {
             key: 'user',
             render: (_: any, record: User) => (
                 <Space>
-                    <Avatar style={{ backgroundColor: '#1890ff' }} size="large">
+                    <Avatar style={{ backgroundColor: '#0000FF' }} size="large">
                         {(record.firstName || 'U').charAt(0)}{(record.lastName || 'N').charAt(0)}
                     </Avatar>
                     <div>
@@ -338,8 +338,8 @@ export default function UsersPage() {
                                 <p className="text-gray-500 text-sm mb-2">Total Users</p>
                                 <Statistic value={totalUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold' }} />
                             </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1890ff20' }}>
-                                <UserOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
                             </div>
                         </div>
                     </Card>
@@ -364,10 +364,10 @@ export default function UsersPage() {
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
                                 <p className="text-gray-500 text-sm mb-2">Active Users</p>
-                                <Statistic value={activeUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }} />
+                                <Statistic value={activeUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#0000FF' }} />
                             </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1890ff20' }}>
-                                <UserOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
                             </div>
                         </div>
                     </Card>
@@ -394,10 +394,10 @@ export default function UsersPage() {
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
                                 <p className="text-gray-500 text-sm mb-2">Landlords</p>
-                                <Statistic value={landlordUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }} />
+                                <Statistic value={landlordUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#0000FF' }} />
                             </div>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1890ff20' }}>
-                                <HomeOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <HomeOutlined style={{ fontSize: 20, color: '#0000FF' }} />
                             </div>
                         </div>
                     </Card>
@@ -479,7 +479,7 @@ export default function UsersPage() {
                 {selectedUser && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
-                            <Avatar size={64} style={{ backgroundColor: '#1890ff' }}>
+                            <Avatar size={64} style={{ backgroundColor: '#0000FF' }}>
                                 {(selectedUser.firstName || 'U').charAt(0)}{(selectedUser.lastName || 'N').charAt(0)}
                             </Avatar>
                             <div>

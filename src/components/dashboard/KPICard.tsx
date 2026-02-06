@@ -61,9 +61,9 @@ export function KPICardsGrid({ kpiData }: KPICardsGridProps) {
                             {kpi.icon && (
                                 <div
                                     className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                                    style={{ backgroundColor: '#1890ff20' }}
+                                    style={{ backgroundColor: '#0000FF20' }}
                                 >
-                                    <div style={{ fontSize: 24, color: '#1890ff' }}>{kpi.icon}</div>
+                                    <div style={{ fontSize: 24, color: '#0000FF' }}>{kpi.icon}</div>
                                 </div>
                             )}
                         </div>

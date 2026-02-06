@@ -29,7 +29,7 @@ export function PaymentsChart({ data }: PaymentsChartProps) {
         columnStyle: {
             radius: [8, 8, 0, 0],
         },
-        color: ['#1890ff', '#52c41a'],
+        color: ['#0000FF', '#52c41a'],
         legend: {
             position: 'top-right' as const,
         },

@@ -2,6 +2,7 @@
 
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ConfigProvider } from 'antd';
+import { PRIMARY_BLUE } from '@/config/colors.js';
 
 export function LayoutClientWrapper({
     children,
@@ -12,7 +13,7 @@ export function LayoutClientWrapper({
         <ConfigProvider
             theme={{
                 token: {
-                    colorPrimary: '#1890ff',
+                    colorPrimary: PRIMARY_BLUE,
                 },
             }}
             warning={{

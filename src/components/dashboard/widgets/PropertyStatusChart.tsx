@@ -72,7 +72,7 @@ export default function PropertyStatusChart({ userId, userRole }: PropertyStatus
                 Approved: '#52c41a',
                 Pending: '#faad14',
                 Rejected: '#ff4d4f',
-                Rented: '#1890ff',
+                Rented: '#0000FF',
                 Archived: '#8c8c8c',
             };
             return colors[type] || '#d9d9d9';

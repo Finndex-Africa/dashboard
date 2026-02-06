@@ -1,3 +1,5 @@
+const { PRIMARY_BLUE } = require('./src/config/colors.js');
+
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,18 +10,35 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-          950: '#082f49',
+          DEFAULT: PRIMARY_BLUE,
+          50: '#e6e6ff',
+          100: '#b3b3ff',
+          200: '#8080ff',
+          300: '#4d4dff',
+          400: '#1a1aff',
+          500: PRIMARY_BLUE,
+          600: '#0000e6',
+          700: '#0000cc',
+          800: '#0000b3',
+          900: '#000099',
         },
+        blue: {
+          50: '#e6e6ff',
+          100: '#b3b3ff',
+          200: '#8080ff',
+          300: '#4d4dff',
+          400: '#1a1aff',
+          500: PRIMARY_BLUE,
+          600: PRIMARY_BLUE,
+          700: '#0000e6',
+          800: '#0000cc',
+          900: '#0000b3',
+          950: '#000099',
+        },
+      },
+      fontFamily: {
+        body: ['var(--font-whitney-medium)', 'sans-serif'],
+        heading: ['var(--font-whitney-bold)', 'sans-serif'],
       },
     },
   },

@@ -37,7 +37,7 @@ export function PropertyTrendChart({ data }: PropertyTrendChartProps) {
                 duration: 1000,
             },
         },
-        color: ['#1890ff', '#52c41a'],
+        color: ['#0000FF', '#52c41a'],
         height: 300,
         xAxis: {
             type: 'time',
@@ -66,7 +66,7 @@ export function PropertyTrendChart({ data }: PropertyTrendChartProps) {
             shape: 'circle',
             style: {
                 fill: '#fff',
-                stroke: '#1890ff',
+                stroke: '#0000FF',
                 lineWidth: 2,
             },
         },
