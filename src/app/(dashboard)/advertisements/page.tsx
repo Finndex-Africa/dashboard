@@ -121,7 +121,7 @@ export default function AdvertisementsPage() {
     const getPlacementColor = (placement: string) => {
         const colors: Record<string, string> = {
             home: 'blue',
-            properties: 'purple',
+            properties: 'blue',
             services: 'cyan',
             sidebar: 'geekblue',
             banner: 'magenta',
@@ -291,7 +291,7 @@ export default function AdvertisementsPage() {
                             title="Total Clicks"
                             value={totalClicks}
                             prefix={<BarChartOutlined />}
-                            valueStyle={{ color: '#722ed1' }}
+                            valueStyle={{ color: '#0000FF' }}
                         />
                     </Card>
                 </Col>

@@ -160,7 +160,7 @@ export default function UsersPage() {
             case 'landlord': return 'blue';
             case 'agent': return 'green';
             case 'service_provider': return 'orange';
-            case 'home_seeker': return 'purple';
+            case 'home_seeker': return 'blue';
             default: return 'default';
         }
     };
@@ -422,10 +422,10 @@ export default function UsersPage() {
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
                                 <p className="text-gray-500 text-sm mb-2">Home Seekers</p>
-                                <Statistic value={homeSeekerUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }} />
+                                <Statistic value={homeSeekerUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#0000FF' }} />
                             </div>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#722ed120' }}>
-                                <SearchOutlined style={{ fontSize: 20, color: '#722ed1' }} />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <SearchOutlined style={{ fontSize: 20, color: '#0000FF' }} />
                             </div>
                         </div>
                     </Card>

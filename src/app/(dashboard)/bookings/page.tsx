@@ -1,474 +1,501 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-export const dynamic = 'force-dynamic';
+import { useState, useEffect } from 'react';
+import Typography from 'antd/es/typography';
+import Button from 'antd/es/button';
+import message from 'antd/es/message';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
-import Input from 'antd/es/input';
-import Select from 'antd/es/select';
+import Statistic from 'antd/es/statistic';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Button from 'antd/es/button';
+import Avatar from 'antd/es/avatar';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
-import Typography from 'antd/es/typography';
 import Modal from 'antd/es/modal';
-import Form from 'antd/es/form';
-import DatePicker from 'antd/es/date-picker';
-import InputNumber from 'antd/es/input-number';
-import TextArea from 'antd/es/input/TextArea';
-import { SearchOutlined, EyeOutlined, EditOutlined, StopOutlined } from '@ant-design/icons';
-import { bookingsApi } from '@/services/api/bookings.api';
-import type { Booking } from '@/types/dashboard';
-import type { ColumnsType } from 'antd/es/table';
-import { showToast } from '@/lib/toast';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
+import {
+    UserOutlined,
+    TeamOutlined,
+    HomeOutlined,
+    ToolOutlined,
+    SearchOutlined,
+    EyeOutlined,
+    EditOutlined,
+    DeleteOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+} from '@ant-design/icons';
+import { Column } from '@ant-design/plots';
+import { usersApi } from '@/services/api/users.api';
+import type { User } from '@/types/users';
 import { useAuth } from '@/providers/AuthProvider';
-import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-const { Search } = Input;
 
-type BookingType = 'property' | 'service' | 'all';
-type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rejected' | 'all';
-
-function BookingsPageContent() {
-    const { user } = useAuth();
-    const router = useRouter();
-    const searchParams = useSearchParams();
-
-    // Query params
-    const typeParam = (searchParams.get('type') as BookingType) || 'all';
-    const statusParam = (searchParams.get('status') as BookingStatus) || 'all';
-
-    // State
+export default function UsersPage() {
+    const { user: currentUser } = useAuth();
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editLoading, setEditLoading] = useState(false);
-    const [cancelLoading, setCancelLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
-    const [form] = Form.useForm();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [verificationFilter, setVerificationFilter] = useState<string>('all');
 
     useEffect(() => {
-        if (user) {
-            fetchBookings();
-        }
-    }, [user, typeParam, statusParam]);
+        fetchUsers();
+    }, []);
 
-    const fetchBookings = async () => {
-        if (!user?.role) return;
-
+    const fetchUsers = async () => {
         try {
             setLoading(true);
-            let response;
-
-            // Role-based data fetching (REDUCED from 1000 to 50 for all roles)
-            if (user.role === 'home_seeker') {
-                // Home seekers: own bookings only
-                response = await bookingsApi.getMyBookings({ page: 1, limit: 10 });
-            } else if (user.role === 'service_provider') {
-                // Service providers: bookings for own services
-                response = await bookingsApi.getProviderBookings({ page: 1, limit: 10 });
-            } else if (user.role === 'agent' || user.role === 'landlord') {
-                // Agents: property bookings only
-                response = await bookingsApi.getAll({ page: 1, limit: 10 });
-            } else {
-                // Admin: all bookings
-                response = await bookingsApi.getAll({ page: 1, limit: 10 });
+            
+            // Fetch ALL users by fetching all pages for accurate statistics
+            // Backend controller returns: { success: true, data: [...], pagination: {...} }
+            // API client returns: { success: true, data: [...], pagination: {...} } (same structure)
+            let allUsers: User[] = [];
+            let currentPage = 1;
+            let hasMorePages = true;
+            const pageSize = 100; // Fetch 100 at a time
+            
+            while (hasMorePages) {
+                const response = await usersApi.getAll({ page: currentPage, limit: pageSize });
+                
+                // Backend returns: { success: true, data: User[], pagination: {...} }
+                // Handle both possible structures (direct array or nested)
+                let pageUsers: User[] = [];
+                
+                if (Array.isArray(response.data)) {
+                    // Direct array structure (backend format)
+                    pageUsers = response.data;
+                } else if (response.data?.data && Array.isArray(response.data.data)) {
+                    // Nested structure (if wrapped)
+                    pageUsers = response.data.data;
+                } else {
+                    // Fallback
+                    pageUsers = [];
+                }
+                
+                allUsers = [...allUsers, ...pageUsers];
+                
+                // Check pagination - backend returns pagination at root level
+                const pagination = (response as any).pagination || response.data?.pagination;
+                if (pagination) {
+                    hasMorePages = currentPage < pagination.totalPages;
+                    currentPage++;
+                } else {
+                    // If no pagination info, stop if we got fewer than pageSize results
+                    hasMorePages = pageUsers.length === pageSize;
+                    currentPage++;
+                }
+                
+                // Safety limit to prevent infinite loops
+                if (currentPage > 100) {
+                    console.warn('Reached safety limit of 100 pages while fetching users');
+                    break;
+                }
             }
-
-            const bookingsData = (response as any)?.data?.data || response.data || [];
-            const bookings = Array.isArray(bookingsData) ? bookingsData : [];
-            setBookings(bookings);
+            
+            setUsers(allUsers);
         } catch (error: any) {
-            if (error.response?.status !== 404) {
-                const errorMsg = error.response?.data?.message || error.message || 'Failed to load bookings';
-                showToast.error(errorMsg);
-            }
-            setBookings([]);
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to load users';
+            message.error(errorMsg);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Filter bookings
-    const filteredBookings = bookings.filter(booking => {
-        // Search filter
-        if (searchText) {
-            const search = searchText.toLowerCase();
-            const serviceTitle = typeof booking.serviceId === 'object' && booking.serviceId?.title
-                ? booking.serviceId.title.toLowerCase()
-                : '';
-            if (!serviceTitle.includes(search)) return false;
-        }
-
-        // Type filter (property vs service)
-        if (typeParam !== 'all') {
-            // Future: Check booking type when property bookings are added
-            // For now, all bookings are service bookings
-        }
-
-        // Status filter
-        if (statusParam !== 'all' && booking.status !== statusParam) return false;
-
-        return true;
-    });
-
-    const handleView = (booking: Booking) => {
-        setSelectedBooking(booking);
+    const handleView = (user: User) => {
+        setSelectedUser(user);
         setViewModalOpen(true);
     };
 
-    const handleEdit = (booking: Booking) => {
-        setSelectedBooking(booking);
-        form.setFieldsValue({
-            duration: booking.duration,
-            serviceLocation: booking.serviceLocation,
-            serviceAddress: booking.serviceAddress,
-            notes: booking.notes,
-        });
-        setEditModalOpen(true);
-    };
-
-    const handleUpdateBooking = async (values: any) => {
-        if (!selectedBooking) return;
-
-        try {
-            setEditLoading(true);
-            await bookingsApi.update(selectedBooking._id, {
-                ...values,
-                scheduledDate: values.scheduledDate?.toISOString(),
-            });
-
-            showToast.success('Booking updated successfully');
-            setEditModalOpen(false);
-            form.resetFields();
-            setSelectedBooking(null);
-            fetchBookings();
-        } catch (error: any) {
-            showToast.error(error.response?.data?.message || 'Failed to update booking');
-        } finally {
-            setEditLoading(false);
-        }
-    };
-
-    const handleCancelBooking = async (booking: Booking) => {
+    const handleDelete = (user: User) => {
         Modal.confirm({
-            title: 'Cancel Booking',
-            content: 'Are you sure you want to cancel this booking?',
-            okText: 'Yes, Cancel Booking',
+            title: 'Delete User',
+            content: `Are you sure you want to delete ${user.firstName} ${user.lastName}?`,
+            okText: 'Delete',
             okType: 'danger',
             onOk: async () => {
                 try {
-                    setCancelLoading(true);
-                    await bookingsApi.cancel(booking._id, 'Cancelled by user');
-                    showToast.success('Booking cancelled successfully');
-                    fetchBookings();
+                    await usersApi.delete(user._id);
+                    message.success('User deleted successfully');
+                    fetchUsers();
                 } catch (error: any) {
-                    showToast.error(error.response?.data?.message || 'Failed to cancel booking');
-                } finally {
-                    setCancelLoading(false);
+                    message.error('Failed to delete user');
                 }
             },
         });
     };
 
-    const getStatusColor = (status: Booking['status']) => {
-        switch (status) {
-            case 'confirmed': return 'green';
-            case 'pending': return 'orange';
-            case 'in_progress': return 'blue';
-            case 'completed': return 'cyan';
-            case 'cancelled': return 'red';
-            case 'rejected': return 'volcano';
+    const handleToggleVerification = async (user: User) => {
+        // Check if current user is admin
+        if (currentUser?.role !== 'admin') {
+            message.error('Only administrators can verify or unverify users');
+            return;
+        }
+
+        try {
+            if (user.verified) {
+                await usersApi.unverify(user._id);
+                message.success(`${user.firstName} ${user.lastName} has been unverified`);
+            } else {
+                await usersApi.verify(user._id);
+                message.success(`${user.firstName} ${user.lastName} has been verified`);
+            }
+            fetchUsers();
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update verification status';
+            message.error(errorMessage);
+        }
+    };
+
+    // Helper functions for role display
+    const getRoleColor = (role: User['userType']) => {
+        switch (role) {
+            case 'admin': return 'red';
+            case 'landlord': return 'blue';
+            case 'agent': return 'green';
+            case 'service_provider': return 'orange';
+            case 'home_seeker': return 'blue';
             default: return 'default';
         }
     };
 
-    const getPaymentStatusColor = (status: Booking['paymentStatus']) => {
-        switch (status) {
-            case 'completed': return 'green';
-            case 'pending': return 'orange';
-            case 'failed': return 'red';
-            case 'refunded': return 'purple';
-            default: return 'default';
+    const getRoleLabel = (role: User['userType']) => {
+        switch (role) {
+            case 'admin': return 'Admin';
+            case 'landlord': return 'Landlord';
+            case 'agent': return 'Agent';
+            case 'service_provider': return 'Service Provider';
+            case 'home_seeker': return 'Home Seeker';
+            default: return role;
         }
     };
 
-    const columns: ColumnsType<Booking> = [
+    // Filter users based on search term and verification status
+    const filteredUsers = users.filter(user => {
+        // Search filter
+        if (searchTerm.trim()) {
+            const search = searchTerm.toLowerCase();
+            const matchesSearch = (
+                user.firstName?.toLowerCase().includes(search) ||
+                user.lastName?.toLowerCase().includes(search) ||
+                user.email?.toLowerCase().includes(search) ||
+                user.phone?.toLowerCase().includes(search) ||
+                getRoleLabel(user.userType).toLowerCase().includes(search)
+            );
+            if (!matchesSearch) return false;
+        }
+
+        // Verification filter
+        if (verificationFilter !== 'all') {
+            if (verificationFilter === 'verified' && !user.verified) return false;
+            if (verificationFilter === 'not_verified' && user.verified) return false;
+        }
+
+        return true;
+    });
+
+    const totalUsers = users.length;
+    const adminUsers = users.filter(u => u.userType === 'admin').length;
+    const landlordUsers = users.filter(u => u.userType === 'landlord').length;
+    const agentUsers = users.filter(u => u.userType === 'agent').length;
+    const serviceProviderUsers = users.filter(u => u.userType === 'service_provider').length;
+    const homeSeekerUsers = users.filter(u => u.userType === 'home_seeker').length;
+    const verifiedUsers = users.filter(u => u.verified).length;
+    const activeUsers = users.filter(u => u.status === 'active').length;
+
+    const columns = [
         {
-            title: 'Service',
-            dataIndex: 'serviceId',
-            key: 'service',
-            render: (service: any) => (
-                <div>
-                    <div className="font-medium">
-                        {typeof service === 'object' ? service?.title : 'N/A'}
+            title: 'User',
+            key: 'user',
+            render: (_: any, record: User) => (
+                <Space>
+                    <Avatar style={{ backgroundColor: '#0000FF' }} size="large">
+                        {(record.firstName || 'U').charAt(0)}{(record.lastName || 'N').charAt(0)}
+                    </Avatar>
+                    <div>
+                        <div className="font-medium">{record.firstName || ''} {record.lastName || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{record.email}</div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                        {typeof service === 'object' ? service?.category : ''}
-                    </div>
-                </div>
+                </Space>
             ),
         },
         {
-            title: 'Scheduled Date',
-            dataIndex: 'scheduledDate',
-            key: 'scheduledDate',
-            render: (date) => new Date(date).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
+            title: 'Phone',
+            dataIndex: 'phone',
+            key: 'phone',
+            render: (phone: string) => phone || 'N/A',
         },
         {
-            title: 'Duration',
-            dataIndex: 'duration',
-            key: 'duration',
-            render: (duration) => `${duration} hours`,
+            title: 'Role',
+            dataIndex: 'userType',
+            key: 'userType',
+            filters: [
+                { text: 'admin', value: 'admin' },
+                { text: 'Landlord', value: 'landlord' },
+                { text: 'Agent', value: 'agent' },
+                { text: 'Service_rovider', value: 'service_provider' },
+                { text: 'Home Seeker', value: 'home_seeker' },
+            ],
+            onFilter: (value: any, record: User) => record.userType === value,
+            render: (role: User['userType']) => (
+                <Tag color={getRoleColor(role)}>{getRoleLabel(role)}</Tag>
+            ),
         },
         {
-            title: 'Total Price',
-            dataIndex: 'totalPrice',
-            key: 'totalPrice',
-            render: (price) => `$${price?.toLocaleString() || 0}`,
+            title: 'Verified',
+            dataIndex: 'verified',
+            key: 'verified',
+            filters: [
+                { text: 'Verified', value: true },
+                { text: 'Not Verified', value: false },
+            ],
+            onFilter: (value: any, record: User) => record.verified === value,
+            render: (verified: boolean) => (
+                <Tag color={verified ? 'green' : 'orange'} icon={verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>
+                    {verified ? 'Verified' : 'Not Verified'}
+                </Tag>
+            ),
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            render: (status: Booking['status']) => (
-                <Tag color={getStatusColor(status)}>
-                    {status.toUpperCase().replace('_', ' ')}
-                </Tag>
+            filters: [
+                { text: 'Active', value: "active" },
+                { text: 'Inactive', value: "inactive" },
+            ],
+            onFilter: (value: any, record: User) => record.status === value,
+            render: (status: string) => (
+                <Tag color={status === 'active' ? 'green' : 'red'}>{status === 'active' ? 'Active' : 'Inactive'}</Tag>
             ),
         },
         {
-            title: 'Payment',
-            dataIndex: 'paymentStatus',
-            key: 'paymentStatus',
-            render: (status: Booking['paymentStatus']) => (
-                <Tag color={getPaymentStatusColor(status)}>
-                    {status?.toUpperCase() || 'N/A'}
-                </Tag>
-            ),
+            title: 'Created',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            sorter: (a: User, b: User) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            render: (date: string) => new Date(date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            }),
         },
         {
             title: 'Actions',
             key: 'actions',
-            render: (_, record) => (
-                <Space size="small">
-                    <Tooltip title="View">
-                        <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
-                    </Tooltip>
-                    {record.status === 'pending' && (
-                        <>
-                            <Tooltip title="Edit">
-                                <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                            </Tooltip>
-                            <Tooltip title="Cancel">
+            render: (_: any, record: User) => {
+                const isAdmin = currentUser?.role === 'admin';
+
+                return (
+                    <Space size="small">
+                        {isAdmin && (
+                            <Tooltip title={record.verified ? 'Unverify User' : 'Verify User'}>
                                 <Button
                                     type="text"
-                                    danger
-                                    icon={<StopOutlined />}
-                                    onClick={() => handleCancelBooking(record)}
-                                    loading={cancelLoading}
+                                    icon={record.verified ? <CloseCircleOutlined /> : <CheckCircleOutlined />}
+                                    onClick={() => handleToggleVerification(record)}
+                                    style={{ color: record.verified ? '#fa8c16' : '#52c41a' }}
                                 />
                             </Tooltip>
-                        </>
-                    )}
-                </Space>
-            ),
+                        )}
+                        <Tooltip title="View">
+                            <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                            <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Edit functionality coming soon')} />
+                        </Tooltip>
+                        {isAdmin && (
+                            <Tooltip title="Delete">
+                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
+                            </Tooltip>
+                        )}
+                    </Space>
+                );
+            },
         },
     ];
 
-    const handleFilterChange = (key: 'type' | 'status', value: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (value === 'all') {
-            params.delete(key);
-        } else {
-            params.set(key, value);
-        }
-        router.push(`/bookings?${params.toString()}`);
-    };
-
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <Title level={2} className="mb-1">Bookings</Title>
-                <Text type="secondary">Manage your booking requests</Text>
+            <div className="flex justify-between items-center">
+                <div>
+                    <Title level={3} className="mb-1">Users</Title>
+                    <Text type="secondary">Manage users and view user statistics by type</Text>
+                </div>
             </div>
 
-            {/* Filters */}
+            <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Total Users</p>
+                                <Statistic value={totalUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold' }} />
+                            </div>
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Verified Users</p>
+                                <Statistic value={verifiedUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }} />
+                            </div>
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#52c41a20' }}>
+                                <CheckCircleOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Active Users</p>
+                                <Statistic value={activeUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#0000FF' }} />
+                            </div>
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Agents</p>
+                                <Statistic value={agentUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }} />
+                            </div>
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#52c41a20' }}>
+                                <TeamOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} lg={8}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Landlords</p>
+                                <Statistic value={landlordUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#0000FF' }} />
+                            </div>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
+                                <HomeOutlined style={{ fontSize: 20, color: '#0000FF' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Service Providers</p>
+                                <Statistic value={serviceProviderUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#fa8c16' }} />
+                            </div>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#fa8c1620' }}>
+                                <ToolOutlined style={{ fontSize: 20, color: '#fa8c16' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Home Seekers</p>
+                                <Statistic value={homeSeekerUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }} />
+                            </div>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#722ed120' }}>
+                                <SearchOutlined style={{ fontSize: 20, color: '#722ed1' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Search and Filters */}
             <Card>
                 <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                        <Search
-                            placeholder="Search by service..."
+                    <Col xs={24} md={16}>
+                        <Input
+                            placeholder="Search by name, email, phone, or role..."
                             allowClear
                             size="large"
                             prefix={<SearchOutlined />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </Col>
-                    <Col xs={12} md={4}>
+                    <Col xs={24} md={8}>
                         <Select
                             size="large"
-                            value={typeParam}
-                            onChange={(value) => handleFilterChange('type', value)}
+                            value={verificationFilter}
+                            onChange={setVerificationFilter}
                             style={{ width: '100%' }}
                         >
-                            <Select.Option value="all">All Types</Select.Option>
-                            <Select.Option value="service">Service</Select.Option>
-                            <Select.Option value="property">Property</Select.Option>
-                        </Select>
-                    </Col>
-                    <Col xs={12} md={4}>
-                        <Select
-                            size="large"
-                            value={statusParam}
-                            onChange={(value) => handleFilterChange('status', value)}
-                            style={{ width: '100%' }}
-                        >
-                            <Select.Option value="all">All Status</Select.Option>
-                            <Select.Option value="pending">Pending</Select.Option>
-                            <Select.Option value="confirmed">Confirmed</Select.Option>
-                            <Select.Option value="in_progress">In Progress</Select.Option>
-                            <Select.Option value="completed">Completed</Select.Option>
-                            <Select.Option value="cancelled">Cancelled</Select.Option>
+                            <Select.Option value="all">All Users</Select.Option>
+                            <Select.Option value="verified">Verified</Select.Option>
+                            <Select.Option value="not_verified">Not Verified</Select.Option>
                         </Select>
                     </Col>
                 </Row>
             </Card>
 
-            {/* Bookings Table */}
+            {/* Users Table */}
             <Card>
                 <Table
                     columns={columns}
-                    dataSource={filteredBookings}
+                    dataSource={filteredUsers}
                     loading={loading}
                     rowKey="_id"
                     pagination={{
                         pageSize: 10,
-                        showTotal: (total) => `${total} bookings`,
-                        showSizeChanger: true,
+                        showTotal: (total) => `Total ${total} user${total !== 1 ? 's' : ''}`,
+                        showSizeChanger: true
                     }}
                 />
             </Card>
 
-            {/* View Modal */}
-            <Modal
-                title="Booking Details"
-                open={viewModalOpen}
-                onCancel={() => {
-                    setViewModalOpen(false);
-                    setSelectedBooking(null);
-                }}
-                footer={null}
-                width={600}
-            >
-                {selectedBooking && (
+            <Modal title="User Details" open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
+                {selectedUser && (
                     <div className="space-y-4">
-                        <div>
-                            <Text type="secondary">Service</Text>
-                            <div className="font-medium">
-                                {typeof selectedBooking.serviceId === 'object'
-                                    ? selectedBooking.serviceId?.title
-                                    : 'N/A'}
-                            </div>
-                        </div>
-                        <div>
-                            <Text type="secondary">Scheduled Date</Text>
-                            <div>{new Date(selectedBooking.scheduledDate).toLocaleString()}</div>
-                        </div>
-                        <div>
-                            <Text type="secondary">Duration</Text>
-                            <div>{selectedBooking.duration} hours</div>
-                        </div>
-                        <div>
-                            <Text type="secondary">Total Price</Text>
-                            <div>${selectedBooking.totalPrice?.toLocaleString()}</div>
-                        </div>
-                        <div>
-                            <Text type="secondary">Status</Text>
+                        <div className="flex items-center gap-4">
+                            <Avatar size={64} style={{ backgroundColor: '#0000FF' }}>
+                                {(selectedUser.firstName || 'U').charAt(0)}{(selectedUser.lastName || 'N').charAt(0)}
+                            </Avatar>
                             <div>
-                                <Tag color={getStatusColor(selectedBooking.status)}>
-                                    {selectedBooking.status.toUpperCase()}
-                                </Tag>
+                                <div className="text-xl font-bold">{selectedUser.firstName || ''} {selectedUser.lastName || 'Unknown'}</div>
+                                <div className="text-gray-500">{selectedUser.email}</div>
                             </div>
                         </div>
-                        <div>
-                            <Text type="secondary">Payment Status</Text>
-                            <div>
-                                <Tag color={getPaymentStatusColor(selectedBooking.paymentStatus)}>
-                                    {selectedBooking.paymentStatus?.toUpperCase() || 'N/A'}
-                                </Tag>
-                            </div>
-                        </div>
-                        {selectedBooking.notes && (
-                            <div>
-                                <Text type="secondary">Notes</Text>
-                                <div>{selectedBooking.notes}</div>
-                            </div>
-                        )}
+                        <div><Text type="secondary">Phone Number</Text><div className="font-medium">{selectedUser.phone || 'N/A'}</div></div>
+                        <div><Text type="secondary">Role</Text><div><Tag color={getRoleColor(selectedUser.userType)}>{getRoleLabel(selectedUser.userType)}</Tag></div></div>
+                        <div><Text type="secondary">Verification Status</Text><div><Tag color={selectedUser.verified ? 'green' : 'orange'} icon={selectedUser.verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>{selectedUser.verified ? 'Verified' : 'Not Verified'}</Tag></div></div>
+                        <div><Text type="secondary">Account Status</Text><div><Tag color={selectedUser.status === 'active' ? 'green' : 'red'}>{selectedUser.status === 'active' ? 'Active' : 'Inactive'}</Tag></div></div>
+                        <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
+                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
                     </div>
                 )}
             </Modal>
-
-            {/* Edit Modal */}
-            <Modal
-                title="Edit Booking"
-                open={editModalOpen}
-                onOk={() => form.submit()}
-                onCancel={() => {
-                    setEditModalOpen(false);
-                    form.resetFields();
-                    setSelectedBooking(null);
-                }}
-                confirmLoading={editLoading}
-            >
-                <Form form={form} layout="vertical" onFinish={handleUpdateBooking}>
-                    <Form.Item name="scheduledDate" label="Scheduled Date">
-                        <DatePicker showTime style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name="duration" label="Duration (hours)">
-                        <InputNumber min={1} style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name="serviceLocation" label="Service Location">
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="serviceAddress" label="Service Address">
-                        <TextArea rows={2} />
-                    </Form.Item>
-                    <Form.Item name="notes" label="Notes">
-                        <TextArea rows={3} />
-                    </Form.Item>
-                </Form>
-            </Modal>
         </div>
-    );
-}
-
-export default function BookingsPage() {
-    return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading...</p>
-                </div>
-            </div>
-        }>
-            <BookingsPageContent />
-        </Suspense>
     );
 }

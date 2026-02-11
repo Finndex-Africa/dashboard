@@ -76,7 +76,7 @@ export default function AgentsPage() {
         xField: 'agent',
         yField: 'value',
         seriesField: 'type',
-        color: ['#6366f1', '#3b82f6'],
+        color: ['#0000FF', '#0000FF'],
         columnStyle: { radius: [4, 4, 0, 0] },
     };
 
@@ -86,7 +86,7 @@ export default function AgentsPage() {
             key: 'agent',
             render: (_: any, record: Agent) => (
                 <Space>
-                    <Avatar style={{ backgroundColor: '#6366f1' }} size="large">
+                    <Avatar style={{ backgroundColor: '#0000FF' }} size="large">
                         {record.name.charAt(0)}
                     </Avatar>
                     <div>

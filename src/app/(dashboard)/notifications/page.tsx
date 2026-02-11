@@ -124,8 +124,8 @@ export default function NotificationsPage() {
             title: 'Total',
             value: totalNotifications,
             icon: <BellOutlined />,
-            color: '#667eea',
-            bgColor: '#667eea15',
+            color: '#0000FF',
+            bgColor: '#0000FF15',
         },
         {
             title: 'Unread',
@@ -186,7 +186,7 @@ export default function NotificationsPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <Title level={2} className="mb-1" style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        background: 'linear-gradient(135deg, #0000FF 0%, #0000CC 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent'
                     }}>
@@ -201,7 +201,7 @@ export default function NotificationsPage() {
                         size="large"
                         onClick={handleMarkAllAsRead}
                         style={{
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            background: 'linear-gradient(135deg, #0000FF 0%, #0000CC 100%)',
                             border: 'none',
                             borderRadius: '8px',
                             height: '44px',

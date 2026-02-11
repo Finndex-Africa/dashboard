@@ -200,11 +200,11 @@ export default function DashboardLayout({
                     },
                     success: {
                         iconTheme: {
-                            primary: '#43e97b',
+                            primary: '#52c41a',
                             secondary: '#fff',
                         },
                         style: {
-                            border: '1px solid #43e97b20',
+                            border: '1px solid #52c41a20',
                         },
                     },
                     error: {
@@ -218,7 +218,7 @@ export default function DashboardLayout({
                     },
                     loading: {
                         iconTheme: {
-                            primary: '#4facfe',
+                            primary: '#0000FF',
                             secondary: '#fff',
                         },
                     },
@@ -383,7 +383,7 @@ export default function DashboardLayout({
                                     src={user?.avatar}
                                     icon={!user?.avatar && <UserOutlined />}
                                     size={48}
-                                    style={{ backgroundColor: '#6366f1' }}
+                                    style={{ backgroundColor: '#0000FF' }}
                                 />
                                 <div>
                                     <div style={{ fontWeight: 600, fontSize: '16px' }}>

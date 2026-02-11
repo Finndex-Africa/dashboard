@@ -153,8 +153,8 @@ export default function DashboardPage() {
             value: totalProperties,
             change: 12.5,
             IconComponent: HomeOutlined,
-            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            bgColor: '#667eea10',
+            gradient: 'linear-gradient(135deg, #0000FF 0%, #764ba2 100%)',
+            bgColor: '#0000FF10',
         },
         {
             title: 'Portfolio Value',
@@ -162,8 +162,8 @@ export default function DashboardPage() {
             prefix: '$',
             change: 8.2,
             IconComponent: DollarOutlined,
-            gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            bgColor: '#f093fb10',
+            gradient: 'linear-gradient(135deg, #6666FF 0%, #f5576c 100%)',
+            bgColor: '#6666FF10',
         },
         {
             title: 'Active Services',
@@ -255,7 +255,7 @@ export default function DashboardPage() {
         yField: 'value',
         seriesField: 'category',
         smooth: true,
-        color: ['#667eea', '#4facfe', '#43e97b'],
+        color: ['#0000FF', '#4facfe', '#43e97b'],
         legend: {
             position: 'top' as const,
         },
@@ -297,7 +297,7 @@ export default function DashboardPage() {
                 content: totalProperties.toString(),
             },
         },
-        color: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'],
+        color: ['#0000FF', '#764ba2', '#6666FF', '#4facfe', '#43e97b'],
     };
 
     return (
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             {/* Modern Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <Title level={2} className="mb-0" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <Title level={2} className="mb-0" style={{ background: 'linear-gradient(135deg, #0000FF 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         Dashboard Overview
                     </Title>
                     <Text type="secondary" className="text-base">Welcome back! Here's what's happening with your properties today.</Text>
@@ -390,7 +390,7 @@ export default function DashboardPage() {
                     <Card
                         title={
                             <div className="flex items-center gap-2">
-                                <TrophyOutlined style={{ fontSize: '20px', color: '#667eea' }} />
+                                <TrophyOutlined style={{ fontSize: '20px', color: '#0000FF' }} />
                                 <Text strong style={{ fontSize: '18px' }}>Revenue Trend</Text>
                             </div>
                         }
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                             <Col span={8} className="text-center">
                                 <Text type="secondary">Properties</Text>
                                 <div className="mt-1">
-                                    <Text strong className="text-xl" style={{ color: '#667eea' }}>{totalProperties}</Text>
+                                    <Text strong className="text-xl" style={{ color: '#0000FF' }}>{totalProperties}</Text>
                                 </div>
                             </Col>
                             <Col span={8} className="text-center">
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                     <Card
                         title={
                             <div className="flex items-center gap-2">
-                                <HomeOutlined style={{ fontSize: '20px', color: '#667eea' }} />
+                                <HomeOutlined style={{ fontSize: '20px', color: '#0000FF' }} />
                                 <Text strong style={{ fontSize: '18px' }}>Property Types</Text>
                             </div>
                         }
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                                                     width: '12px',
                                                     height: '12px',
                                                     borderRadius: '50%',
-                                                    background: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'][idx % 5],
+                                                    background: ['#0000FF', '#764ba2', '#6666FF', '#4facfe', '#43e97b'][idx % 5],
                                                 }} />
                                                 <Text>{item.type}</Text>
                                             </div>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
 
                                 return (
                                     <div key={prop._id || idx} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <Avatar size={48} style={{ background: `linear-gradient(135deg, ${['#667eea', '#f093fb', '#4facfe', '#43e97b', '#ffa94d'][idx]} 0%, ${['#764ba2', '#f5576c', '#00f2fe', '#38f9d7', '#ff6b6b'][idx]} 100%)` }}>
+                                        <Avatar size={48} style={{ background: `linear-gradient(135deg, ${['#0000FF', '#6666FF', '#4facfe', '#43e97b', '#ffa94d'][idx]} 0%, ${['#764ba2', '#f5576c', '#00f2fe', '#38f9d7', '#ff6b6b'][idx]} 100%)` }}>
                                             {idx + 1}
                                         </Avatar>
                                         <div className="flex-1">

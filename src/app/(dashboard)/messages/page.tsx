@@ -92,7 +92,7 @@ const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
                         src={otherUser?.image}
                         icon={!otherUser?.image && <UserOutlined />}
                         style={{
-                            backgroundColor: '#6366f1',
+                            backgroundColor: '#0000FF',
                             flexShrink: 0
                         }}
                     />

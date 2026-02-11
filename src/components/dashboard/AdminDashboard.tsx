@@ -6,10 +6,12 @@ import Row from 'antd/es/row';
 import Col from 'antd/es/col';
 import Select from 'antd/es/select';
 import Typography from 'antd/es/typography';
-import message from 'antd/es/message';
 import Progress from 'antd/es/progress';
 import Badge from 'antd/es/badge';
 import Avatar from 'antd/es/avatar';
+import Tag from 'antd/es/tag';
+import Skeleton from 'antd/es/skeleton';
+import Statistic from 'antd/es/statistic';
 import {
     HomeOutlined,
     DollarOutlined,
@@ -19,10 +21,16 @@ import {
     FallOutlined,
     TrophyOutlined,
     CalendarOutlined,
+    ArrowRightOutlined,
+    EnvironmentOutlined,
+    EyeOutlined,
+    AppstoreOutlined,
+    TeamOutlined,
+    ThunderboltOutlined,
+    ClockCircleOutlined,
 } from '@ant-design/icons';
 import { Line, Pie } from '@ant-design/plots';
-import Button from 'antd/es/button';
-import Collapse from 'antd/es/collapse';
+import { useRouter } from 'next/navigation';
 import { propertiesApi } from '@/services/api/properties.api';
 import { servicesApi } from '@/services/api/services.api';
 import { usersApi } from '@/services/api/users.api';
@@ -31,7 +39,14 @@ import type { Property } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
 
-// Helper functions
+/* ─── helpers ─── */
+function greet(): string {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+}
+
 function formatTimeAgo(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();
@@ -39,276 +54,148 @@ function formatTimeAgo(dateString: string): string {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} mins ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function formatLargeNumber(value: number, prefix: string = ''): string {
+function fmt(value: number, prefix = ''): string {
     if (value === 0) return `${prefix}0`;
-
-    const absValue = Math.abs(value);
-
-    if (absValue >= 1_000_000_000) {
-        // Billions
-        return `${prefix}${(value / 1_000_000_000).toFixed(2)}B`;
-    } else if (absValue >= 1_000_000) {
-        // Millions
-        return `${prefix}${(value / 1_000_000).toFixed(2)}M`;
-    } else if (absValue >= 1_000) {
-        // Thousands
-        return `${prefix}${(value / 1_000).toFixed(1)}K`;
-    }
-
+    const abs = Math.abs(value);
+    if (abs >= 1e9) return `${prefix}${(value / 1e9).toFixed(1)}B`;
+    if (abs >= 1e6) return `${prefix}${(value / 1e6).toFixed(1)}M`;
+    if (abs >= 1e3) return `${prefix}${(value / 1e3).toFixed(1)}K`;
     return `${prefix}${value.toLocaleString()}`;
 }
 
-function getNotificationStatus(type: string): 'success' | 'info' | 'warning' | 'error' | 'default' {
-    const statusMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
-        'property_approved': 'success',
-        'property_rejected': 'error',
-        'booking_confirmed': 'success',
-        'payment_received': 'success',
-        'new_inquiry': 'warning',
-        'property_viewed': 'default',
-        'service_completed': 'success',
-        'review_submitted': 'info',
+function badgeStatus(type: string): 'success' | 'info' | 'warning' | 'error' | 'default' {
+    const m: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
+        property_approved: 'success', property_rejected: 'error', booking_confirmed: 'success',
+        payment_received: 'success', new_inquiry: 'warning', property_viewed: 'default',
+        service_completed: 'success', review_submitted: 'info',
     };
-    return statusMap[type] || 'default';
+    return m[type] || 'default';
 }
 
+/* ─── main ─── */
 export default function AdminDashboard() {
+    const router = useRouter();
     const [properties, setProperties] = useState<Property[]>([]);
     const [services, setServices] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [rawResponses, setRawResponses] = useState<any>(null);
-    const [rawError, setRawError] = useState<any>(null);
     const [selectedYear, setSelectedYear] = useState<number>(2026);
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
+    const [userName, setUserName] = useState('Admin');
 
-    // Fixed year range 2024-2026
-    const availableYears = [2024, 2026, 2026];
+    const availableYears = [2024, 2025, 2026];
     const availableMonths = [
         { value: 'all', label: 'All Months' },
-        { value: '0', label: 'January' },
-        { value: '1', label: 'February' },
-        { value: '2', label: 'March' },
-        { value: '3', label: 'April' },
-        { value: '4', label: 'May' },
-        { value: '5', label: 'June' },
-        { value: '6', label: 'July' },
-        { value: '7', label: 'August' },
-        { value: '8', label: 'September' },
-        { value: '9', label: 'October' },
-        { value: '10', label: 'November' },
-        { value: '11', label: 'December' },
+        ...['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December']
+            .map((m, i) => ({ value: String(i), label: m })),
     ];
 
     useEffect(() => {
-        let mounted = true;
-
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-
-                // Fetch data for dashboard overview
-                // Using moderate limits (100) to show meaningful charts while maintaining good performance
-                // Admin should use admin endpoints to see ALL data without restrictions
-                const [propertiesResponse, servicesResponse, usersResponse, notificationsResponse] = await Promise.all([
-                    propertiesApi.getAllAdminProperties({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
-                    servicesApi.getAllAdminServices({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
-                    usersApi.getAll({ page: 1, limit: 10 }).catch((e) => ({ data: [], __error: e })),
-                    notificationsApi.getAll({ limit: 10 }).catch((e) => ({ data: [], __error: e }))
-                ]);
-
-                if (!mounted) return;
-
-                setRawResponses({
-                    propertiesResponse,
-                    servicesResponse,
-                    usersResponse,
-                    notificationsResponse,
-                });
-
-                // Extract data from paginated responses - use same pattern as properties/services pages
-                const propertiesData = Array.isArray(propertiesResponse?.data) ? propertiesResponse.data : propertiesResponse?.data?.data || [];
-                const servicesData = Array.isArray(servicesResponse?.data) ? servicesResponse.data : servicesResponse?.data?.data || [];
-                const usersData = Array.isArray(usersResponse?.data) ? usersResponse.data : usersResponse?.data?.data || [];
-                const notificationsData = Array.isArray(notificationsResponse?.data) ? notificationsResponse.data : notificationsResponse?.data?.data || [];
-
-                setProperties(Array.isArray(propertiesData) ? propertiesData : []);
-                setServices(Array.isArray(servicesData) ? servicesData : []);
-                setUsers(Array.isArray(usersData) ? usersData : []);
-                setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
-            } catch (error: any) {
-                if (!mounted) return;
-                console.error('Failed to fetch dashboard data:', error);
-                setRawError({ message: error?.message, response: error?.response?.data || null });
-                // Set empty arrays on error
-                setProperties([]);
-                setServices([]);
-                setUsers([]);
-                setNotifications([]);
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
+        // Get user name
+        try {
+            const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
+            if (raw) {
+                const u = JSON.parse(raw);
+                setUserName(u.firstName || u.email?.split('@')[0] || 'Admin');
             }
-        };
-
-        fetchData();
-
-        return () => {
-            mounted = false;
-        };
+        } catch { /* ignore */ }
     }, []);
 
-    // Use pagination metadata for accurate totals if available, otherwise use length
-    const propertiesTotal = rawResponses?.propertiesResponse?.data?.pagination?.totalItems || properties.length;
-    const servicesTotal = rawResponses?.servicesResponse?.data?.pagination?.totalItems || services.length;
-    const usersTotal = rawResponses?.usersResponse?.data?.pagination?.totalItems || users.length;
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                setLoading(true);
+                const [pRes, sRes, uRes, nRes] = await Promise.all([
+                    propertiesApi.getAllAdminProperties({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
+                    servicesApi.getAllAdminServices({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
+                    usersApi.getAll({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
+                    notificationsApi.getAll({ limit: 10 }).catch(() => ({ data: [] })),
+                ]);
+                if (!mounted) return;
+                setRawResponses({ pRes, sRes, uRes, nRes });
+                const ex = (r: any) => { const d = Array.isArray(r?.data) ? r.data : r?.data?.data || []; return Array.isArray(d) ? d : []; };
+                setProperties(ex(pRes));
+                setServices(ex(sRes));
+                setUsers(ex(uRes));
+                setNotifications(ex(nRes));
+            } catch {
+                if (!mounted) return;
+                setProperties([]); setServices([]); setUsers([]); setNotifications([]);
+            } finally { if (mounted) setLoading(false); }
+        })();
+        return () => { mounted = false; };
+    }, []);
 
-    const totalProperties = propertiesTotal;
-    const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
-    const totalServices = servicesTotal;
-    const totalUsers = usersTotal;
+    /* derived data */
+    const propTotal = rawResponses?.pRes?.data?.pagination?.totalItems || properties.length;
+    const svcTotal = rawResponses?.sRes?.data?.pagination?.totalItems || services.length;
+    const usrTotal = rawResponses?.uRes?.data?.pagination?.totalItems || users.length;
+    const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
 
-    const statsConfig = [
-        {
-            title: 'Total Properties',
-            value: totalProperties,
-            change: 12.5,
-            IconComponent: HomeOutlined,
-            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            bgColor: '#667eea10',
-        },
-        {
-            title: 'Portfolio Value',
-            value: totalValue,
-            prefix: '$',
-            change: 8.2,
-            IconComponent: DollarOutlined,
-            gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            bgColor: '#f093fb10',
-        },
-        {
-            title: 'Active Services',
-            value: totalServices,
-            change: 15.3,
-            IconComponent: ToolOutlined,
-            gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            bgColor: '#4facfe10',
-        },
-        {
-            title: 'Total Users',
-            value: totalUsers,
-            change: 23.1,
-            IconComponent: UserOutlined,
-            gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            bgColor: '#43e97b10',
-        },
+    /* ─── quick action cards ─── */
+    const quickActions = [
+        { label: 'Properties', icon: <HomeOutlined />, path: '/properties', count: propTotal },
+        { label: 'Services', icon: <ToolOutlined />, path: '/services', count: svcTotal },
+        { label: 'Users', icon: <TeamOutlined />, path: '/users', count: usrTotal },
+        { label: 'Bookings', icon: <CalendarOutlined />, path: '/bookings' },
     ];
 
-    // Generate monthly trend data - Use the selected year and optionally filter by month
-    const generateMonthlyData = () => {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    /* ─── stat cards ─── */
+    const stats = [
+        { title: 'Total Properties', value: propTotal, change: 12.5, icon: <HomeOutlined />, color: '#0000FF' },
+        { title: 'Portfolio Value', value: portfolioValue, prefix: '$', change: 8.2, icon: <DollarOutlined />, color: '#0000CC' },
+        { title: 'Active Services', value: svcTotal, change: 15.3, icon: <ToolOutlined />, color: '#0000FF' },
+        { title: 'Total Users', value: usrTotal, change: 23.1, icon: <UserOutlined />, color: '#0044CC' },
+    ];
 
-        // If a specific month is selected, only show that month
+    /* ─── trend data ─── */
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = (() => {
+        const filter = (arr: any[], mi: number) => arr.filter(x => {
+            if (!x.createdAt) return false;
+            const d = new Date(x.createdAt);
+            return d.getMonth() === mi && d.getFullYear() === selectedYear;
+        }).length;
         if (selectedMonth !== 'all') {
-            const monthIndex = parseInt(selectedMonth);
-            const month = months[monthIndex];
-
-            const monthProperties = properties.filter(p => {
-                if (!p.createdAt) return false;
-                const date = new Date(p.createdAt);
-                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
-            });
-            const monthServices = services.filter(s => {
-                if (!s.createdAt) return false;
-                const date = new Date(s.createdAt);
-                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
-            });
-            const monthUsers = users.filter(u => {
-                if (!u.createdAt) return false;
-                const date = new Date(u.createdAt);
-                return date.getMonth() === monthIndex && date.getFullYear() === selectedYear;
-            });
-
-            return [{
-                month,
-                properties: monthProperties.length,
-                services: monthServices.length,
-                users: monthUsers.length,
-            }];
+            const mi = parseInt(selectedMonth);
+            return [{ month: months[mi], properties: filter(properties, mi), services: filter(services, mi), users: filter(users, mi) }];
         }
+        return months.map((m, i) => ({ month: m, properties: filter(properties, i), services: filter(services, i), users: filter(users, i) }));
+    })();
 
-        // Show all months
-        const result = months.map((month, index) => {
-            const monthProperties = properties.filter(p => {
-                if (!p.createdAt) return false;
-                const date = new Date(p.createdAt);
-                return date.getMonth() === index && date.getFullYear() === selectedYear;
-            });
-            const monthServices = services.filter(s => {
-                if (!s.createdAt) return false;
-                const date = new Date(s.createdAt);
-                return date.getMonth() === index && date.getFullYear() === selectedYear;
-            });
-            const monthUsers = users.filter(u => {
-                if (!u.createdAt) return false;
-                const date = new Date(u.createdAt);
-                return date.getMonth() === index && date.getFullYear() === selectedYear;
-            });
+    /* ─── property types ─── */
+    const typeCounts: Record<string, number> = {};
+    properties.forEach(p => { const t = p.propertyType || 'Other'; typeCounts[t] = (typeCounts[t] || 0) + 1; });
+    const typeData = Object.entries(typeCounts).map(([type, value]) => ({
+        type: type.charAt(0).toUpperCase() + type.slice(1), value,
+    })).sort((a, b) => b.value - a.value);
 
-            return {
-                month,
-                properties: monthProperties.length,
-                services: monthServices.length,
-                users: monthUsers.length,
-            };
-        });
-
-        return result;
-    };
-
-    const monthlyData = generateMonthlyData();
-
-    // Property type distribution
-    const propertyTypeCounts: Record<string, number> = {};
-
-    properties.forEach((p) => {
-        const type = p.propertyType || 'Other';
-        propertyTypeCounts[type] = (propertyTypeCounts[type] || 0) + 1;
-    });
-
-    const propertyTypeData = Object.entries(propertyTypeCounts)
-        .map(([type, value]) => ({
-            type: type.charAt(0).toUpperCase() + type.slice(1),
-            value,
-        }))
-        .sort((a, b) => b.value - a.value);
-
-    // Top performing properties
-    const topProperties = properties
-        .map(p => ({
-            ...p,
-            performance: (p.views || 0) + (p.inquiries || 0) * 5,
-        }))
-        .sort((a, b) => b.performance - a.performance)
+    /* ─── top properties ─── */
+    const topProps = [...properties]
+        .map(p => ({ ...p, perf: (p.views || 0) + (p.inquiries || 0) * 5 }))
+        .sort((a, b) => b.perf - a.perf)
         .slice(0, 5);
 
-    // Recent activity
-    const recentActivity = notifications.slice(0, 7).map(notif => ({
-        action: notif.title || 'Activity',
-        detail: notif.message || '',
-        time: formatTimeAgo(notif.createdAt),
-        status: getNotificationStatus(notif.type),
+    /* ─── recent activity ─── */
+    const activity = notifications.slice(0, 8).map(n => ({
+        action: n.title || 'Activity',
+        detail: n.message || '',
+        time: formatTimeAgo(n.createdAt),
+        status: badgeStatus(n.type),
     }));
 
+    /* ─── chart configs ─── */
     const trendConfig = {
         data: monthlyData.flatMap(d => [
             { month: d.month, value: d.properties, category: 'Properties' },
@@ -319,306 +206,364 @@ export default function AdminDashboard() {
         yField: 'value',
         seriesField: 'category',
         smooth: true,
-        color: ['#667eea', '#4facfe', '#43e97b'],
-        legend: { position: 'top' as const },
+        color: ['#0000FF', '#0044CC', '#52c41a'],
+        legend: { position: 'top-right' as const },
         lineStyle: { lineWidth: 3 },
-        point: {
-            size: 5,
-            shape: 'circle',
-            style: { fill: 'white', lineWidth: 2 },
-        },
+        point: { size: 4, shape: 'circle' as const, style: { fill: 'white', lineWidth: 2 } },
+        area: { style: { fillOpacity: 0.06 } },
+        animation: { appear: { animation: 'wave-in' as const, duration: 1200 } },
     };
 
+    const pieColors = ['#0000FF', '#0044CC', '#3366FF', '#6688FF', '#52c41a'];
     const pieConfig = {
-        data: propertyTypeData,
+        data: typeData,
         angleField: 'value',
         colorField: 'type',
-        radius: 0.8,
-        innerRadius: 0.6,
-        label: {
-            type: 'inner',
-            offset: '-30%',
-            content: (item: any) => {
-                return `${item.value}`;
-            },
-            style: { fontSize: 14, textAlign: 'center', fill: '#fff' },
-        },
+        radius: 0.85,
+        innerRadius: 0.65,
+        label: false as const,
         statistic: {
-            title: false,
-            content: {
-                style: { fontSize: '24px', fontWeight: 'bold' },
-                content: totalProperties.toString(),
-            },
+            title: { style: { fontSize: '13px', color: '#999' }, content: 'Total' },
+            content: { style: { fontSize: '28px', fontWeight: '700', color: '#111' }, content: String(propTotal) },
         },
-        color: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'],
-        legend: {
-            position: 'bottom' as const,
-        },
+        color: pieColors,
+        legend: false as const,
+        animation: { appear: { animation: 'fade-in' as const, duration: 800 } },
     };
 
-    // Show loading state
+    /* ─── loading skeleton ─── */
     if (loading) {
         return (
-            <div className="space-y-6 p-2">
-                <div className="flex flex-col items-center justify-center" style={{ minHeight: '60vh' }}>
-                    <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
-                    <Title level={3} className="mb-2">Loading Dashboard...</Title>
-                    <Text type="secondary">Fetching your data</Text>
+            <div className="space-y-6">
+                {/* Header skeleton */}
+                <div className="space-y-2">
+                    <Skeleton.Input active style={{ width: 280, height: 36 }} />
+                    <Skeleton.Input active style={{ width: 360, height: 20 }} />
                 </div>
+                {/* Stat card skeletons */}
+                <Row gutter={[16, 16]}>
+                    {[1, 2, 3, 4].map(i => (
+                        <Col xs={24} sm={12} lg={6} key={i}>
+                            <Card style={{ borderRadius: 16 }}><Skeleton active paragraph={{ rows: 2 }} /></Card>
+                        </Col>
+                    ))}
+                </Row>
+                {/* Chart skeletons */}
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} lg={16}><Card style={{ borderRadius: 16, height: 420 }}><Skeleton active paragraph={{ rows: 8 }} /></Card></Col>
+                    <Col xs={24} lg={8}><Card style={{ borderRadius: 16, height: 420 }}><Skeleton active paragraph={{ rows: 8 }} /></Card></Col>
+                </Row>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-2">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <Title level={2} className="mb-0" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>
-                        Dashboard Overview
+        <div className="space-y-6">
+
+            {/* ───────── HERO HEADER ───────── */}
+            <div style={{
+                background: 'linear-gradient(135deg, #0000FF 0%, #0033CC 50%, #0055EE 100%)',
+                borderRadius: 20,
+                padding: 'clamp(20px, 4vw, 32px)',
+                position: 'relative',
+                overflow: 'hidden',
+            }}>
+                {/* Decorative circles */}
+                <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ position: 'absolute', bottom: -60, right: 80, width: 220, height: 220, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+                <div style={{ position: 'absolute', top: 20, right: 160, width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(13px, 2.5vw, 15px)', display: 'block', marginBottom: 4 }}>
+                        <ClockCircleOutlined style={{ marginRight: 6 }} />
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </Text>
+                    <Title level={2} style={{ color: '#fff', margin: 0, fontSize: 'clamp(22px, 5vw, 32px)', fontWeight: 700 }}>
+                        {greet()}, {userName}
                     </Title>
-                    <Text type="secondary" className="text-sm sm:text-base">Welcome back! Here's what's happening with your platform today.</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 'clamp(13px, 2.5vw, 16px)', display: 'block', marginTop: 6 }}>
+                        Here&apos;s what&apos;s happening across your platform today.
+                    </Text>
+
+                    {/* Quick action pills */}
+                    <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
+                        {quickActions.map((qa) => (
+                            <button
+                                key={qa.label}
+                                onClick={() => router.push(qa.path)}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                                    background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: 12, padding: '8px 16px',
+                                    color: '#fff', fontSize: 'clamp(12px, 2vw, 14px)', fontWeight: 500,
+                                    cursor: 'pointer', transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                            >
+                                {qa.icon}
+                                {qa.label}
+                                {qa.count !== undefined && (
+                                    <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 8, padding: '2px 8px', fontSize: 12 }}>
+                                        {qa.count}
+                                    </span>
+                                )}
+                                <ArrowRightOutlined style={{ fontSize: 10, opacity: 0.7 }} />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* ───────── STAT CARDS ───────── */}
             <Row gutter={[16, 16]}>
-                {statsConfig.map((stat, index) => {
-                    const Icon = stat.IconComponent;
-                    return (
-                        <Col xs={24} sm={12} md={12} lg={6} key={index}>
-                            <Card
-                                className="hover:shadow-lg transition-all duration-300"
-                                style={{ borderRadius: '12px', border: '1px solid #f0f0f0', height: '100%' }}
-                                styles={{ body: { padding: '16px', height: '100%' } }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                                    <div style={{ flex: '1', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                        <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 13px)', display: 'block', marginBottom: '8px' }}>
-                                            {stat.title}
-                                        </Text>
-                                        <div style={{
-                                            fontSize: 'clamp(22px, 5vw, 30px)',
-                                            fontWeight: 700,
-                                            marginBottom: '8px',
-                                            wordBreak: 'break-word',
-                                            lineHeight: 1.1,
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis'
-                                        }}>
-                                            {formatLargeNumber(stat.value, stat.prefix)}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', marginTop: 'auto' }}>
-                                            {stat.change > 0 ? (
-                                                <>
-                                                    <RiseOutlined style={{ color: '#52c41a', fontSize: 'clamp(12px, 2vw, 14px)' }} />
-                                                    <span style={{ color: '#52c41a', fontWeight: 600, fontSize: 'clamp(12px, 2vw, 14px)' }}>{stat.change}%</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FallOutlined style={{ color: '#ff4d4f', fontSize: 'clamp(12px, 2vw, 14px)' }} />
-                                                    <span style={{ color: '#ff4d4f', fontWeight: 600, fontSize: 'clamp(12px, 2vw, 14px)' }}>{Math.abs(stat.change)}%</span>
-                                                </>
-                                            )}
-                                            <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 12px)' }}>vs last month</Text>
-                                        </div>
-                                    </div>
-                                    <div
-                                        style={{
-                                            width: 'clamp(48px, 12vw, 56px)',
-                                            height: 'clamp(48px, 12vw, 56px)',
-                                            borderRadius: '14px',
-                                            backgroundColor: stat.bgColor,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <span style={{
-                                            background: stat.gradient,
-                                            WebkitBackgroundClip: 'text',
-                                            WebkitTextFillColor: 'transparent',
-                                            fontSize: 'clamp(24px, 6vw, 28px)',
-                                        }}>
-                                            <Icon />
-                                        </span>
+                {stats.map((s, i) => (
+                    <Col xs={24} sm={12} lg={6} key={i}>
+                        <Card
+                            hoverable
+                            style={{
+                                borderRadius: 16,
+                                border: 'none',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
+                                overflow: 'hidden',
+                            }}
+                            styles={{ body: { padding: '20px 20px 16px' } }}
+                        >
+                            {/* Accent bar */}
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: s.color }} />
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <Text type="secondary" style={{ fontSize: 13, letterSpacing: '0.02em' }}>{s.title}</Text>
+                                    <div style={{ fontSize: 'clamp(26px, 5vw, 34px)', fontWeight: 700, lineHeight: 1.2, marginTop: 6, color: '#111' }}>
+                                        {fmt(s.value, s.prefix)}
                                     </div>
                                 </div>
-                            </Card>
-                        </Col>
-                    );
-                })}
+                                <div style={{
+                                    width: 48, height: 48, borderRadius: 14,
+                                    background: `${s.color}0D`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 22, color: s.color, flexShrink: 0,
+                                }}>
+                                    {s.icon}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f5f5f5' }}>
+                                {s.change > 0 ? (
+                                    <Tag color="success" style={{ margin: 0, borderRadius: 6, fontWeight: 600, fontSize: 12 }}>
+                                        <RiseOutlined /> {s.change}%
+                                    </Tag>
+                                ) : (
+                                    <Tag color="error" style={{ margin: 0, borderRadius: 6, fontWeight: 600, fontSize: 12 }}>
+                                        <FallOutlined /> {Math.abs(s.change)}%
+                                    </Tag>
+                                )}
+                                <Text type="secondary" style={{ fontSize: 12 }}>vs last month</Text>
+                            </div>
+                        </Card>
+                    </Col>
+                ))}
             </Row>
 
-            {/* Charts */}
+            {/* ───────── CHARTS ROW ───────── */}
             <Row gutter={[16, 16]}>
+                {/* Revenue Trend */}
                 <Col xs={24} lg={16}>
                     <Card
-                        title={
-                            <div className="flex items-center gap-2">
-                                <TrophyOutlined style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#667eea' }} />
-                                <Text strong style={{ fontSize: 'clamp(14px, 3vw, 18px)' }}>Revenue Trend</Text>
-                            </div>
-                        }
-                        extra={
-                            <div className="flex gap-2 flex-wrap">
-                                <Select
-                                    value={selectedYear}
-                                    onChange={setSelectedYear}
-                                    size="small"
-                                    style={{ width: '100%', minWidth: 80, maxWidth: 100 }}
-                                >
-                                    {availableYears.map(year => (
-                                        <Select.Option key={year} value={year}>{year}</Select.Option>
-                                    ))}
-                                </Select>
-                                <Select
-                                    value={selectedMonth}
-                                    onChange={setSelectedMonth}
-                                    size="small"
-                                    style={{ width: '100%', minWidth: 100, maxWidth: 130 }}
-                                >
-                                    {availableMonths.map(month => (
-                                        <Select.Option key={month.value} value={month.value}>{month.label}</Select.Option>
-                                    ))}
-                                </Select>
-                            </div>
-                        }
-                        style={{ borderRadius: '16px', border: 'none' }}
-                        className="shadow-lg"
+                        style={{ borderRadius: 16, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)' }}
+                        styles={{ body: { padding: 'clamp(16px, 3vw, 24px)' } }}
                     >
-                        <Line {...trendConfig} height={320} />
-                        <Row gutter={[8, 16]} className="mt-6 pt-4 border-t">
-                            <Col xs={24} sm={8} className="text-center">
-                                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>Properties</Text>
-                                <div className="mt-1">
-                                    <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', color: '#667eea' }}>{totalProperties}</Text>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+                            <div>
+                                <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', display: 'block' }}>Growth Overview</Text>
+                                <Text type="secondary" style={{ fontSize: 13 }}>Monthly registration trends</Text>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <Select value={selectedYear} onChange={setSelectedYear} size="small" style={{ minWidth: 85 }}
+                                    options={availableYears.map(y => ({ value: y, label: String(y) }))} />
+                                <Select value={selectedMonth} onChange={setSelectedMonth} size="small" style={{ minWidth: 120 }}
+                                    options={availableMonths} />
+                            </div>
+                        </div>
+
+                        <Line {...trendConfig} height={280} />
+
+                        {/* Summary pills */}
+                        <div style={{ display: 'flex', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f0f0', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            {[
+                                { label: 'Properties', value: propTotal, color: '#0000FF' },
+                                { label: 'Services', value: svcTotal, color: '#0044CC' },
+                                { label: 'Users', value: usrTotal, color: '#52c41a' },
+                            ].map(item => (
+                                <div key={item.label} style={{
+                                    display: 'flex', alignItems: 'center', gap: 10,
+                                    background: '#fafafa', borderRadius: 12, padding: '10px 20px',
+                                }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }} />
+                                    <div>
+                                        <Text type="secondary" style={{ fontSize: 12, display: 'block', lineHeight: 1 }}>{item.label}</Text>
+                                        <Text strong style={{ fontSize: 18, color: item.color }}>{item.value}</Text>
+                                    </div>
                                 </div>
-                            </Col>
-                            <Col xs={24} sm={8} className="text-center">
-                                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>Services</Text>
-                                <div className="mt-1">
-                                    <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', color: '#4facfe' }}>{totalServices}</Text>
-                                </div>
-                            </Col>
-                            <Col xs={24} sm={8} className="text-center">
-                                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>Users</Text>
-                                <div className="mt-1">
-                                    <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', color: '#43e97b' }}>{totalUsers}</Text>
-                                </div>
-                            </Col>
-                        </Row>
+                            ))}
+                        </div>
                     </Card>
                 </Col>
 
+                {/* Property Types */}
                 <Col xs={24} lg={8}>
                     <Card
-                        title={
-                            <div className="flex items-center gap-2">
-                                <HomeOutlined style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#667eea' }} />
-                                <Text strong style={{ fontSize: 'clamp(14px, 3vw, 18px)' }}>Property Types</Text>
-                            </div>
-                        }
-                        style={{ borderRadius: '16px', border: 'none' }}
-                        className="shadow-lg"
+                        style={{ borderRadius: 16, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)', height: '100%' }}
+                        styles={{ body: { padding: 'clamp(16px, 3vw, 24px)', height: '100%', display: 'flex', flexDirection: 'column' } }}
                     >
-                        {propertyTypeData.length > 0 ? (
+                        <div style={{ marginBottom: 16 }}>
+                            <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', display: 'block' }}>Property Types</Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>Distribution breakdown</Text>
+                        </div>
+
+                        {typeData.length > 0 ? (
                             <>
-                                <Pie {...pieConfig} height={320} />
-                                <div className="mt-4 space-y-2">
-                                    {propertyTypeData.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2">
-                                                <div style={{
-                                                    width: 'clamp(10px, 2vw, 12px)',
-                                                    height: 'clamp(10px, 2vw, 12px)',
-                                                    borderRadius: '50%',
-                                                    background: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'][idx % 5],
-                                                    flexShrink: 0,
-                                                }} />
-                                                <Text style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>{item.type}</Text>
+                                <div style={{ flex: 1, minHeight: 220 }}>
+                                    <Pie {...pieConfig} height={220} />
+                                </div>
+                                <div style={{ marginTop: 16 }}>
+                                    {typeData.map((item, idx) => (
+                                        <div key={idx} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '8px 12px', borderRadius: 10, marginBottom: 4,
+                                            background: idx === 0 ? `${pieColors[0]}08` : 'transparent',
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ width: 10, height: 10, borderRadius: 3, background: pieColors[idx % pieColors.length], flexShrink: 0 }} />
+                                                <Text style={{ fontSize: 14 }}>{item.type}</Text>
                                             </div>
-                                            <Text strong style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>{item.value}</Text>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <Text strong style={{ fontSize: 14 }}>{item.value}</Text>
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    ({propTotal > 0 ? Math.round((item.value / propTotal) * 100) : 0}%)
+                                                </Text>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </>
                         ) : (
-                            <div className="text-center py-8">
-                                <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>No property type data available</Text>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                                <AppstoreOutlined style={{ fontSize: 40, color: '#d9d9d9' }} />
+                                <Text type="secondary">No property data yet</Text>
                             </div>
                         )}
                     </Card>
                 </Col>
             </Row>
 
-            {/* Bottom Section */}
+            {/* ───────── BOTTOM SECTION ───────── */}
             <Row gutter={[16, 16]}>
+                {/* Top Properties */}
                 <Col xs={24} lg={12}>
                     <Card
-                        title={
-                            <div className="flex items-center gap-2">
-                                <TrophyOutlined style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#f5576c' }} />
-                                <Text strong style={{ fontSize: 'clamp(14px, 3vw, 18px)' }}>Top Performing Properties</Text>
-                            </div>
-                        }
-                        style={{ borderRadius: '16px', border: 'none' }}
-                        className="shadow-lg"
+                        style={{ borderRadius: 16, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)' }}
+                        styles={{ body: { padding: 'clamp(16px, 3vw, 24px)' } }}
                     >
-                        <div className="space-y-4">
-                            {topProperties.length > 0 ? topProperties.map((prop, idx) => {
-                                const maxPerformance = Math.max(...topProperties.map(p => p.performance || 0));
-                                const performancePercent = maxPerformance > 0 ? ((prop.performance || 0) / maxPerformance) * 100 : 0;
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div>
+                                <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', display: 'block' }}>Top Properties</Text>
+                                <Text type="secondary" style={{ fontSize: 13 }}>By engagement score</Text>
+                            </div>
+                            <TrophyOutlined style={{ fontSize: 20, color: '#faad14' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {topProps.length > 0 ? topProps.map((prop, idx) => {
+                                const maxPerf = Math.max(...topProps.map(p => p.perf || 1));
+                                const pct = maxPerf > 0 ? Math.round(((prop.perf || 0) / maxPerf) * 100) : 0;
+                                const medals = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
                                 return (
-                                    <div key={prop._id || idx} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <Avatar size={window.innerWidth < 640 ? 40 : 48} style={{ background: `linear-gradient(135deg, ${['#667eea', '#f093fb', '#4facfe', '#43e97b', '#ffa94d'][idx]} 0%, ${['#764ba2', '#f5576c', '#00f2fe', '#38f9d7', '#ff6b6b'][idx]} 100%)`, flexShrink: 0 }}>
+                                    <div key={prop._id || idx} style={{
+                                        display: 'flex', alignItems: 'center', gap: 12,
+                                        padding: '12px 14px', borderRadius: 14,
+                                        background: idx === 0 ? '#fafafa' : 'transparent',
+                                        transition: 'background 0.2s',
+                                        cursor: 'pointer',
+                                    }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fafafa'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = idx === 0 ? '#fafafa' : 'transparent'; }}
+                                    >
+                                        {/* Rank */}
+                                        <div style={{
+                                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontWeight: 700, fontSize: 14,
+                                            background: idx < 3 ? `${medals[idx]}20` : '#f5f5f5',
+                                            color: idx < 3 ? medals[idx] : '#999',
+                                        }}>
                                             {idx + 1}
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <Text strong className="block truncate" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>{prop.title || 'Untitled Property'}</Text>
-                                            <Text type="secondary" className="truncate block" style={{ fontSize: 'clamp(11px, 2vw, 13px)' }}>{prop.location || 'Location not specified'}</Text>
                                         </div>
-                                        <div className="text-right" style={{ minWidth: '80px' }}>
-                                            <Text strong className="block" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>${(prop.price || 0).toLocaleString()}</Text>
-                                            <Progress percent={Math.round(performancePercent)} size="small" strokeColor="#52c41a" showInfo={false} />
+                                        {/* Info */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <Text strong style={{ fontSize: 14, display: 'block' }} className="truncate">{prop.title || 'Untitled'}</Text>
+                                            <Text type="secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <EnvironmentOutlined style={{ fontSize: 11 }} /> {prop.location || 'N/A'}
+                                            </Text>
+                                        </div>
+                                        {/* Price + bar */}
+                                        <div style={{ textAlign: 'right', minWidth: 90 }}>
+                                            <Text strong style={{ fontSize: 14 }}>${(prop.price || 0).toLocaleString()}</Text>
+                                            <Progress percent={pct} size="small" strokeColor="#0000FF" showInfo={false} style={{ marginTop: 4 }} />
                                         </div>
                                     </div>
                                 );
                             }) : (
-                                <div className="text-center py-8">
-                                    <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>No properties data available</Text>
+                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                    <HomeOutlined style={{ fontSize: 40, color: '#d9d9d9' }} />
+                                    <br />
+                                    <Text type="secondary" style={{ marginTop: 8, display: 'inline-block' }}>No properties yet</Text>
                                 </div>
                             )}
                         </div>
                     </Card>
                 </Col>
 
+                {/* Recent Activity */}
                 <Col xs={24} lg={12}>
                     <Card
-                        title={
-                            <div className="flex items-center gap-2">
-                                <CalendarOutlined style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#4facfe' }} />
-                                <Text strong style={{ fontSize: 'clamp(14px, 3vw, 18px)' }}>Recent Activity</Text>
-                            </div>
-                        }
-                        style={{ borderRadius: '16px', border: 'none' }}
-                        className="shadow-lg"
+                        style={{ borderRadius: 16, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)' }}
+                        styles={{ body: { padding: 'clamp(16px, 3vw, 24px)' } }}
                     >
-                        <div className="space-y-3">
-                            {recentActivity.length > 0 ? recentActivity.map((activity, idx) => (
-                                <div key={idx} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <Badge status={activity.status as any} style={{ flexShrink: 0 }} />
-                                    <div className="flex-1 min-w-0">
-                                        <Text strong className="block truncate" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>{activity.action}</Text>
-                                        <Text type="secondary" className="block" style={{ fontSize: 'clamp(11px, 2vw, 13px)' }}>{activity.detail}</Text>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div>
+                                <Text strong style={{ fontSize: 'clamp(16px, 3vw, 20px)', display: 'block' }}>Recent Activity</Text>
+                                <Text type="secondary" style={{ fontSize: 13 }}>Latest platform events</Text>
+                            </div>
+                            <ThunderboltOutlined style={{ fontSize: 20, color: '#0000FF' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {activity.length > 0 ? activity.map((a, idx) => (
+                                <div key={idx} style={{
+                                    display: 'flex', alignItems: 'flex-start', gap: 12,
+                                    padding: '10px 12px', borderRadius: 12,
+                                    transition: 'background 0.2s',
+                                }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#fafafa'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                    <div style={{ marginTop: 6, flexShrink: 0 }}>
+                                        <Badge status={a.status as any} />
                                     </div>
-                                    <Text type="secondary" className="whitespace-nowrap" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>{activity.time}</Text>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <Text strong style={{ fontSize: 14, display: 'block' }} className="truncate">{a.action}</Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }} className="line-clamp-1">{a.detail}</Text>
+                                    </div>
+                                    <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>{a.time}</Text>
                                 </div>
                             )) : (
-                                <div className="text-center py-8">
-                                    <Text type="secondary" style={{ fontSize: 'clamp(12px, 2vw, 14px)' }}>No recent activity</Text>
+                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                    <CalendarOutlined style={{ fontSize: 40, color: '#d9d9d9' }} />
+                                    <br />
+                                    <Text type="secondary" style={{ marginTop: 8, display: 'inline-block' }}>No recent activity</Text>
                                 </div>
                             )}
                         </div>

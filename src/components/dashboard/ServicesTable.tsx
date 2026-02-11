@@ -145,8 +145,8 @@ export function ServicesTable({
                                     loading={approvingId === record._id}
                                     onClick={() => onVerify(record)}
                                     style={{
-                                        background: '#43e97b',
-                                        borderColor: '#43e97b',
+                                        background: '#52c41a',
+                                        borderColor: '#52c41a',
                                     }}
                                 >
                                     Verify
