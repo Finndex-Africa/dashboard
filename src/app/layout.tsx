@@ -1,16 +1,20 @@
 import type { Metadata } from 'next'
-import localFont from 'next/font/local'
+import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import { LayoutClientWrapper } from '@/components/LayoutClientWrapper'
 
-// Whitney (same as main site): Bold for headings, Medium for body
-const whitneyBold = localFont({
-    src: '../../../frontend/Whitney-Font/whitney-bold.otf',
+// DM Sans as a stand-in for Whitney (geometric sans-serif).
+// Bold for headings, Medium for body – same variable names so all
+// downstream CSS/Tailwind references keep working.
+const whitneyBold = DM_Sans({
+    weight: '700',
+    subsets: ['latin'],
     variable: '--font-whitney-bold',
     display: 'swap',
 })
-const whitneyMedium = localFont({
-    src: '../../../frontend/Whitney-Font/whitney-medium.otf',
+const whitneyMedium = DM_Sans({
+    weight: '500',
+    subsets: ['latin'],
     variable: '--font-whitney-medium',
     display: 'swap',
 })
