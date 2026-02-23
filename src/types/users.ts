@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-export type UserRole = 'admin' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker'; // 'landlord' is legacy, use 'agent'
+export type UserRole = 'admin' | 'admin_property' | 'admin_services' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker'; // admin = general admin
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'blocked';
 
 export interface User {
@@ -16,6 +16,7 @@ export interface User {
   role?: UserRole; // For backward compatibility
   status: string;
   verified: boolean;
+  emailVerified?: boolean;
   phoneVerified: boolean;
   blocked: boolean;
   blockedReason?: string;

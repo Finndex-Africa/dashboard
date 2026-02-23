@@ -10,489 +10,363 @@ import Col from 'antd/es/col';
 import Statistic from 'antd/es/statistic';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Avatar from 'antd/es/avatar';
-import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Modal from 'antd/es/modal';
-import Input from 'antd/es/input';
 import Select from 'antd/es/select';
 import {
-    UserOutlined,
-    TeamOutlined,
-    HomeOutlined,
-    ToolOutlined,
-    SearchOutlined,
-    EyeOutlined,
-    EditOutlined,
-    DeleteOutlined,
+    CalendarOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
+    EyeOutlined,
+    DollarOutlined,
+    ClockCircleOutlined,
 } from '@ant-design/icons';
-import { Column } from '@ant-design/plots';
-import { usersApi } from '@/services/api/users.api';
-import type { User } from '@/types/users';
+import { bookingsApi } from '@/services/api/bookings.api';
+import type { Booking } from '@/types/dashboard';
 import { useAuth } from '@/providers/AuthProvider';
 
 const { Title, Text } = Typography;
 
-export default function UsersPage() {
+export default function BookingsPage() {
     const { user: currentUser } = useAuth();
-    const [users, setUsers] = useState<User[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [verificationFilter, setVerificationFilter] = useState<string>('all');
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        fetchBookings();
+    }, [statusFilter]);
 
-    const fetchUsers = async () => {
+    const fetchBookings = async () => {
         try {
             setLoading(true);
-            
-            // Fetch ALL users by fetching all pages for accurate statistics
-            // Backend controller returns: { success: true, data: [...], pagination: {...} }
-            // API client returns: { success: true, data: [...], pagination: {...} } (same structure)
-            let allUsers: User[] = [];
-            let currentPage = 1;
-            let hasMorePages = true;
-            const pageSize = 100; // Fetch 100 at a time
-            
-            while (hasMorePages) {
-                const response = await usersApi.getAll({ page: currentPage, limit: pageSize });
-                
-                // Backend returns: { success: true, data: User[], pagination: {...} }
-                // Handle both possible structures (direct array or nested)
-                let pageUsers: User[] = [];
-                
-                if (Array.isArray(response.data)) {
-                    // Direct array structure (backend format)
-                    pageUsers = response.data;
-                } else if (response.data?.data && Array.isArray(response.data.data)) {
-                    // Nested structure (if wrapped)
-                    pageUsers = response.data.data;
-                } else {
-                    // Fallback
-                    pageUsers = [];
-                }
-                
-                allUsers = [...allUsers, ...pageUsers];
-                
-                // Check pagination - backend returns pagination at root level
-                const pagination = (response as any).pagination || response.data?.pagination;
-                if (pagination) {
-                    hasMorePages = currentPage < pagination.totalPages;
-                    currentPage++;
-                } else {
-                    // If no pagination info, stop if we got fewer than pageSize results
-                    hasMorePages = pageUsers.length === pageSize;
-                    currentPage++;
-                }
-                
-                // Safety limit to prevent infinite loops
-                if (currentPage > 100) {
-                    console.warn('Reached safety limit of 100 pages while fetching users');
-                    break;
-                }
+            const filters: any = { limit: 100 };
+            if (statusFilter !== 'all') filters.status = statusFilter;
+            const response = await bookingsApi.getAll(filters);
+
+            let list: Booking[] = [];
+            const d = response.data as any;
+            if (Array.isArray(d)) {
+                list = d;
+            } else if (d?.data && Array.isArray(d.data)) {
+                list = d.data;
             }
-            
-            setUsers(allUsers);
-        } catch (error: any) {
-            const errorMsg = error.response?.data?.message || error.message || 'Failed to load users';
-            message.error(errorMsg);
-            setUsers([]);
+            setBookings(list);
+        } catch {
+            message.error('Failed to load bookings');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleView = (user: User) => {
-        setSelectedUser(user);
-        setViewModalOpen(true);
-    };
-
-    const handleDelete = (user: User) => {
-        Modal.confirm({
-            title: 'Delete User',
-            content: `Are you sure you want to delete ${user.firstName} ${user.lastName}?`,
-            okText: 'Delete',
-            okType: 'danger',
-            onOk: async () => {
-                try {
-                    await usersApi.delete(user._id);
-                    message.success('User deleted successfully');
-                    fetchUsers();
-                } catch (error: any) {
-                    message.error('Failed to delete user');
-                }
-            },
-        });
-    };
-
-    const handleToggleVerification = async (user: User) => {
-        // Check if current user is admin
-        if (currentUser?.role !== 'admin') {
-            message.error('Only administrators can verify or unverify users');
-            return;
-        }
-
+    const handleAction = async (id: string, action: 'confirm' | 'cancel' | 'complete') => {
+        setActionLoading(true);
         try {
-            if (user.verified) {
-                await usersApi.unverify(user._id);
-                message.success(`${user.firstName} ${user.lastName} has been unverified`);
-            } else {
-                await usersApi.verify(user._id);
-                message.success(`${user.firstName} ${user.lastName} has been verified`);
-            }
-            fetchUsers();
-        } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update verification status';
-            message.error(errorMessage);
+            if (action === 'confirm') await bookingsApi.confirm(id);
+            else if (action === 'cancel') await bookingsApi.cancel(id);
+            else if (action === 'complete') await bookingsApi.complete(id);
+            message.success(`Booking ${action}ed successfully`);
+            setViewModalOpen(false);
+            fetchBookings();
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || `Failed to ${action} booking`);
+        } finally {
+            setActionLoading(false);
         }
     };
 
-    // Helper functions for role display
-    const getRoleColor = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'red';
-            case 'landlord': return 'blue';
-            case 'agent': return 'green';
-            case 'service_provider': return 'orange';
-            case 'home_seeker': return 'blue';
-            default: return 'default';
-        }
+    const getStatusColor = (status: string) => {
+        const colors: Record<string, string> = {
+            pending: 'orange',
+            confirmed: 'blue',
+            in_progress: 'processing',
+            completed: 'green',
+            cancelled: 'default',
+            rejected: 'red',
+        };
+        return colors[status] || 'default';
     };
 
-    const getRoleLabel = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'Admin';
-            case 'landlord': return 'Landlord';
-            case 'agent': return 'Agent';
-            case 'service_provider': return 'Service Provider';
-            case 'home_seeker': return 'Home Seeker';
-            default: return role;
+    const getUserName = (user: Booking['userId']) => {
+        if (typeof user === 'object' && user) {
+            return user.name || user.email || 'User';
         }
+        return String(user || 'Unknown');
     };
 
-    // Filter users based on search term and verification status
-    const filteredUsers = users.filter(user => {
-        // Search filter
-        if (searchTerm.trim()) {
-            const search = searchTerm.toLowerCase();
-            const matchesSearch = (
-                user.firstName?.toLowerCase().includes(search) ||
-                user.lastName?.toLowerCase().includes(search) ||
-                user.email?.toLowerCase().includes(search) ||
-                user.phone?.toLowerCase().includes(search) ||
-                getRoleLabel(user.userType).toLowerCase().includes(search)
-            );
-            if (!matchesSearch) return false;
+    const getServiceTitle = (service: Booking['serviceId']) => {
+        if (typeof service === 'object' && service) {
+            return (service as any).title || (service as any).name || 'Service';
         }
+        return String(service || 'Unknown');
+    };
 
-        // Verification filter
-        if (verificationFilter !== 'all') {
-            if (verificationFilter === 'verified' && !user.verified) return false;
-            if (verificationFilter === 'not_verified' && user.verified) return false;
-        }
-
-        return true;
-    });
-
-    const totalUsers = users.length;
-    const adminUsers = users.filter(u => u.userType === 'admin').length;
-    const landlordUsers = users.filter(u => u.userType === 'landlord').length;
-    const agentUsers = users.filter(u => u.userType === 'agent').length;
-    const serviceProviderUsers = users.filter(u => u.userType === 'service_provider').length;
-    const homeSeekerUsers = users.filter(u => u.userType === 'home_seeker').length;
-    const verifiedUsers = users.filter(u => u.verified).length;
-    const activeUsers = users.filter(u => u.status === 'active').length;
+    // Stats
+    const totalBookings = bookings.length;
+    const pendingCount = bookings.filter((b) => b.status === 'pending').length;
+    const confirmedCount = bookings.filter((b) => b.status === 'confirmed').length;
+    const completedCount = bookings.filter((b) => b.status === 'completed').length;
+    const totalRevenue = bookings
+        .filter((b) => b.paymentStatus === 'completed')
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
     const columns = [
         {
-            title: 'User',
-            key: 'user',
-            render: (_: any, record: User) => (
-                <Space>
-                    <Avatar style={{ backgroundColor: '#0000FF' }} size="large">
-                        {(record.firstName || 'U').charAt(0)}{(record.lastName || 'N').charAt(0)}
-                    </Avatar>
-                    <div>
-                        <div className="font-medium">{record.firstName || ''} {record.lastName || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{record.email}</div>
-                    </div>
-                </Space>
+            title: 'Customer',
+            key: 'customer',
+            render: (_: unknown, record: Booking) => (
+                <div className="font-medium">{getUserName(record.userId)}</div>
             ),
         },
         {
-            title: 'Phone',
-            dataIndex: 'phone',
-            key: 'phone',
-            render: (phone: string) => phone || 'N/A',
-        },
-        {
-            title: 'Role',
-            dataIndex: 'userType',
-            key: 'userType',
-            filters: [
-                { text: 'admin', value: 'admin' },
-                { text: 'Landlord', value: 'landlord' },
-                { text: 'Agent', value: 'agent' },
-                { text: 'Service_rovider', value: 'service_provider' },
-                { text: 'Home Seeker', value: 'home_seeker' },
-            ],
-            onFilter: (value: any, record: User) => record.userType === value,
-            render: (role: User['userType']) => (
-                <Tag color={getRoleColor(role)}>{getRoleLabel(role)}</Tag>
+            title: 'Service',
+            key: 'service',
+            render: (_: unknown, record: Booking) => (
+                <div>{getServiceTitle(record.serviceId)}</div>
             ),
         },
         {
-            title: 'Verified',
-            dataIndex: 'verified',
-            key: 'verified',
-            filters: [
-                { text: 'Verified', value: true },
-                { text: 'Not Verified', value: false },
-            ],
-            onFilter: (value: any, record: User) => record.verified === value,
-            render: (verified: boolean) => (
-                <Tag color={verified ? 'green' : 'orange'} icon={verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>
-                    {verified ? 'Verified' : 'Not Verified'}
-                </Tag>
-            ),
+            title: 'Date',
+            dataIndex: 'scheduledDate',
+            key: 'scheduledDate',
+            render: (d: string) => new Date(d).toLocaleDateString(),
+            sorter: (a: Booking, b: Booking) =>
+                new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime(),
+        },
+        {
+            title: 'Amount',
+            dataIndex: 'totalPrice',
+            key: 'totalPrice',
+            render: (v: number) => `$${(v || 0).toLocaleString()}`,
+            sorter: (a: Booking, b: Booking) => (a.totalPrice || 0) - (b.totalPrice || 0),
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            filters: [
-                { text: 'Active', value: "active" },
-                { text: 'Inactive', value: "inactive" },
-            ],
-            onFilter: (value: any, record: User) => record.status === value,
-            render: (status: string) => (
-                <Tag color={status === 'active' ? 'green' : 'red'}>{status === 'active' ? 'Active' : 'Inactive'}</Tag>
+            render: (s: string) => (
+                <Tag color={getStatusColor(s)}>{s?.replace('_', ' ').toUpperCase()}</Tag>
             ),
         },
         {
-            title: 'Created',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            sorter: (a: User, b: User) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-            }),
+            title: 'Payment',
+            dataIndex: 'paymentStatus',
+            key: 'paymentStatus',
+            render: (s: string) => (
+                <Tag color={s === 'completed' ? 'green' : s === 'failed' ? 'red' : 'orange'}>
+                    {s?.toUpperCase()}
+                </Tag>
+            ),
         },
         {
             title: 'Actions',
             key: 'actions',
-            render: (_: any, record: User) => {
-                const isAdmin = currentUser?.role === 'admin';
-
-                return (
-                    <Space size="small">
-                        {isAdmin && (
-                            <Tooltip title={record.verified ? 'Unverify User' : 'Verify User'}>
+            render: (_: unknown, record: Booking) => (
+                <div className="flex gap-1">
+                    <Tooltip title="View Details">
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => {
+                                setSelectedBooking(record);
+                                setViewModalOpen(true);
+                            }}
+                        />
+                    </Tooltip>
+                    {record.status === 'pending' && (
+                        <>
+                            <Tooltip title="Confirm">
                                 <Button
                                     type="text"
-                                    icon={record.verified ? <CloseCircleOutlined /> : <CheckCircleOutlined />}
-                                    onClick={() => handleToggleVerification(record)}
-                                    style={{ color: record.verified ? '#fa8c16' : '#52c41a' }}
+                                    size="small"
+                                    icon={<CheckCircleOutlined />}
+                                    style={{ color: '#52c41a' }}
+                                    onClick={() => handleAction(record._id, 'confirm')}
                                 />
                             </Tooltip>
-                        )}
-                        <Tooltip title="View">
-                            <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
-                        </Tooltip>
-                        <Tooltip title="Edit">
-                            <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Edit functionality coming soon')} />
-                        </Tooltip>
-                        {isAdmin && (
-                            <Tooltip title="Delete">
-                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
+                            <Tooltip title="Cancel">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<CloseCircleOutlined />}
+                                    danger
+                                    onClick={() => handleAction(record._id, 'cancel')}
+                                />
                             </Tooltip>
-                        )}
-                    </Space>
-                );
-            },
+                        </>
+                    )}
+                    {record.status === 'confirmed' && (
+                        <Tooltip title="Mark Complete">
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<CheckCircleOutlined />}
+                                style={{ color: '#52c41a' }}
+                                onClick={() => handleAction(record._id, 'complete')}
+                            />
+                        </Tooltip>
+                    )}
+                </div>
+            ),
         },
     ];
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <Title level={3} className="mb-1">Users</Title>
-                    <Text type="secondary">Manage users and view user statistics by type</Text>
-                </div>
+            <div>
+                <Title level={2}>Bookings</Title>
+                <Text type="secondary">Manage and track all service bookings</Text>
             </div>
 
             <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Total Users</p>
-                                <Statistic value={totalUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold' }} />
-                            </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
-                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Verified Users</p>
-                                <Statistic value={verifiedUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }} />
-                            </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#52c41a20' }}>
-                                <CheckCircleOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Active Users</p>
-                                <Statistic value={activeUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#0000FF' }} />
-                            </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
-                                <UserOutlined style={{ fontSize: 24, color: '#0000FF' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Agents</p>
-                                <Statistic value={agentUsers} valueStyle={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }} />
-                            </div>
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#52c41a20' }}>
-                                <TeamOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
+                {[
+                    { title: 'Total Bookings', value: totalBookings, icon: <CalendarOutlined />, color: '#0000FF' },
+                    { title: 'Pending', value: pendingCount, icon: <ClockCircleOutlined />, color: '#faad14' },
+                    { title: 'Confirmed', value: confirmedCount, icon: <CheckCircleOutlined />, color: '#1890ff' },
+                    { title: 'Completed', value: completedCount, icon: <CheckCircleOutlined />, color: '#52c41a' },
+                    { title: 'Revenue', value: totalRevenue, icon: <DollarOutlined />, color: '#722ed1', prefix: '$' },
+                ].map((s) => (
+                    <Col xs={12} lg={4} key={s.title}>
+                        <Card style={{ borderRadius: 12 }} styles={{ body: { padding: 16 } }}>
+                            <Statistic
+                                title={s.title}
+                                value={s.value}
+                                prefix={s.prefix}
+                                valueStyle={{ color: s.color, fontWeight: 700, fontSize: 22 }}
+                            />
+                        </Card>
+                    </Col>
+                ))}
             </Row>
 
-            <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={8}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Landlords</p>
-                                <Statistic value={landlordUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#0000FF' }} />
-                            </div>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0000FF20' }}>
-                                <HomeOutlined style={{ fontSize: 20, color: '#0000FF' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={8}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Service Providers</p>
-                                <Statistic value={serviceProviderUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#fa8c16' }} />
-                            </div>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#fa8c1620' }}>
-                                <ToolOutlined style={{ fontSize: 20, color: '#fa8c16' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={8}>
-                    <Card className="h-full">
-                        <div className="flex items-start justify-between h-full">
-                            <div className="flex-1">
-                                <p className="text-gray-500 text-sm mb-2">Home Seekers</p>
-                                <Statistic value={homeSeekerUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }} />
-                            </div>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#722ed120' }}>
-                                <SearchOutlined style={{ fontSize: 20, color: '#722ed1' }} />
-                            </div>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Search and Filters */}
-            <Card>
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} md={16}>
-                        <Input
-                            placeholder="Search by name, email, phone, or role..."
-                            allowClear
-                            size="large"
-                            prefix={<SearchOutlined />}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </Col>
-                    <Col xs={24} md={8}>
-                        <Select
-                            size="large"
-                            value={verificationFilter}
-                            onChange={setVerificationFilter}
-                            style={{ width: '100%' }}
-                        >
-                            <Select.Option value="all">All Users</Select.Option>
-                            <Select.Option value="verified">Verified</Select.Option>
-                            <Select.Option value="not_verified">Not Verified</Select.Option>
-                        </Select>
-                    </Col>
-                </Row>
-            </Card>
-
-            {/* Users Table */}
-            <Card>
+            <Card style={{ borderRadius: 12 }}>
+                <div className="flex items-center gap-4 mb-4">
+                    <Select
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        style={{ width: 180 }}
+                        options={[
+                            { label: 'All Statuses', value: 'all' },
+                            { label: 'Pending', value: 'pending' },
+                            { label: 'Confirmed', value: 'confirmed' },
+                            { label: 'In Progress', value: 'in_progress' },
+                            { label: 'Completed', value: 'completed' },
+                            { label: 'Cancelled', value: 'cancelled' },
+                        ]}
+                    />
+                </div>
                 <Table
-                    columns={columns}
-                    dataSource={filteredUsers}
                     loading={loading}
+                    dataSource={bookings}
+                    columns={columns}
                     rowKey="_id"
-                    pagination={{
-                        pageSize: 10,
-                        showTotal: (total) => `Total ${total} user${total !== 1 ? 's' : ''}`,
-                        showSizeChanger: true
-                    }}
+                    pagination={{ pageSize: 10, showSizeChanger: true }}
+                    scroll={{ x: 800 }}
                 />
             </Card>
 
-            <Modal title="User Details" open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
-                {selectedUser && (
+            {/* Booking Detail Modal */}
+            <Modal
+                title="Booking Details"
+                open={viewModalOpen}
+                onCancel={() => setViewModalOpen(false)}
+                width={600}
+                footer={
+                    selectedBooking?.status === 'pending'
+                        ? [
+                              <Button key="cancel" danger loading={actionLoading} onClick={() => handleAction(selectedBooking._id, 'cancel')}>
+                                  Cancel Booking
+                              </Button>,
+                              <Button
+                                  key="confirm"
+                                  type="primary"
+                                  loading={actionLoading}
+                                  onClick={() => handleAction(selectedBooking._id, 'confirm')}
+                              >
+                                  Confirm Booking
+                              </Button>,
+                          ]
+                        : selectedBooking?.status === 'confirmed'
+                          ? [
+                                <Button
+                                    key="complete"
+                                    type="primary"
+                                    loading={actionLoading}
+                                    onClick={() => handleAction(selectedBooking._id, 'complete')}
+                                    style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                >
+                                    Mark Complete
+                                </Button>,
+                            ]
+                          : [<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]
+                }
+            >
+                {selectedBooking && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <Avatar size={64} style={{ backgroundColor: '#0000FF' }}>
-                                {(selectedUser.firstName || 'U').charAt(0)}{(selectedUser.lastName || 'N').charAt(0)}
-                            </Avatar>
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <div className="text-xl font-bold">{selectedUser.firstName || ''} {selectedUser.lastName || 'Unknown'}</div>
-                                <div className="text-gray-500">{selectedUser.email}</div>
+                                <Text type="secondary">Customer</Text>
+                                <div className="font-medium">{getUserName(selectedBooking.userId)}</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Service</Text>
+                                <div className="font-medium">{getServiceTitle(selectedBooking.serviceId)}</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Scheduled Date</Text>
+                                <div className="font-medium">{new Date(selectedBooking.scheduledDate).toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Duration</Text>
+                                <div className="font-medium">{selectedBooking.duration} hour(s)</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Amount</Text>
+                                <div className="font-medium text-lg">${(selectedBooking.totalPrice || 0).toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Status</Text>
+                                <div>
+                                    <Tag color={getStatusColor(selectedBooking.status)}>
+                                        {selectedBooking.status?.replace('_', ' ').toUpperCase()}
+                                    </Tag>
+                                </div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Contact Phone</Text>
+                                <div className="font-medium">{selectedBooking.contactPhone || '-'}</div>
+                            </div>
+                            <div>
+                                <Text type="secondary">Payment</Text>
+                                <div>
+                                    <Tag color={selectedBooking.paymentStatus === 'completed' ? 'green' : 'orange'}>
+                                        {selectedBooking.paymentStatus?.toUpperCase()}
+                                    </Tag>
+                                </div>
                             </div>
                         </div>
-                        <div><Text type="secondary">Phone Number</Text><div className="font-medium">{selectedUser.phone || 'N/A'}</div></div>
-                        <div><Text type="secondary">Role</Text><div><Tag color={getRoleColor(selectedUser.userType)}>{getRoleLabel(selectedUser.userType)}</Tag></div></div>
-                        <div><Text type="secondary">Verification Status</Text><div><Tag color={selectedUser.verified ? 'green' : 'orange'} icon={selectedUser.verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>{selectedUser.verified ? 'Verified' : 'Not Verified'}</Tag></div></div>
-                        <div><Text type="secondary">Account Status</Text><div><Tag color={selectedUser.status === 'active' ? 'green' : 'red'}>{selectedUser.status === 'active' ? 'Active' : 'Inactive'}</Tag></div></div>
-                        <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
-                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
+                        {selectedBooking.serviceAddress && (
+                            <div>
+                                <Text type="secondary">Location</Text>
+                                <div className="font-medium">{selectedBooking.serviceAddress}</div>
+                            </div>
+                        )}
+                        {selectedBooking.notes && (
+                            <div>
+                                <Text type="secondary">Notes</Text>
+                                <div className="text-gray-700">{selectedBooking.notes}</div>
+                            </div>
+                        )}
+                        {selectedBooking.cancellationReason && (
+                            <div>
+                                <Text type="secondary">Cancellation Reason</Text>
+                                <div className="text-red-600">{selectedBooking.cancellationReason}</div>
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>

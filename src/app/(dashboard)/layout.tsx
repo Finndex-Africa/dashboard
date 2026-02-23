@@ -3,12 +3,9 @@
 import { useState } from 'react';
 import Layout from 'antd/es/layout';
 import Menu from 'antd/es/menu';
-import Dropdown from 'antd/es/dropdown';
 import Drawer from 'antd/es/drawer';
-import Space from 'antd/es/space';
 import Avatar from 'antd/es/avatar';
 import Button from 'antd/es/button';
-import Input from 'antd/es/input';
 import {
     HomeOutlined,
     AppstoreOutlined,
@@ -22,17 +19,14 @@ import {
     TrophyOutlined,
     MenuOutlined,
     CloseOutlined,
-    SearchOutlined,
+    SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
-import { designTokens } from '@/config/theme';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { getRoleRedirectPath } from '@/lib/role-redirects';
 
-const { Search } = Input;
-
-const { Header, Content, Sider } = Layout;
+const { Content, Sider } = Layout;
 
 export default function DashboardLayout({
     children,
@@ -40,99 +34,32 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
     const { user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
-    const handleMenuClick = (key: string) => {
-        if (key === 'logout') {
-            handleLogout();
-        } else {
-            router.push(`/${key}`);
-        }
-    };
-
-    const handleHomeClick = () => {
-        const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
-        window.location.href = websiteUrl;
-    };
-
-    const handleSearch = (value: string) => {
-        if (!value.trim() || isSearching) return;
-
-        setIsSearching(true);
-        const searchQuery = encodeURIComponent(value);
-
-        // Clear search value and reset loading state after navigation
-        setTimeout(() => {
-            setSearchValue('');
-            setIsSearching(false);
-        }, 500);
-
-        if (pathname.includes('/properties')) {
-            router.push(`/properties?search=${searchQuery}`);
-            return;
-        }
-
-        if (pathname.includes('/services')) {
-            router.push(`/services?search=${searchQuery}`);
-            return;
-        }
-
-        if (pathname.includes('/users')) {
-            router.push(`/users?search=${searchQuery}`);
-            return;
-        }
-
-        if (pathname.includes('/bookings')) {
-            router.push(`/bookings?search=${searchQuery}`);
-            return;
-        }
-
-        // Default to searching properties
-        router.push(`/properties?search=${searchQuery}`);
-    };
-
-    // User dropdown menu items (top-right profile) - Only profile actions, no navigation
-    const userDropdownItems = [
-        {
-            key: 'profile',
-            label: 'Profile',
-            icon: <UserOutlined />,
-            onClick: () => router.push('/profile'),
-        },
-        {
-            type: 'divider' as const,
-        },
-        {
-            key: 'logout',
-            label: 'Log out',
-            icon: <LogoutOutlined />,
-            onClick: () => handleLogout(),
-        },
-    ];
+    // No top-right dropdown - Profile is now in the sidebar
 
     // Define all menu items with role restrictions
+    // admin = general admin (full access), admin_property = properties only, admin_services = services only
     const allMenuItems = [
         {
             key: '/dashboard',
             icon: <HomeOutlined />,
             label: 'Dashboard',
-            roles: ['admin'], // ONLY admin has dashboard
+            roles: ['admin', 'admin_property', 'admin_services'],
         },
         {
             key: '/properties',
             icon: <AppstoreOutlined />,
             label: 'Properties',
-            roles: ['home_seeker', 'landlord', 'agent', 'admin'], // Everyone sees properties
+            roles: ['home_seeker', 'landlord', 'agent', 'admin', 'admin_property'],
         },
         {
             key: '/services',
             icon: <ShopOutlined />,
             label: 'Services',
-            roles: ['home_seeker', 'service_provider', 'admin'], // Home seekers can browse services
+            roles: ['home_seeker', 'service_provider', 'admin', 'admin_services'],
         },
         {
             key: '/bookings',
@@ -153,16 +80,28 @@ export default function DashboardLayout({
             roles: ['admin'],
         },
         {
+            key: '/verifications',
+            icon: <SafetyCertificateOutlined />,
+            label: 'Verifications',
+            roles: ['admin'],
+        },
+        {
             key: '/notifications',
             icon: <BellOutlined />,
             label: 'Notifications',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
+            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
         },
         {
             key: '/messages',
             icon: <MessageOutlined />,
             label: 'Messages',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
+            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
+        },
+        {
+            key: '/profile',
+            icon: <UserOutlined />,
+            label: 'Profile',
+            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
         },
     ];
 
@@ -292,28 +231,22 @@ export default function DashboardLayout({
 
                 {/* Main Layout - Adjust margin for sidebar on desktop */}
                 <Layout className="md:ml-[260px]" style={{ position: 'relative' }}>
-                    {/* Header */}
-                    <Header
-                        style={{
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 100,
-                            width: '100%',
-                            padding: '0 16px',
-                            background: '#fff',
-                            borderBottom: '1px solid #ebebeb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            height: '64px',
-                            gap: '16px',
-                            boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.08)',
-                        }}
-                    >
-                        {/* Left side: Logo (mobile only) */}
-                        <div className="flex items-center flex-shrink-0">
+                    {/* Mobile-only header with burger menu — hidden on md+ */}
+                    <div className="block md:hidden sticky top-0 z-[100]">
+                        <div
+                            className="flex items-center justify-between"
+                            style={{
+                                width: '100%',
+                                padding: '0 16px',
+                                background: '#fff',
+                                borderBottom: '1px solid #ebebeb',
+                                height: '56px',
+                                boxShadow: '0 1px 4px 0 rgba(0, 0, 0, 0.06)',
+                            }}
+                        >
+                            {/* Logo (mobile) */}
                             <div
-                                className="cursor-pointer flex items-center md:hidden"
+                                className="cursor-pointer flex items-center"
                                 onClick={() => {
                                     const redirectPath = user?.role ? getRoleRedirectPath(user.role) : '/properties';
                                     router.push(redirectPath);
@@ -325,16 +258,12 @@ export default function DashboardLayout({
                                     className="h-8 object-contain"
                                 />
                             </div>
-                        </div>
 
-                        {/* Right side: Burger Menu (mobile only) + User Menu */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            {/* Burger Menu Button - Show only on mobile */}
+                            {/* Burger menu (mobile) */}
                             <Button
                                 type="text"
                                 icon={<MenuOutlined style={{ fontSize: '16px' }} />}
                                 onClick={() => setDrawerOpen(true)}
-                                className="md:hidden flex items-center justify-center"
                                 style={{
                                     width: '40px',
                                     height: '40px',
@@ -342,26 +271,8 @@ export default function DashboardLayout({
                                     border: '1px solid #ddd',
                                 }}
                             />
-
-                            {/* User Avatar Dropdown */}
-                            <Dropdown menu={{ items: userDropdownItems }} trigger={['click']}>
-                                <div
-                                    className="cursor-pointer flex items-center gap-2 px-2 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all"
-                                    style={{ height: '40px' }}
-                                >
-                                    <MenuOutlined style={{ fontSize: '13px', color: '#717171' }} />
-                                    <Avatar
-                                        src={user?.avatar}
-                                        icon={!user?.avatar && <UserOutlined />}
-                                        size={26}
-                                        style={{
-                                            backgroundColor: '#717171',
-                                        }}
-                                    />
-                                </div>
-                            </Dropdown>
                         </div>
-                    </Header>
+                    </div>
 
                     {/* Mobile Drawer Menu */}
                     <Drawer
@@ -436,8 +347,8 @@ export default function DashboardLayout({
                     <Content
                         style={{
                             background: '#f7f7f7',
-                            minHeight: 'calc(100vh - 64px)',
-                            padding: '40px 20px',
+                            minHeight: 'calc(100vh - 56px)',
+                            padding: '32px 20px',
                             position: 'relative',
                             zIndex: 1,
                         }}

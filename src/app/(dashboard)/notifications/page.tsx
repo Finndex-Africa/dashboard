@@ -153,6 +153,11 @@ export default function NotificationsPage() {
     const getNotificationIcon = (type: Notification['type']) => {
         switch (type) {
             case 'info':
+            case 'new_user_registered':
+            case 'new_property_submitted':
+            case 'new_service_submitted':
+            case 'new_booking_created':
+            case 'new_advertise_request':
                 return <InfoCircleOutlined style={{ fontSize: 20, color: '#0000FF' }} />;
             case 'success':
                 return <CheckCircleOutlined style={{ fontSize: 20, color: '#52c41a' }} />;
@@ -168,6 +173,11 @@ export default function NotificationsPage() {
     const getNotificationColor = (type: Notification['type']) => {
         switch (type) {
             case 'info':
+            case 'new_user_registered':
+            case 'new_property_submitted':
+            case 'new_service_submitted':
+            case 'new_booking_created':
+            case 'new_advertise_request':
                 return '#0000FF20';
             case 'success':
                 return '#52c41a20';

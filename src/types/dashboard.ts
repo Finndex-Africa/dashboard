@@ -184,9 +184,14 @@ export interface Notification {
     userId: string;
     title: string;
     message: string;
-    type: 'info' | 'success' | 'warning' | 'error';
+    /** Backend uses enum (e.g. new_user_registered, booking_created); dashboard also supports info | success | warning | error */
+    type: 'info' | 'success' | 'warning' | 'error' | string;
     read: boolean;
     link?: string;
+    icon?: string;
+    priority?: string;
+    relatedEntityId?: string;
+    relatedEntityType?: string;
     createdAt: string;
     updatedAt: string;
 }
