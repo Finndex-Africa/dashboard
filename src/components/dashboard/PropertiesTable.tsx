@@ -5,7 +5,7 @@ import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
-import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Property } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -15,6 +15,7 @@ interface PropertiesTableProps {
     onView?: (property: Property) => void;
     onEdit?: (property: Property) => void;
     onDelete?: (property: Property) => void;
+    onReview?: (property: Property) => void;
     onApprove?: (property: Property) => void;
     onReject?: (property: Property) => void;
     onUnpublish?: (property: Property) => void;
@@ -30,6 +31,7 @@ export function PropertiesTable({
     onView,
     onEdit,
     onDelete,
+    onReview,
     onApprove,
     onReject,
     onUnpublish,
@@ -139,8 +141,19 @@ export function PropertiesTable({
                         </Tooltip>
                     )}
 
-                    {/* Admin: Approve/Reject pending properties */}
-                    {record.status === 'pending' && onApprove && onReject ? (
+                    {/* Admin: Review pending properties (then Approve/Reject from modal) */}
+                    {record.status === 'pending' && onReview ? (
+                        <Tooltip title="Review before approving or rejecting">
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FileSearchOutlined />}
+                                onClick={() => onReview(record)}
+                            >
+                                Review
+                            </Button>
+                        </Tooltip>
+                    ) : record.status === 'pending' && onApprove && onReject ? (
                         <>
                             <Tooltip title="Approve">
                                 <Button

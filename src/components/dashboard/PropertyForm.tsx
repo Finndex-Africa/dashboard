@@ -9,10 +9,8 @@ import Button from 'antd/es/button';
 import Row from 'antd/es/row';
 import Col from 'antd/es/col';
 import Divider from 'antd/es/divider';
-import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import Upload from 'antd/es/upload';
-import Checkbox from 'antd/es/checkbox';
 import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { Property } from '@/types/dashboard';
@@ -20,6 +18,26 @@ import { showToast } from '@/lib/toast';
 
 const { TextArea } = Input;
 const { Text } = Typography;
+
+// Same amenity options as user property form (backend expects { icon, label }[])
+const AMENITY_OPTIONS = [
+    { value: 'Water', icon: '💧' },
+    { value: 'Electricity', icon: '⚡' },
+    { value: 'WiFi', icon: '📶' },
+    { value: 'Parking', icon: '🚗' },
+    { value: 'Security', icon: '🔒' },
+    { value: 'Swimming Pool', icon: '🏊' },
+    { value: 'Gym', icon: '💪' },
+    { value: 'Garden', icon: '🌳' },
+    { value: 'Balcony', icon: '🏠' },
+    { value: 'Air Conditioning', icon: '❄️' },
+    { value: 'Heating', icon: '🔥' },
+    { value: 'Laundry', icon: '🧺' },
+    { value: 'Elevator', icon: '🛗' },
+    { value: 'Generator', icon: '⚙️' },
+    { value: 'CCTV', icon: '📹' },
+    { value: 'Gate', icon: '🚪' },
+] as const;
 
 interface PropertyFormProps {
     initialValues?: Partial<Property>;
@@ -36,14 +54,24 @@ export function PropertyForm({
 }: PropertyFormProps) {
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
+    const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
     // Reset form when initialValues changes (modal opens/closes)
     useEffect(() => {
         if (!initialValues) {
             form.resetFields();
             setFileList([]);
+            setSelectedAmenities([]);
         } else {
             form.setFieldsValue(initialValues);
+
+            // Sync amenities from saved property (same as user form)
+            const savedAmenities = initialValues.amenities as Array<{ label: string }> | undefined;
+            if (savedAmenities?.length) {
+                setSelectedAmenities(savedAmenities.map((a) => a.label));
+            } else {
+                setSelectedAmenities([]);
+            }
 
             // Convert existing images to UploadFile format
             if (initialValues.images && initialValues.images.length > 0) {
@@ -58,12 +86,26 @@ export function PropertyForm({
         }
     }, [initialValues, form]);
 
-    const handleSubmit = (values: any) => {
-        const filesToUpload = fileList
-            .filter(file => file.originFileObj)
-            .map(file => file.originFileObj as File);
+    const toggleAmenity = (amenity: string) => {
+        setSelectedAmenities((prev) =>
+            prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
+        );
+    };
 
-        onSubmit(values, filesToUpload);
+    const handleSubmit = (values: any) => {
+        const amenitiesPayload =
+            selectedAmenities.length > 0
+                ? selectedAmenities.map((label) => {
+                    const opt = AMENITY_OPTIONS.find((a) => a.value === label);
+                    return { icon: opt?.icon ?? '•', label };
+                })
+                : undefined;
+
+        const filesToUpload = fileList
+            .filter((file) => file.originFileObj)
+            .map((file) => file.originFileObj as File);
+
+        onSubmit({ ...values, amenities: amenitiesPayload }, filesToUpload);
     };
 
     const handleUploadChange = ({ fileList: newFileList }: any) => {
@@ -92,7 +134,7 @@ export function PropertyForm({
             onFinish={handleSubmit}
             style={{ marginTop: '20px' }}
         >
-            {/* Basic Information Section */}
+            {/* Basic Information – same order as user form */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
                     Basic Information
@@ -111,9 +153,19 @@ export function PropertyForm({
                             />
                         </Form.Item>
                     </Col>
-                </Row>
-
-                <Row gutter={16}>
+                    <Col xs={24}>
+                        <Form.Item
+                            name="description"
+                            label="Description"
+                            rules={[{ required: true, message: 'Please enter description' }]}
+                        >
+                            <TextArea
+                                rows={4}
+                                placeholder="Describe your property..."
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="propertyType"
@@ -126,7 +178,7 @@ export function PropertyForm({
                                 style={{ borderRadius: '8px' }}
                             >
                                 <Select.Option value="Apartment">Apartment</Select.Option>
-                                <Select.Option value="House">House</Select.Option>
+                                <Select.Option value="Office Space">Office Space</Select.Option>
                             </Select>
                         </Form.Item>
                     </Col>
@@ -152,7 +204,31 @@ export function PropertyForm({
 
             <Divider style={{ margin: '24px 0' }} />
 
-            {/* Property Details Section */}
+            {/* Location – same as user form */}
+            <div style={{ marginBottom: '24px' }}>
+                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
+                    Location
+                </Text>
+                <Row gutter={16}>
+                    <Col xs={24}>
+                        <Form.Item
+                            name="location"
+                            label="Location"
+                            rules={[{ required: true, message: 'Please enter location' }]}
+                        >
+                            <Input
+                                size="large"
+                                placeholder="e.g., Westlands, Nairobi"
+                                style={{ borderRadius: '8px' }}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </div>
+
+            <Divider style={{ margin: '24px 0' }} />
+
+            {/* Property Details – same as user form */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
                     Property Details
@@ -175,10 +251,7 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                     <Col xs={24} sm={12}>
-                        <Form.Item
-                            name="area"
-                            label="Area (sq ft)"
-                        >
+                        <Form.Item name="area" label="Area (sq ft)">
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
@@ -188,7 +261,6 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                 </Row>
-
                 <Row gutter={16}>
                     <Col xs={24} sm={8}>
                         <Form.Item
@@ -220,10 +292,7 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                     <Col xs={24} sm={8}>
-                        <Form.Item
-                            name="maxGuests"
-                            label="Max Guests"
-                        >
+                        <Form.Item name="maxGuests" label="Max Guests">
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
@@ -237,159 +306,51 @@ export function PropertyForm({
 
             <Divider style={{ margin: '24px 0' }} />
 
-            {/* Amenities Section */}
+            {/* Amenities – same chip grid as user form with yellow selected state */}
             <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Amenities & Features
+                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '8px' }}>
+                    Amenities
                 </Text>
-
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="wifi" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>WiFi</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="airConditioning" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Air Conditioning</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="heating" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Heating</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="kitchen" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Kitchen</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="washer" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Washer</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="dryer" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Dryer</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="tv" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>TV</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="workspace" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Dedicated Workspace</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="parking" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Parking</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="pool" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Swimming Pool</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="gym" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Gym</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="elevator" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Elevator</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="balcony" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Balcony</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="garden" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Garden</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="securitySystem" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Security System</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="petFriendly" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Pet Friendly</Checkbox>
-                        </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12} md={8}>
-                        <Form.Item name="smoking" valuePropName="checked" style={{ marginBottom: 0 }}>
-                            <Checkbox>Smoking Allowed</Checkbox>
-                        </Form.Item>
-                    </Col>
-                </Row>
-
-                <Row gutter={16} style={{ marginTop: '16px' }}>
-                    <Col xs={24} sm={12}>
-                        <Form.Item
-                            name="parkingSpaces"
-                            label="Number of Parking Spaces"
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '12px' }}>
+                    Select the amenities available in this property
+                </Text>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                    {AMENITY_OPTIONS.map((amenity) => (
+                        <button
+                            key={amenity.value}
+                            type="button"
+                            onClick={() => toggleAmenity(amenity.value)}
+                            style={{
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: `2px solid ${selectedAmenities.includes(amenity.value) ? '#ffcc00' : '#e5e7eb'}`,
+                                background: selectedAmenities.includes(amenity.value) ? 'rgba(255, 204, 0, 0.15)' : '#fff',
+                                color: selectedAmenities.includes(amenity.value) ? '#111' : '#374151',
+                                textAlign: 'left',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                            }}
                         >
-                            <InputNumber
-                                size="large"
-                                style={{ width: '100%', borderRadius: '8px' }}
-                                placeholder="0"
-                                min={0}
-                            />
-                        </Form.Item>
-                    </Col>
-                </Row>
-            </div>
-
-            <Divider style={{ margin: '24px 0' }} />
-
-            {/* Location Section */}
-            <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Location
-                </Text>
-                <Row gutter={16}>
-                    <Col xs={24}>
-                        <Form.Item
-                            name="location"
-                            label="Full Address"
-                            rules={[{ required: true, message: 'Please enter location' }]}
-                        >
-                            <Input
-                                size="large"
-                                placeholder="e.g., Westlands, Nairobi, Kenya"
-                                style={{ borderRadius: '8px' }}
-                            />
-                        </Form.Item>
-                    </Col>
-                </Row>
-            </div>
-
-            <Divider style={{ margin: '24px 0' }} />
-
-            {/* Description Section */}
-            <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Description
-                </Text>
-                <Form.Item
-                    name="description"
-                    label="Property Description"
-                    rules={[{ required: true, message: 'Please enter description' }]}
-                >
-                    <TextArea
-                        rows={5}
-                        placeholder="Provide a detailed description of the property, including key features and amenities..."
-                        style={{ borderRadius: '8px' }}
-                    />
-                </Form.Item>
+                            <span style={{ fontSize: '20px' }}>{amenity.icon}</span>
+                            <span style={{ fontSize: '13px', fontWeight: 500 }}>{amenity.value}</span>
+                            {selectedAmenities.includes(amenity.value) && (
+                                <svg
+                                    style={{ marginLeft: 'auto', width: 20, height: 20, color: '#ffcc00' }}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <Divider style={{ margin: '24px 0' }} />

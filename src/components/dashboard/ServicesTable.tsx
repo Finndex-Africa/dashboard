@@ -6,7 +6,7 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -16,6 +16,7 @@ interface ServicesTableProps {
     onView?: (service: Service) => void;
     onEdit?: (service: Service) => void;
     onDelete?: (service: Service) => void;
+    onReview?: (service: Service) => void;
     onVerify?: (service: Service) => void;
     onReject?: (service: Service) => void;
     onUnpublish?: (service: Service) => void;
@@ -31,6 +32,7 @@ export function ServicesTable({
     onView,
     onEdit,
     onDelete,
+    onReview,
     onVerify,
     onReject,
     onUnpublish,
@@ -134,8 +136,19 @@ export function ServicesTable({
                         </Tooltip>
                     )}
 
-                    {/* Admin: Verify/Reject pending services */}
-                    {record.verificationStatus === 'pending' && onVerify && onReject ? (
+                    {/* Admin: Review pending services (then Verify/Reject from modal) */}
+                    {record.verificationStatus === 'pending' && onReview ? (
+                        <Tooltip title="Review before verifying or rejecting">
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FileSearchOutlined />}
+                                onClick={() => onReview(record)}
+                            >
+                                Review
+                            </Button>
+                        </Tooltip>
+                    ) : record.verificationStatus === 'pending' && onVerify && onReject ? (
                         <>
                             <Tooltip title="Verify">
                                 <Button

@@ -46,7 +46,7 @@ export interface Service {
 export interface Property {
     _id: string;
     title: string;
-    type: 'Apartment' | 'House' ;
+    type: 'Apartment' | 'Office Space' ;
     propertyType: string;
     location: string;
     price: number;
@@ -69,8 +69,8 @@ export interface Property {
     availableFrom?: string;
     availableTo?: string;
 
-    // Additional property details (Airbnb-style)
-    amenities?: string[];
+    // Additional property details (from posting form – backend expects { icon, label }[])
+    amenities?: Array<{ icon?: string; label: string; description?: string }>;
     maxGuests?: number;
     parking?: boolean;
     parkingSpaces?: number;

@@ -14,6 +14,7 @@ import Input from 'antd/es/input';
 import Select from 'antd/es/select';
 import Tabs from 'antd/es/tabs';
 import Modal from 'antd/es/modal';
+import Descriptions from 'antd/es/descriptions';
 import {
     PlusOutlined,
     ToolOutlined,
@@ -62,6 +63,8 @@ function ServicesPageContent() {
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [savedIds, setSavedIds] = useState<string[]>([]);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [serviceForReview, setServiceForReview] = useState<Service | null>(null);
 
     // Determine current view/tab based on role and query params
     const isHS = user?.role && isHomeSeeker(user.role);
@@ -228,8 +231,15 @@ function ServicesPageContent() {
         }
     };
 
+    const handleReviewClick = (service: Service) => {
+        setServiceForReview(service);
+        setReviewModalOpen(true);
+    };
+
     const handleRejectClick = (service: Service) => {
         setSelectedService(service);
+        setReviewModalOpen(false);
+        setServiceForReview(null);
         setIsRejectModalOpen(true);
     };
 
@@ -462,6 +472,7 @@ function ServicesPageContent() {
                     loading={loading}
                     onEdit={(s) => router.push(`/services/${s._id}`)}
                     onDelete={canCreateService(user.role) ? handleDelete : undefined}
+                    onReview={canModerateServices(user.role) ? handleReviewClick : undefined}
                     onVerify={canModerateServices(user.role) ? handleVerify : undefined}
                     onReject={canModerateServices(user.role) ? handleRejectClick : undefined}
                     onUnpublish={canCreateService(user.role) ? handleUnpublish : undefined}
@@ -471,6 +482,54 @@ function ServicesPageContent() {
                     approvingId={actionLoading}
                 />
             </Card>
+
+            {/* Review Modal (Admin): view full details then Verify or Reject */}
+            <Modal
+                title="Review Service"
+                open={reviewModalOpen}
+                onCancel={() => {
+                    setReviewModalOpen(false);
+                    setServiceForReview(null);
+                }}
+                width={640}
+                footer={null}
+            >
+                {serviceForReview && (
+                    <>
+                        <Descriptions bordered column={1} size="small" className="mb-4">
+                            <Descriptions.Item label="Title">{serviceForReview.title}</Descriptions.Item>
+                            <Descriptions.Item label="Category">{serviceForReview.category}</Descriptions.Item>
+                            <Descriptions.Item label="Provider">{typeof serviceForReview.provider === 'object' ? serviceForReview.provider?.name : serviceForReview.provider ?? '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Location">{serviceForReview.location || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Price">{serviceForReview.price != null ? `$${serviceForReview.price.toLocaleString()}` : '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Business">{serviceForReview.businessName || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Description">
+                                <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Images">
+                                {serviceForReview.images?.length ? `${serviceForReview.images.length} image(s)` : 'None'}
+                            </Descriptions.Item>
+                        </Descriptions>
+                        <div className="flex justify-end gap-2">
+                            <Button onClick={() => { setReviewModalOpen(false); setServiceForReview(null); }}>Cancel</Button>
+                            <Button danger onClick={() => handleRejectClick(serviceForReview)}>Reject</Button>
+                            <Button
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                loading={actionLoading === serviceForReview._id}
+                                onClick={async () => {
+                                    await handleVerify(serviceForReview);
+                                    setReviewModalOpen(false);
+                                    setServiceForReview(null);
+                                }}
+                                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                            >
+                                Verify
+                            </Button>
+                        </div>
+                    </>
+                )}
+            </Modal>
 
             {/* Rejection Modal (Admin Only) */}
             <Modal

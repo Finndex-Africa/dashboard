@@ -14,6 +14,7 @@ import Input from 'antd/es/input';
 import Select from 'antd/es/select';
 import Tabs from 'antd/es/tabs';
 import Modal from 'antd/es/modal';
+import Descriptions from 'antd/es/descriptions';
 import Result from 'antd/es/result';
 import {
     PlusOutlined,
@@ -65,6 +66,8 @@ function PropertiesPageContent() {
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [savedIds, setSavedIds] = useState<string[]>([]);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [propertyForReview, setPropertyForReview] = useState<Property | null>(null);
 
     // Determine current view/tab based on role and query params
     const isHS = user?.role && isHomeSeeker(user.role);
@@ -226,8 +229,15 @@ function PropertiesPageContent() {
         }
     };
 
+    const handleReviewClick = (property: Property) => {
+        setPropertyForReview(property);
+        setReviewModalOpen(true);
+    };
+
     const handleRejectClick = (property: Property) => {
         setSelectedProperty(property);
+        setReviewModalOpen(false);
+        setPropertyForReview(null);
         setIsRejectModalOpen(true);
     };
 
@@ -456,7 +466,7 @@ function PropertiesPageContent() {
                         >
                             <Select.Option value="all">All Types</Select.Option>
                             <Select.Option value="Apartment">Apartment</Select.Option>
-                            <Select.Option value="House">House</Select.Option>
+                            <Select.Option value="Office Space">Office Space</Select.Option>
                         </Select>
                     </Col>
                 </Row>
@@ -469,6 +479,7 @@ function PropertiesPageContent() {
                     loading={loading}
                     onEdit={(p) => router.push(`/properties/${p._id}`)}
                     onDelete={canCreateProperty(user.role) ? handleDelete : undefined}
+                    onReview={canModerateProperties(user.role) ? handleReviewClick : undefined}
                     onApprove={canModerateProperties(user.role) ? handleApprove : undefined}
                     onReject={canModerateProperties(user.role) ? handleRejectClick : undefined}
                     onUnpublish={canCreateProperty(user.role) ? handleUnpublish : undefined}
@@ -478,6 +489,54 @@ function PropertiesPageContent() {
                     approvingId={actionLoading}
                 />
             </Card>
+
+            {/* Review Modal (Admin): view full details then Approve or Reject */}
+            <Modal
+                title="Review Property"
+                open={reviewModalOpen}
+                onCancel={() => {
+                    setReviewModalOpen(false);
+                    setPropertyForReview(null);
+                }}
+                width={640}
+                footer={null}
+            >
+                {propertyForReview && (
+                    <>
+                        <Descriptions bordered column={1} size="small" className="mb-4">
+                            <Descriptions.Item label="Title">{propertyForReview.title}</Descriptions.Item>
+                            <Descriptions.Item label="Location">{propertyForReview.location}</Descriptions.Item>
+                            <Descriptions.Item label="Type">{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
+                            <Descriptions.Item label="Price">${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
+                            <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Rooms">{propertyForReview.rooms ?? '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Description">
+                                <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{propertyForReview.description || '—'}</div>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Images">
+                                {propertyForReview.images?.length ? `${propertyForReview.images.length} image(s)` : 'None'}
+                            </Descriptions.Item>
+                        </Descriptions>
+                        <div className="flex justify-end gap-2">
+                            <Button onClick={() => { setReviewModalOpen(false); setPropertyForReview(null); }}>Cancel</Button>
+                            <Button danger onClick={() => handleRejectClick(propertyForReview)}>Reject</Button>
+                            <Button
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                loading={actionLoading === propertyForReview._id}
+                                onClick={async () => {
+                                    await handleApprove(propertyForReview);
+                                    setReviewModalOpen(false);
+                                    setPropertyForReview(null);
+                                }}
+                                style={{ background: '#43e97b', borderColor: '#43e97b' }}
+                            >
+                                Approve
+                            </Button>
+                        </div>
+                    </>
+                )}
+            </Modal>
 
             {/* Rejection Modal (Admin Only) */}
             <Modal
