@@ -193,8 +193,8 @@ export default function DashboardLayout({
                         }}
                     >
                         <img
-                            src="/images/logos/Finndex Africa Updated Logo.png"
-                            alt="Finndex Africa"
+                            src="/images/logos/Header%20Logo-Findafriq.png"
+                            alt="FindAfriq"
                             className="h-10 object-contain"
                         />
                     </div>
@@ -253,8 +253,8 @@ export default function DashboardLayout({
                                 }}
                             >
                                 <img
-                                    src="/images/logos/Finndex Africa Updated Logo.png"
-                                    alt="Finndex Africa"
+                                    src="/images/logos/Header%20Logo-Findafriq.png"
+                                    alt="FindAfriq"
                                     className="h-8 object-contain"
                                 />
                             </div>

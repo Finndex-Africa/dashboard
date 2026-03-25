@@ -20,15 +20,15 @@ const whitneyMedium = DM_Sans({
 })
 
 export const metadata: Metadata = {
-    title: 'Finndex Dashboard',
-    description: 'Manage your Finndex Africa properties and services',
+    title: 'FindAfriq Dashboard',
+    description: 'Manage your FindAfriq properties and services',
     icons: {
         icon: [
-            { url: '/images/logos/Finndex Africa Updated Logo.png' },
+            { url: '/images/logos/Header%20Logo-Findafriq.png' },
             { url: '/favicon.ico' },
         ],
-        apple: '/images/logos/Finndex Africa Updated Logo.png',
-        shortcut: '/images/logos/Finndex Africa Updated Logo.png',
+        apple: '/images/logos/Header%20Logo-Findafriq.png',
+        shortcut: '/images/logos/Header%20Logo-Findafriq.png',
     },
 }
 

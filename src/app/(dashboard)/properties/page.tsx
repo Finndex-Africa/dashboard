@@ -498,7 +498,7 @@ function PropertiesPageContent() {
                     setReviewModalOpen(false);
                     setPropertyForReview(null);
                 }}
-                width={640}
+                width={760}
                 footer={null}
             >
                 {propertyForReview && (
@@ -510,13 +510,49 @@ function PropertiesPageContent() {
                             <Descriptions.Item label="Price">${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
                             <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
                             <Descriptions.Item label="Rooms">{propertyForReview.rooms ?? '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Listed By">
+                                {(() => {
+                                    const p = propertyForReview as any;
+                                    const owner = p.agentId || p.landlordId || p.userId || p.owner;
+                                    if (!owner) return '—';
+                                    if (typeof owner === 'string') return owner;
+                                    const fullName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
+                                    return fullName || owner.name || owner.email || owner._id || '—';
+                                })()}
+                            </Descriptions.Item>
                             <Descriptions.Item label="Description">
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{propertyForReview.description || '—'}</div>
                             </Descriptions.Item>
-                            <Descriptions.Item label="Images">
-                                {propertyForReview.images?.length ? `${propertyForReview.images.length} image(s)` : 'None'}
-                            </Descriptions.Item>
                         </Descriptions>
+
+                        <div className="mb-4">
+                            <div className="text-sm font-medium text-gray-700 mb-2">Images</div>
+                            {propertyForReview.images?.length ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {propertyForReview.images.map((img, idx) => (
+                                        <a
+                                            key={`${img}-${idx}`}
+                                            href={img}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
+                                            title={`Open image ${idx + 1}`}
+                                        >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={img}
+                                                alt={`Property image ${idx + 1}`}
+                                                className="w-full h-28 object-cover bg-gray-50"
+                                                loading="lazy"
+                                            />
+                                        </a>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-sm text-gray-500">No images</div>
+                            )}
+                        </div>
+
                         <div className="flex justify-end gap-2">
                             <Button onClick={() => { setReviewModalOpen(false); setPropertyForReview(null); }}>Cancel</Button>
                             <Button danger onClick={() => handleRejectClick(propertyForReview)}>Reject</Button>

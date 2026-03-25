@@ -1,6 +1,6 @@
-# Finndex Dashboard
+# FindAfriq Dashboard
 
-The authenticated portal for Finndex Africa's property management platform.
+The authenticated portal for FindAfriq's property management platform.
 
 ## Getting Started
 
@@ -51,7 +51,7 @@ src/
 Create a `.env.local` file in the root directory with:
 
 ```
-NEXT_PUBLIC_API_URL=https://api.finndexafrica.com/api
+NEXT_PUBLIC_API_URL=https://api.findafriq.com/api
 NEXT_PUBLIC_AUTH_MODE=dashboard
 ```
 

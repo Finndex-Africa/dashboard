@@ -166,7 +166,7 @@ export interface Booking {
     paymentReference?: string;
     paidAt?: string;
     // Commission fields
-    platformFee?: number; // 10% Finndex fee
+    platformFee?: number; // 10% FindAfriq fee
     providerEarnings?: number; // 90% for service provider
     commissionProcessed: boolean;
     commissionProcessedAt?: string;

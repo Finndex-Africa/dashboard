@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // DigitalOcean Spaces configuration
 const SPACES_ENDPOINT = process.env.NEXT_PUBLIC_DO_SPACES_ENDPOINT || 'https://nyc3.digitaloceanspaces.com';
-const SPACES_BUCKET = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || 'finndexafrica';
+const SPACES_BUCKET = process.env.NEXT_PUBLIC_DO_SPACES_BUCKET || 'findafriq';
 const SPACES_REGION = process.env.NEXT_PUBLIC_DO_SPACES_REGION || 'nyc3';
 const SPACES_KEY = process.env.NEXT_PUBLIC_DO_SPACES_KEY || '';
 const SPACES_SECRET = process.env.NEXT_PUBLIC_DO_SPACES_SECRET || '';
