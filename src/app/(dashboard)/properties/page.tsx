@@ -33,6 +33,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import {
     canCreateProperty,
     canModerateProperties,
+    getPropertyPosterDisplayName,
     isHomeSeeker,
     isPropertyCreator,
     getDefaultPropertyView,
@@ -511,14 +512,7 @@ function PropertiesPageContent() {
                             <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
                             <Descriptions.Item label="Rooms">{propertyForReview.rooms ?? '—'}</Descriptions.Item>
                             <Descriptions.Item label="Listed By">
-                                {(() => {
-                                    const p = propertyForReview as any;
-                                    const owner = p.agentId || p.landlordId || p.userId || p.owner;
-                                    if (!owner) return '—';
-                                    if (typeof owner === 'string') return owner;
-                                    const fullName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
-                                    return fullName || owner.name || owner.email || owner._id || '—';
-                                })()}
+                                {getPropertyPosterDisplayName(propertyForReview)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Description">
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{propertyForReview.description || '—'}</div>
