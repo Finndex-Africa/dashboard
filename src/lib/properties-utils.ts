@@ -3,7 +3,29 @@
  * Phase 2: Query-driven views for /properties
  */
 
+import type { PropertyPosterRef } from '@/types/dashboard';
 import { UserRole } from './role-redirects';
+
+/** Display name for the user who posted the property (matches admin review modal "Listed By"). */
+export function getPropertyPosterDisplayName(property: {
+    agentId?: PropertyPosterRef;
+    landlordId?: PropertyPosterRef;
+    userId?: PropertyPosterRef;
+    owner?: PropertyPosterRef;
+}): string {
+    const raw = property.agentId ?? property.landlordId ?? property.userId ?? property.owner;
+    if (raw == null || raw === '') return '—';
+    if (typeof raw === 'string') return raw;
+    const fullName = `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim();
+    return fullName || raw.name || raw.email || raw._id || '—';
+}
+
+/** Resolve poster id for ownership checks when agentId/landlordId may be populated objects. */
+export function propertyPosterId(ref: PropertyPosterRef | undefined): string | undefined {
+    if (ref == null || ref === '') return undefined;
+    if (typeof ref === 'string') return ref;
+    return ref._id;
+}
 
 export type PropertyView = 'all' | 'mine' | 'pending';
 export type PropertyTab = 'active' | 'saved';

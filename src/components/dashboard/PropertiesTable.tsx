@@ -7,6 +7,7 @@ import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Property } from '@/types/dashboard';
+import { getPropertyPosterDisplayName } from '@/lib/properties-utils';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PropertiesTableProps {
@@ -91,10 +92,11 @@ export function PropertiesTable({
             render: (price) => `$${price.toLocaleString()}`,
         },
         {
-            title: 'Area',
-            dataIndex: 'area',
-            key: 'area',
-            render: (area) => `${area} sq ft`,
+            title: 'Listed by',
+            key: 'listedBy',
+            render: (_, record) => (
+                <span className="text-gray-900">{getPropertyPosterDisplayName(record)}</span>
+            ),
         },
         {
             title: 'Status',

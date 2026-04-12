@@ -23,12 +23,9 @@ export const metadata: Metadata = {
     title: 'FindAfriq Dashboard',
     description: 'Manage your FindAfriq properties and services',
     icons: {
-        icon: [
-            { url: '/images/logos/Header%20Logo-Findafriq.png' },
-            { url: '/favicon.ico' },
-        ],
-        apple: '/images/logos/Header%20Logo-Findafriq.png',
-        shortcut: '/images/logos/Header%20Logo-Findafriq.png',
+        icon: '/favicon.ico',
+        apple: '/favicon.ico',
+        shortcut: '/favicon.ico',
     },
 }
 
