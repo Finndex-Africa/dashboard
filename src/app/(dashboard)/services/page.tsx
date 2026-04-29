@@ -15,6 +15,7 @@ import Select from 'antd/es/select';
 import Tabs from 'antd/es/tabs';
 import Modal from 'antd/es/modal';
 import Descriptions from 'antd/es/descriptions';
+import Image from 'antd/es/image';
 import {
     PlusOutlined,
     ToolOutlined,
@@ -35,6 +36,10 @@ import {
     getDefaultServiceView,
     getDefaultServiceTab,
     savedServicesManager,
+    getServiceBusinessLabel,
+    getServiceCategoryLabel,
+    getServiceImageUrls,
+    getServiceProviderLabel,
     type ServiceView,
     type ServiceTab,
 } from '@/lib/services-utils';
@@ -470,6 +475,7 @@ function ServicesPageContent() {
                 <ServicesTable
                     services={filteredServices}
                     loading={loading}
+                    adminStatusColumn={isAdmin}
                     onEdit={(s) => router.push(`/services/${s._id}`)}
                     onDelete={canCreateService(user.role) ? handleDelete : undefined}
                     onReview={canModerateServices(user.role) ? handleReviewClick : undefined}
@@ -491,23 +497,48 @@ function ServicesPageContent() {
                     setReviewModalOpen(false);
                     setServiceForReview(null);
                 }}
-                width={640}
+                width={720}
                 footer={null}
             >
                 {serviceForReview && (
                     <>
                         <Descriptions bordered column={1} size="small" className="mb-4">
                             <Descriptions.Item label="Title">{serviceForReview.title}</Descriptions.Item>
-                            <Descriptions.Item label="Category">{serviceForReview.category}</Descriptions.Item>
-                            <Descriptions.Item label="Provider">{typeof serviceForReview.provider === 'object' ? serviceForReview.provider?.name : serviceForReview.provider ?? '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Category">{getServiceCategoryLabel(serviceForReview) || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Provider">{getServiceProviderLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Location">{serviceForReview.location || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Price">{serviceForReview.price != null ? `$${serviceForReview.price.toLocaleString()}` : '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Business">{serviceForReview.businessName || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Business">{getServiceBusinessLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Description">
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>
                             </Descriptions.Item>
                             <Descriptions.Item label="Images">
-                                {serviceForReview.images?.length ? `${serviceForReview.images.length} image(s)` : 'None'}
+                                {(() => {
+                                    const urls = getServiceImageUrls(serviceForReview);
+                                    if (!urls.length) {
+                                        return 'None';
+                                    }
+                                    return (
+                                        <div>
+                                            <div className="text-sm text-gray-500 mb-2">{urls.length} image(s)</div>
+                                            <Image.PreviewGroup>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {urls.map((url, index) => (
+                                                        <Image
+                                                            key={`${url}-${index}`}
+                                                            src={url}
+                                                            alt=""
+                                                            width={96}
+                                                            height={96}
+                                                            className="rounded border border-gray-200 object-cover"
+                                                            style={{ objectFit: 'cover' }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </Image.PreviewGroup>
+                                        </div>
+                                    );
+                                })()}
                             </Descriptions.Item>
                         </Descriptions>
                         <div className="flex justify-end gap-2">

@@ -9,10 +9,13 @@ import Rate from 'antd/es/rate';
 import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
+import { getServiceCategoryLabel, getServiceProviderLabel } from '@/lib/services-utils';
 
 interface ServicesTableProps {
     services: Service[];
     loading?: boolean;
+    /** Admin: show verification state in the status column when pending/rejected */
+    adminStatusColumn?: boolean;
     onView?: (service: Service) => void;
     onEdit?: (service: Service) => void;
     onDelete?: (service: Service) => void;
@@ -29,6 +32,7 @@ interface ServicesTableProps {
 export function ServicesTable({
     services,
     loading,
+    adminStatusColumn = false,
     onView,
     onEdit,
     onDelete,
@@ -70,7 +74,7 @@ export function ServicesTable({
             render: (title, record) => (
                 <div>
                     <div className="font-medium text-gray-900">{title}</div>
-                    <div className="text-sm text-gray-500">{record.category}</div>
+                    <div className="text-sm text-gray-500">{getServiceCategoryLabel(record) || record.category || '—'}</div>
                 </div>
             ),
         },
@@ -78,6 +82,10 @@ export function ServicesTable({
             title: 'Provider',
             dataIndex: 'provider',
             key: 'provider',
+            render: (_, record) => {
+                const label = getServiceProviderLabel(record);
+                return label || '—';
+            },
         },
         {
             title: 'Price',
@@ -104,9 +112,15 @@ export function ServicesTable({
                 { text: 'Suspended', value: 'suspended' },
             ],
             onFilter: (value, record) => record.status === value,
-            render: (status: Service['status']) => (
-                <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
-            ),
+            render: (status: Service['status'], record) => {
+                if (adminStatusColumn && record.verificationStatus === 'pending') {
+                    return <Tag color="orange">Pending verification</Tag>;
+                }
+                if (adminStatusColumn && record.verificationStatus === 'rejected') {
+                    return <Tag color="volcano">Rejected</Tag>;
+                }
+                return <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>;
+            },
         },
         {
             title: 'Date Added',

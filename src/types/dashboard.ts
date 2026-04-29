@@ -26,6 +26,10 @@ export interface Service {
     reviewCount?: number;
     images?: string[];
     provider?: string | { _id: string; name: string; email: string };
+    /** Denormalized display name when API sends it alongside populated provider */
+    providerName?: string;
+    /** Human-readable category when API sends it alongside slug */
+    categoryLabel?: string;
 
     // Business details
     businessName?: string;
