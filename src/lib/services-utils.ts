@@ -3,7 +3,64 @@
  * Phase 3: Mirror of properties-utils pattern
  */
 
+import type { Service } from '@/types/dashboard';
 import { UserRole } from './role-redirects';
+
+const OBJECT_ID_HEX = /^[a-f\d]{24}$/i;
+
+/**
+ * Resolved provider label for tables and admin review modal.
+ */
+export function getServiceProviderLabel(service: Service): string {
+  const direct = service.providerName?.trim();
+  if (direct) return direct;
+
+  const p = service.provider;
+  if (typeof p === 'string' && p.trim()) {
+    if (OBJECT_ID_HEX.test(p)) return '';
+    return p.trim();
+  }
+  if (p && typeof p === 'object' && p.name?.trim()) {
+    return p.name.trim();
+  }
+  return '';
+}
+
+/**
+ * Category for display — prefers API label, else formats slug.
+ */
+export function getServiceCategoryLabel(service: Service): string {
+  const label = service.categoryLabel?.trim();
+  if (label) return label;
+  const c = service.category?.trim();
+  if (!c) return '';
+  return c
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Business / company line for admin views.
+ */
+export function getServiceBusinessLabel(service: Service): string {
+  return service.businessName?.trim() || '';
+}
+/**
+ * Normalize image URLs to a usable list (handles optional API quirks).
+ */
+export function getServiceImageUrls(service: Service): string[] {
+  const raw = service.images;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') return item.trim();
+      return '';
+    })
+    .filter(Boolean);
+}
 
 export type ServiceView = 'all' | 'mine' | 'pending';
 export type ServiceTab = 'active' | 'saved';

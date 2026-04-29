@@ -15,12 +15,17 @@ import Image from 'antd/es/image';
 import message from 'antd/es/message';
 import Select from 'antd/es/select';
 import {
-    CheckCircleOutlined,
-    CloseCircleOutlined,
     EyeOutlined,
+    ExportOutlined,
+    FilePdfOutlined,
     SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
+
+function certificateUrlLooksPdf(url: string): boolean {
+    const path = url.split(/[?#]/)[0]?.toLowerCase() ?? '';
+    return path.endsWith('.pdf');
+}
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -33,6 +38,7 @@ interface Verification {
     idFrontImage: string;
     idBackImage?: string;
     selfieImage?: string;
+    businessRegistrationCertificate?: string;
     status: 'pending' | 'approved' | 'rejected' | 'expired';
     rejectionReason?: string;
     notes?: string;
@@ -277,6 +283,53 @@ export default function VerificationsPage() {
                                 <div className="mt-1">
                                     <Image src={selected.idBackImage} alt="Back" style={{ maxHeight: 250, borderRadius: 8 }} />
                                 </div>
+                            </div>
+                        )}
+
+                        {selected.businessRegistrationCertificate?.trim() && (
+                            <div>
+                                <Text type="secondary" className="block">
+                                    Business registration certificate
+                                </Text>
+                                {certificateUrlLooksPdf(selected.businessRegistrationCertificate) ? (
+                                    <div className="mt-3 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
+                                            <div className="flex min-w-0 items-center gap-4">
+                                                <div
+                                                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-red-500/[0.12] text-2xl text-red-600"
+                                                    aria-hidden
+                                                >
+                                                    <FilePdfOutlined />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-900">PDF document</p>
+                                                    <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                                                        Opens in a new tab so you can review the full certificate.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                className="h-11 shrink-0 rounded-lg px-6 shadow-md transition-all hover:shadow-lg sm:self-center"
+                                                icon={<ExportOutlined />}
+                                                href={selected.businessRegistrationCertificate}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                View certificate
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-1">
+                                        <Image
+                                            src={selected.businessRegistrationCertificate}
+                                            alt="Business registration certificate"
+                                            style={{ maxHeight: 250, borderRadius: 8 }}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
 
