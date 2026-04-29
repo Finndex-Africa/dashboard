@@ -13,7 +13,12 @@ import { propertiesApi } from '@/services/api/properties.api';
 import { mediaApi } from '@/services/api/media.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { canCreateProperty, getDefaultPropertyView, canModerateProperties } from '@/lib/properties-utils';
+import {
+    canCreateProperty,
+    getDefaultPropertyView,
+    canModerateProperties,
+    propertyPosterId,
+} from '@/lib/properties-utils';
 import type { Property } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
@@ -46,8 +51,8 @@ export default function EditPropertyPage() {
             // Check ownership (non-admins can only edit their own properties)
             if (user?.role !== 'admin') {
                 const isOwner =
-                    fetchedProperty.agentId === user?.id ||
-                    fetchedProperty.landlordId === user?.id;
+                    propertyPosterId(fetchedProperty.agentId) === user?.id ||
+                    propertyPosterId(fetchedProperty.landlordId) === user?.id;
 
                 if (!isOwner) {
                     showToast.error('You can only edit your own properties');

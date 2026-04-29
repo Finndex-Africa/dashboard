@@ -47,6 +47,17 @@ export interface Service {
     updatedAt: string;
 }
 
+/** User id string or populated user (e.g. admin property list) */
+export type PropertyPosterRef =
+    | string
+    | {
+          _id?: string;
+          firstName?: string;
+          lastName?: string;
+          name?: string;
+          email?: string;
+      };
+
 export interface Property {
     _id: string;
     title: string;
@@ -61,8 +72,10 @@ export interface Property {
     area?: number;
     description: string;
     images: string[];
-    agentId?: string;
-    landlordId?: string; // Legacy field - use agentId instead
+    agentId?: PropertyPosterRef;
+    landlordId?: PropertyPosterRef; // Legacy field - use agentId instead
+    userId?: PropertyPosterRef;
+    owner?: PropertyPosterRef;
     views?: number;
     inquiries?: number;
     isPremium?: boolean;
