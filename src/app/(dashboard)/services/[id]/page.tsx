@@ -76,9 +76,15 @@ export default function EditServicePage() {
         try {
             setSubmitting(true);
 
-            // If service was rejected, change status to pending for resubmission
             const updateData = { ...values };
-            if (service.verificationStatus === 'rejected') {
+
+            if (user?.role === 'admin') {
+                // Preserve the current status so the backend does not reset it to
+                // 'pending' on update. verificationStatus is intentionally excluded
+                // because the backend update DTO does not accept that field.
+                updateData.status = service.status;
+            } else if (service.verificationStatus === 'rejected') {
+                // Non-admin re-submitting a rejected service for re-verification
                 updateData.verificationStatus = 'pending';
             }
 
@@ -111,7 +117,7 @@ export default function EditServicePage() {
                 }
             }
 
-            if (service.verificationStatus === 'rejected') {
+            if (user?.role !== 'admin' && service.verificationStatus === 'rejected') {
                 showToast.success('Service updated and resubmitted for verification');
             } else {
                 showToast.success('Service updated successfully');
@@ -178,7 +184,7 @@ export default function EditServicePage() {
                 </Button>
                 <Title level={2}>Edit Service</Title>
                 <Text type="secondary">Update service details</Text>
-                {service.verificationStatus === 'rejected' && (
+                {user?.role !== 'admin' && service.verificationStatus === 'rejected' && (
                     <div style={{ marginTop: 8 }}>
                         <Text type="danger">
                             This service was rejected. Updating it will resubmit for verification.

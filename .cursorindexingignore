@@ -1,0 +1,13 @@
+dist/
+build/
+coverage/
+.tmp/
+cache/
+node_modules/.cache/
+
+# common Nest/Node generated or bulky dirs (adjust to your repo)
+**/migrations/*.sql
+prisma/migrations/
+
+# optional: if you vendor or generate huge JSON
+**/*.map
