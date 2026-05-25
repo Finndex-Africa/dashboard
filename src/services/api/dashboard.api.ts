@@ -24,17 +24,48 @@ export interface Activity {
     };
 }
 
+/** Matches GET /admin/dashboard response `data` shape from the backend */
 export interface AdminDashboardStats {
-    totalUsers: number;
-    totalProperties: number;
-    totalServices: number;
-    totalBookings: number;
-    totalRevenue: number;
-    userGrowth: number;
-    propertyGrowth: number;
-    serviceGrowth: number;
-    bookingGrowth: number;
-    revenueGrowth: number;
+    users: {
+        total: number;
+        homeSeeker: number;
+        landlord: number;
+        agent: number;
+        serviceProvider: number;
+        blocked: number;
+    };
+    properties: {
+        total: number;
+        pending: number;
+        approved: number;
+        rejected: number;
+        flaggedDuplicates: number;
+    };
+    services: {
+        total: number;
+        active: number;
+        pending: number;
+        verified: number;
+    };
+    bookings: {
+        total: number;
+        pending: number;
+        confirmed: number;
+        completed: number;
+        cancelled: number;
+    };
+    reviews: {
+        total: number;
+        flagged: number;
+        hidden: number;
+    };
+    recentActivity: {
+        newUsers: number;
+        newProperties: number;
+        newServices: number;
+        newBookings: number;
+        newReviews: number;
+    };
 }
 
 export const dashboardApi = {

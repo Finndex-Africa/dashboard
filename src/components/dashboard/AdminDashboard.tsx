@@ -35,6 +35,8 @@ import { propertiesApi } from '@/services/api/properties.api';
 import { servicesApi } from '@/services/api/services.api';
 import { usersApi } from '@/services/api/users.api';
 import { notificationsApi } from '@/services/api/notifications.api';
+import { dashboardApi } from '@/services/api/dashboard.api';
+import type { AdminDashboardStats } from '@/services/api/dashboard.api';
 import type { Property } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
@@ -79,6 +81,20 @@ function badgeStatus(type: string): 'success' | 'info' | 'warning' | 'error' | '
     return m[type] || 'default';
 }
 
+/** Normalize GET /admin/dashboard — apiClient returns { success, data: { users, properties, services, ... } } */
+function parseAdminDashboardStats(response: unknown): AdminDashboardStats | null {
+    if (!response || typeof response !== 'object') return null;
+    const root = response as Record<string, unknown>;
+    const payload =
+        root.data && typeof root.data === 'object' && 'properties' in (root.data as object)
+            ? (root.data as AdminDashboardStats)
+            : 'properties' in root
+              ? (root as unknown as AdminDashboardStats)
+              : null;
+    if (!payload?.properties || !payload?.services || !payload?.users) return null;
+    return payload;
+}
+
 /* ─── main ─── */
 export default function AdminDashboard() {
     const router = useRouter();
@@ -88,6 +104,7 @@ export default function AdminDashboard() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [rawResponses, setRawResponses] = useState<any>(null);
+    const [adminStats, setAdminStats] = useState<AdminDashboardStats | null>(null);
     const [selectedYear, setSelectedYear] = useState<number>(2026);
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [userName, setUserName] = useState('Admin');
@@ -116,14 +133,16 @@ export default function AdminDashboard() {
         (async () => {
             try {
                 setLoading(true);
-                const [pRes, sRes, uRes, nRes] = await Promise.all([
+                const [pRes, sRes, uRes, nRes, statsRes] = await Promise.all([
                     propertiesApi.getAllAdminProperties({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
                     servicesApi.getAllAdminServices({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
                     usersApi.getAll({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
                     notificationsApi.getAll({ limit: 10 }).catch(() => ({ data: [] })),
+                    dashboardApi.getAdminStats().catch(() => null),
                 ]);
                 if (!mounted) return;
                 setRawResponses({ pRes, sRes, uRes, nRes });
+                setAdminStats(parseAdminDashboardStats(statsRes));
                 const ex = (r: any) => { const d = Array.isArray(r?.data) ? r.data : r?.data?.data || []; return Array.isArray(d) ? d : []; };
                 setProperties(ex(pRes));
                 setServices(ex(sRes));
@@ -137,10 +156,18 @@ export default function AdminDashboard() {
         return () => { mounted = false; };
     }, []);
 
-    /* derived data */
-    const propTotal = rawResponses?.pRes?.data?.pagination?.totalItems || properties.length;
-    const svcTotal = rawResponses?.sRes?.data?.pagination?.totalItems || services.length;
-    const usrTotal = rawResponses?.uRes?.data?.pagination?.totalItems || users.length;
+    /* derived data — prefer aggregated stats from GET /admin/dashboard */
+    const extractTotal = (res: any, fallback: number): number =>
+        res?.pagination?.totalItems ||
+        res?.pagination?.total ||
+        res?.data?.pagination?.totalItems ||
+        res?.data?.pagination?.total ||
+        fallback;
+
+    const propTotal = adminStats?.properties?.total ?? extractTotal(rawResponses?.pRes, properties.length);
+    const svcTotal = adminStats?.services?.total ?? extractTotal(rawResponses?.sRes, services.length);
+    const activeServices = adminStats?.services?.active ?? svcTotal;
+    const usrTotal = adminStats?.users?.total ?? extractTotal(rawResponses?.uRes, users.length);
     const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
 
     /* ─── quick action cards ─── */
@@ -155,7 +182,7 @@ export default function AdminDashboard() {
     const stats = [
         { title: 'Total Properties', value: propTotal, change: 12.5, icon: <HomeOutlined />, color: '#0000FF' },
         { title: 'Portfolio Value', value: portfolioValue, prefix: '$', change: 8.2, icon: <DollarOutlined />, color: '#0000CC' },
-        { title: 'Active Services', value: svcTotal, change: 15.3, icon: <ToolOutlined />, color: '#0000FF' },
+        { title: 'Active Services', value: activeServices, change: 15.3, icon: <ToolOutlined />, color: '#0000FF' },
         { title: 'Total Users', value: usrTotal, change: 23.1, icon: <UserOutlined />, color: '#0044CC' },
     ];
 
@@ -393,7 +420,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f0f0', flexWrap: 'wrap', justifyContent: 'center' }}>
                             {[
                                 { label: 'Properties', value: propTotal, color: '#0000FF' },
-                                { label: 'Services', value: svcTotal, color: '#0044CC' },
+                                { label: 'Active Services', value: activeServices, color: '#0044CC' },
                                 { label: 'Users', value: usrTotal, color: '#52c41a' },
                             ].map(item => (
                                 <div key={item.label} style={{
