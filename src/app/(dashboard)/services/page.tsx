@@ -40,6 +40,7 @@ import {
     getServiceCategoryLabel,
     getServiceImageUrls,
     getServiceProviderLabel,
+    serviceNeedsReview,
     type ServiceView,
     type ServiceTab,
 } from '@/lib/services-utils';
@@ -156,7 +157,7 @@ function ServicesPageContent() {
                 } else if (currentView === 'pending') {
                     const response = await servicesApi.getMyServices();
                     const myServices = Array.isArray(response.data) ? response.data : [];
-                    fetchedServices = myServices.filter((s: Service) => s.verificationStatus === 'pending');
+                    fetchedServices = myServices.filter((s: Service) => serviceNeedsReview(s));
                 }
             }
 
@@ -200,7 +201,7 @@ function ServicesPageContent() {
     const stats = {
         total: services.length,
         verified: services.filter(s => s.verificationStatus === 'verified').length,
-        pending: services.filter(s => s.verificationStatus === 'pending').length,
+        pending: services.filter(s => serviceNeedsReview(s)).length,
         rejected: services.filter(s => s.verificationStatus === 'rejected').length,
     };
 
@@ -231,6 +232,19 @@ function ServicesPageContent() {
             fetchServices();
         } catch (error) {
             showToast.error('Failed to verify service');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleActivate = async (service: Service) => {
+        try {
+            setActionLoading(service._id);
+            await servicesApi.update(service._id, { status: 'active' });
+            showToast.success('Service activated successfully');
+            fetchServices();
+        } catch (error: any) {
+            showToast.error(error.response?.data?.message || 'Failed to activate service');
         } finally {
             setActionLoading(null);
         }
@@ -481,6 +495,7 @@ function ServicesPageContent() {
                     onReview={canModerateServices(user.role) ? handleReviewClick : undefined}
                     onVerify={canModerateServices(user.role) ? handleVerify : undefined}
                     onReject={canModerateServices(user.role) ? handleRejectClick : undefined}
+                    onActivate={canModerateServices(user.role) ? handleActivate : undefined}
                     onUnpublish={canCreateService(user.role) ? handleUnpublish : undefined}
                     onRepublish={canCreateService(user.role) ? handleRepublish : undefined}
                     onSaveToggle={isHS ? handleSaveToggle : undefined}

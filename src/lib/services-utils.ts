@@ -88,6 +88,22 @@ export function getDefaultServiceTab(): ServiceTab {
 }
 
 /**
+ * Service awaiting first-time admin review.
+ * Backend may set status: "pending" without verificationStatus on new submissions.
+ */
+export function serviceNeedsReview(service: Service): boolean {
+  if (service.status !== 'pending') return false;
+  return !service.verificationStatus || service.verificationStatus === 'pending';
+}
+
+/**
+ * Already verified but status is still pending (e.g. after an admin edit reset status).
+ */
+export function serviceNeedsActivation(service: Service): boolean {
+  return service.status === 'pending' && service.verificationStatus === 'verified';
+}
+
+/**
  * Check if user can create services
  */
 export function canCreateService(role: UserRole | string): boolean {

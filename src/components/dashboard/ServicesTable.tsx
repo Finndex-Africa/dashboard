@@ -9,7 +9,7 @@ import Rate from 'antd/es/rate';
 import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import type { ColumnsType } from 'antd/es/table';
-import { getServiceCategoryLabel, getServiceProviderLabel } from '@/lib/services-utils';
+import { getServiceCategoryLabel, getServiceProviderLabel, serviceNeedsReview, serviceNeedsActivation } from '@/lib/services-utils';
 
 interface ServicesTableProps {
     services: Service[];
@@ -24,6 +24,7 @@ interface ServicesTableProps {
     onReject?: (service: Service) => void;
     onUnpublish?: (service: Service) => void;
     onRepublish?: (service: Service) => void;
+    onActivate?: (service: Service) => void;
     onSaveToggle?: (serviceId: string) => void;
     savedIds?: string[];
     approvingId?: string | null;
@@ -41,6 +42,7 @@ export function ServicesTable({
     onReject,
     onUnpublish,
     onRepublish,
+    onActivate,
     onSaveToggle,
     savedIds = [],
     approvingId,
@@ -113,11 +115,14 @@ export function ServicesTable({
             ],
             onFilter: (value, record) => record.status === value,
             render: (status: Service['status'], record) => {
-                if (adminStatusColumn && record.verificationStatus === 'pending') {
+                if (adminStatusColumn && serviceNeedsReview(record)) {
                     return <Tag color="orange">Pending verification</Tag>;
                 }
                 if (adminStatusColumn && record.verificationStatus === 'rejected') {
                     return <Tag color="volcano">Rejected</Tag>;
+                }
+                if (adminStatusColumn && serviceNeedsActivation(record)) {
+                    return <Tag color="orange">Pending publish</Tag>;
                 }
                 return <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>;
             },
@@ -150,8 +155,8 @@ export function ServicesTable({
                         </Tooltip>
                     )}
 
-                    {/* Admin: Review pending services (then Verify/Reject from modal) */}
-                    {record.verificationStatus === 'pending' && onReview ? (
+                    {/* Admin: Review new submissions awaiting verification */}
+                    {serviceNeedsReview(record) && onReview ? (
                         <Tooltip title="Review before verifying or rejecting">
                             <Button
                                 type="primary"
@@ -162,7 +167,7 @@ export function ServicesTable({
                                 Review
                             </Button>
                         </Tooltip>
-                    ) : record.verificationStatus === 'pending' && onVerify && onReject ? (
+                    ) : serviceNeedsReview(record) && onVerify && onReject ? (
                         <>
                             <Tooltip title="Verify">
                                 <Button
@@ -192,6 +197,23 @@ export function ServicesTable({
                         </>
                     ) : (
                         <>
+                            {serviceNeedsActivation(record) && onActivate && (
+                                <Tooltip title="Activate service">
+                                    <Button
+                                        type="primary"
+                                        size="small"
+                                        icon={<CheckOutlined />}
+                                        loading={approvingId === record._id}
+                                        onClick={() => onActivate(record)}
+                                        style={{
+                                            background: '#52c41a',
+                                            borderColor: '#52c41a',
+                                        }}
+                                    >
+                                        Activate
+                                    </Button>
+                                </Tooltip>
+                            )}
                             {onView && (
                                 <Tooltip title="View">
                                     <Button
