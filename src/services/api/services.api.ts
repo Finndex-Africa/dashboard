@@ -30,7 +30,9 @@ export interface CreateServiceDto {
     whatsappNumber?: string;
 }
 
-export interface UpdateServiceDto extends Partial<CreateServiceDto> {}
+export interface UpdateServiceDto extends Partial<CreateServiceDto> {
+    status?: Service['status'];
+}
 
 export const servicesApi = {
     // Get all services with filters and pagination
