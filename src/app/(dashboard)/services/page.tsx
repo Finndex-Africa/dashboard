@@ -15,7 +15,6 @@ import Select from 'antd/es/select';
 import Tabs from 'antd/es/tabs';
 import Modal from 'antd/es/modal';
 import Descriptions from 'antd/es/descriptions';
-import Image from 'antd/es/image';
 import {
     PlusOutlined,
     ToolOutlined,
@@ -527,35 +526,39 @@ function ServicesPageContent() {
                             <Descriptions.Item label="Description">
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>
                             </Descriptions.Item>
-                            <Descriptions.Item label="Images">
-                                {(() => {
-                                    const urls = getServiceImageUrls(serviceForReview);
-                                    if (!urls.length) {
-                                        return 'None';
-                                    }
-                                    return (
-                                        <div>
-                                            <div className="text-sm text-gray-500 mb-2">{urls.length} image(s)</div>
-                                            <Image.PreviewGroup>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {urls.map((url, index) => (
-                                                        <Image
-                                                            key={`${url}-${index}`}
-                                                            src={url}
-                                                            alt=""
-                                                            width={96}
-                                                            height={96}
-                                                            className="rounded border border-gray-200 object-cover"
-                                                            style={{ objectFit: 'cover' }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </Image.PreviewGroup>
-                                        </div>
-                                    );
-                                })()}
-                            </Descriptions.Item>
                         </Descriptions>
+
+                        <div className="mb-4">
+                            <div className="text-sm font-medium text-gray-700 mb-2">Images</div>
+                            {(() => {
+                                const urls = getServiceImageUrls(serviceForReview);
+                                if (!urls.length) {
+                                    return <div className="text-sm text-gray-500">No images</div>;
+                                }
+                                return (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {urls.map((img, idx) => (
+                                            <a
+                                                key={`${img}-${idx}`}
+                                                href={img}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
+                                                title={`Open image ${idx + 1}`}
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={img}
+                                                    alt={`Service image ${idx + 1}`}
+                                                    className="w-full h-28 object-cover bg-gray-50"
+                                                    loading="lazy"
+                                                />
+                                            </a>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
                         <div className="flex justify-end gap-2">
                             <Button onClick={() => { setReviewModalOpen(false); setServiceForReview(null); }}>Cancel</Button>
                             <Button danger onClick={() => handleRejectClick(serviceForReview)}>Reject</Button>

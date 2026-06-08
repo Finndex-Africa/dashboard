@@ -33,6 +33,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import {
     canCreateProperty,
     canModerateProperties,
+    getPropertyBedroomCount,
     getPropertyPosterDisplayName,
     isHomeSeeker,
     isPropertyCreator,
@@ -510,7 +511,12 @@ function PropertiesPageContent() {
                             <Descriptions.Item label="Type">{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
                             <Descriptions.Item label="Price">${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
                             <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Rooms">{propertyForReview.rooms ?? '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Bedrooms">
+                                {getPropertyBedroomCount(propertyForReview) ?? '—'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Bathrooms">
+                                {propertyForReview.bathrooms ?? '—'}
+                            </Descriptions.Item>
                             <Descriptions.Item label="Listed By">
                                 {getPropertyPosterDisplayName(propertyForReview)}
                             </Descriptions.Item>

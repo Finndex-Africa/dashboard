@@ -20,6 +20,10 @@ export interface CreatePropertyDto {
     priceUnit?: string;
     propertyType: string;
     rooms?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    area?: number;
+    maxGuests?: number;
     furnished?: boolean;
     isPremium?: boolean;
     images?: string[];

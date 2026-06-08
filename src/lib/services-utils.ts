@@ -48,18 +48,35 @@ export function getServiceCategoryLabel(service: Service): string {
 export function getServiceBusinessLabel(service: Service): string {
   return service.businessName?.trim() || '';
 }
+function coerceServiceImageUrl(item: unknown): string {
+  if (typeof item === 'string') return item.trim();
+  if (item && typeof item === 'object' && 'url' in item) {
+    const url = (item as { url: unknown }).url;
+    return typeof url === 'string' ? url.trim() : '';
+  }
+  return '';
+}
+
 /**
- * Normalize image URLs to a usable list (handles optional API quirks).
+ * Normalize image URLs to a usable list (strings, { url } objects, gallery + verification).
  */
-export function getServiceImageUrls(service: Service): string[] {
-  const raw = service.images;
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item) => {
-      if (typeof item === 'string') return item.trim();
-      return '';
-    })
-    .filter(Boolean);
+export function getServiceImageUrls(service: Service & { images?: unknown; verificationImages?: unknown }): string[] {
+  const sources = [service.images, service.verificationImages];
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const raw of sources) {
+    if (!Array.isArray(raw)) continue;
+    for (const item of raw) {
+      const url = coerceServiceImageUrl(item);
+      if (url && !seen.has(url)) {
+        seen.add(url);
+        urls.push(url);
+      }
+    }
+  }
+
+  return urls;
 }
 
 export type ServiceView = 'all' | 'mine' | 'pending';

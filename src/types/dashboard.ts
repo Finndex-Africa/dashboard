@@ -25,6 +25,7 @@ export interface Service {
     rating?: number;
     reviewCount?: number;
     images?: string[];
+    verificationImages?: string[];
     provider?: string | { _id: string; name: string; email: string };
     /** Denormalized display name when API sends it alongside populated provider */
     providerName?: string;
