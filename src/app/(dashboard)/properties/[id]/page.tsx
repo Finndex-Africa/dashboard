@@ -17,6 +17,8 @@ import {
     canCreateProperty,
     getDefaultPropertyView,
     canModerateProperties,
+    mapPropertyFormToApi,
+    mapPropertyToFormValues,
     propertyPosterId,
 } from '@/lib/properties-utils';
 import type { Property } from '@/types/dashboard';
@@ -83,7 +85,7 @@ export default function EditPropertyPage() {
             setSubmitting(true);
 
             // If property was rejected, change status to pending for resubmission
-            const updateData = { ...values };
+            const updateData = mapPropertyFormToApi(values);
             if (property.status === 'rejected') {
                 updateData.status = 'pending';
             }
@@ -195,7 +197,7 @@ export default function EditPropertyPage() {
 
             <Card>
                 <PropertyForm
-                    initialValues={property}
+                    initialValues={mapPropertyToFormValues(property)}
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     loading={submitting}

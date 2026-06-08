@@ -7,7 +7,7 @@ import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Property } from '@/types/dashboard';
-import { getPropertyPosterDisplayName } from '@/lib/properties-utils';
+import { getPropertyBedroomCount, getPropertyPosterDisplayName } from '@/lib/properties-utils';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PropertiesTableProps {
@@ -90,6 +90,14 @@ export function PropertiesTable({
             key: 'price',
             sorter: (a, b) => a.price - b.price,
             render: (price) => `$${price.toLocaleString()}`,
+        },
+        {
+            title: 'Bedrooms',
+            key: 'bedrooms',
+            render: (_, record) => {
+                const count = getPropertyBedroomCount(record);
+                return count != null ? count : '—';
+            },
         },
         {
             title: 'Listed by',

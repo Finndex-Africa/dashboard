@@ -3,8 +3,42 @@
  * Phase 2: Query-driven views for /properties
  */
 
-import type { PropertyPosterRef } from '@/types/dashboard';
+import type { CreatePropertyDto } from '@/services/api/properties.api';
+import type { Property, PropertyPosterRef } from '@/types/dashboard';
 import { UserRole } from './role-redirects';
+
+/** Bedroom count from either field (dashboard form uses bedrooms; main app may store rooms). */
+export function getPropertyBedroomCount(property: {
+    bedrooms?: number;
+    rooms?: number;
+}): number | undefined {
+    return property.bedrooms ?? property.rooms;
+}
+
+/** Map form values to API payload (bedrooms → rooms, same as main FindAfriq app). */
+export function mapPropertyFormToApi(values: Record<string, unknown>): CreatePropertyDto & Record<string, unknown> {
+    const { bedrooms, bathrooms, ...rest } = values;
+    const payload = { ...rest } as CreatePropertyDto & Record<string, unknown>;
+
+    if (bedrooms !== undefined && bedrooms !== null && bedrooms !== '') {
+        const count = Number(bedrooms);
+        payload.rooms = count;
+        payload.bedrooms = count;
+    }
+    if (bathrooms !== undefined && bathrooms !== null && bathrooms !== '') {
+        payload.bathrooms = Number(bathrooms);
+    }
+
+    return payload;
+}
+
+/** Prefill edit form when listing only has rooms (legacy / main-app submissions). */
+export function mapPropertyToFormValues(property: Property): Partial<Property> {
+    return {
+        ...property,
+        bedrooms: getPropertyBedroomCount(property),
+    };
+}
 
 /** Display name for the user who posted the property (matches admin review modal "Listed By"). */
 export function getPropertyPosterDisplayName(property: {

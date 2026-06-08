@@ -12,7 +12,7 @@ import { propertiesApi } from '@/services/api/properties.api';
 import { mediaApi } from '@/services/api/media.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
-import { canCreateProperty, getDefaultPropertyView } from '@/lib/properties-utils';
+import { canCreateProperty, getDefaultPropertyView, mapPropertyFormToApi } from '@/lib/properties-utils';
 
 const { Title, Text } = Typography;
 
@@ -34,7 +34,7 @@ export default function CreatePropertyPage() {
             setSubmitting(true);
 
             // Step 1: Create property without images
-            const response = await propertiesApi.create(values);
+            const response = await propertiesApi.create(mapPropertyFormToApi(values));
             const createdProperty = response.data;
 
             console.log('✅ Property created:', createdProperty);
