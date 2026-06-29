@@ -27,6 +27,53 @@ function certificateUrlLooksPdf(url: string): boolean {
     return path.endsWith('.pdf');
 }
 
+function VerificationDocumentSection({ label, url, viewLabel }: { label: string; url: string; viewLabel?: string }) {
+    if (!url?.trim()) return null;
+
+    return (
+        <div>
+            <Text type="secondary" className="block">
+                {label}
+            </Text>
+            {certificateUrlLooksPdf(url) ? (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
+                        <div className="flex min-w-0 items-center gap-4">
+                            <div
+                                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-red-500/[0.12] text-2xl text-red-600"
+                                aria-hidden
+                            >
+                                <FilePdfOutlined />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">PDF document</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                                    Opens in a new tab so you can review the full document.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            type="primary"
+                            size="large"
+                            className="h-11 shrink-0 rounded-lg px-6 shadow-md transition-all hover:shadow-lg sm:self-center"
+                            icon={<ExportOutlined />}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {viewLabel ?? 'View document'}
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                <div className="mt-1">
+                    <Image src={url} alt={label} style={{ maxHeight: 250, borderRadius: 8 }} />
+                </div>
+            )}
+        </div>
+    );
+}
+
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
@@ -39,6 +86,7 @@ interface Verification {
     idBackImage?: string;
     selfieImage?: string;
     businessRegistrationCertificate?: string;
+    signedAgentAgreement?: string;
     status: 'pending' | 'approved' | 'rejected' | 'expired';
     rejectionReason?: string;
     notes?: string;
@@ -287,50 +335,11 @@ export default function VerificationsPage() {
                         )}
 
                         {selected.businessRegistrationCertificate?.trim() && (
-                            <div>
-                                <Text type="secondary" className="block">
-                                    Business registration certificate
-                                </Text>
-                                {certificateUrlLooksPdf(selected.businessRegistrationCertificate) ? (
-                                    <div className="mt-3 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
-                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
-                                            <div className="flex min-w-0 items-center gap-4">
-                                                <div
-                                                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-red-500/[0.12] text-2xl text-red-600"
-                                                    aria-hidden
-                                                >
-                                                    <FilePdfOutlined />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-semibold text-slate-900">PDF document</p>
-                                                    <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                                                        Opens in a new tab so you can review the full certificate.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                type="primary"
-                                                size="large"
-                                                className="h-11 shrink-0 rounded-lg px-6 shadow-md transition-all hover:shadow-lg sm:self-center"
-                                                icon={<ExportOutlined />}
-                                                href={selected.businessRegistrationCertificate}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                View certificate
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="mt-1">
-                                        <Image
-                                            src={selected.businessRegistrationCertificate}
-                                            alt="Business registration certificate"
-                                            style={{ maxHeight: 250, borderRadius: 8 }}
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                            <VerificationDocumentSection
+                                label="Business registration certificate"
+                                url={selected.businessRegistrationCertificate}
+                                viewLabel="View certificate"
+                            />
                         )}
 
                         {selected.selfieImage && (
@@ -340,6 +349,14 @@ export default function VerificationsPage() {
                                     <Image src={selected.selfieImage} alt="Selfie" style={{ maxHeight: 250, borderRadius: 8 }} />
                                 </div>
                             </div>
+                        )}
+
+                        {selected.signedAgentAgreement?.trim() && (
+                            <VerificationDocumentSection
+                                label="Signed agent agreement"
+                                url={selected.signedAgentAgreement}
+                                viewLabel="View agreement"
+                            />
                         )}
 
                         {selected.status === 'pending' && (

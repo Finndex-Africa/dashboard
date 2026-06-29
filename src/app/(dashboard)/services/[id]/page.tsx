@@ -70,7 +70,7 @@ export default function EditServicePage() {
         router.push(`/services?view=${defaultView}`);
     };
 
-    const handleSubmit = async (values: any, files: File[]) => {
+    const handleSubmit = async (values: any, files: File[], keptImages: string[]) => {
         if (!service) return;
 
         try {
@@ -92,10 +92,10 @@ export default function EditServicePage() {
             await servicesApi.update(service._id, updateData);
 
             // Step 2: Upload new images if any
+            const uploadedUrls: string[] = [];
             if (files.length > 0) {
                 console.log('📸 Uploading', files.length, 'new images...');
 
-                const uploadedUrls: string[] = [];
                 for (const file of files) {
                     try {
                         const imageUrl = await mediaApi.upload(file, 'services', serviceId);
@@ -106,15 +106,18 @@ export default function EditServicePage() {
                         showToast.error('Failed to upload some images');
                     }
                 }
+            }
 
-                // Step 3: Update service with new image URLs (append to existing)
-                if (uploadedUrls.length > 0) {
-                    const existingImages = service.images || [];
-                    await servicesApi.update(service._id, {
-                        images: [...existingImages, ...uploadedUrls],
-                    });
-                    console.log('✅ Service images updated');
-                }
+            // Step 3: Sync images (kept existing + newly uploaded)
+            const finalImages = [...keptImages, ...uploadedUrls];
+            const originalImages = service.images ?? [];
+            const imagesChanged =
+                finalImages.length !== originalImages.length ||
+                finalImages.some((url, i) => url !== originalImages[i]);
+
+            if (imagesChanged) {
+                await servicesApi.update(service._id, { images: finalImages });
+                console.log('✅ Service images updated');
             }
 
             if (user?.role !== 'admin' && service.verificationStatus === 'rejected') {

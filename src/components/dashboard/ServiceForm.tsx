@@ -21,7 +21,7 @@ const { Text } = Typography;
 
 interface ServiceFormProps {
     initialValues?: Partial<Service>;
-    onSubmit: (values: Partial<Service>, files: File[]) => void;
+    onSubmit: (values: Partial<Service>, files: File[], keptImages: string[]) => void;
     onCancel: () => void;
     loading?: boolean;
 }
@@ -61,7 +61,11 @@ export function ServiceForm({
             .filter(file => file.originFileObj)
             .map(file => file.originFileObj as File);
 
-        onSubmit(values, filesToUpload);
+        const keptImages = fileList
+            .filter((file) => !file.originFileObj && file.url)
+            .map((file) => file.url as string);
+
+        onSubmit(values, filesToUpload, keptImages);
     };
 
     const handleUploadChange = ({ fileList: newFileList }: any) => {
