@@ -29,7 +29,7 @@ export default function CreateServicePage() {
         router.push(`/services?view=${defaultView}`);
     };
 
-    const handleSubmit = async (values: any, files: File[]) => {
+    const handleSubmit = async (values: any, files: File[], _keptImages: string[]) => {
         try {
             setSubmitting(true);
 

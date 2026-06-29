@@ -41,7 +41,7 @@ const AMENITY_OPTIONS = [
 
 interface PropertyFormProps {
     initialValues?: Partial<Property>;
-    onSubmit: (values: Partial<Property>, files: File[]) => void;
+    onSubmit: (values: Partial<Property>, files: File[], keptImages: string[]) => void;
     onCancel: () => void;
     loading?: boolean;
 }
@@ -105,7 +105,11 @@ export function PropertyForm({
             .filter((file) => file.originFileObj)
             .map((file) => file.originFileObj as File);
 
-        onSubmit({ ...values, amenities: amenitiesPayload }, filesToUpload);
+        const keptImages = fileList
+            .filter((file) => !file.originFileObj && file.url)
+            .map((file) => file.url as string);
+
+        onSubmit({ ...values, amenities: amenitiesPayload }, filesToUpload, keptImages);
     };
 
     const handleUploadChange = ({ fileList: newFileList }: any) => {

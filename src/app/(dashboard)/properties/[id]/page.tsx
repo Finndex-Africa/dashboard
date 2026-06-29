@@ -78,7 +78,7 @@ export default function EditPropertyPage() {
         router.push(`/properties?view=${defaultView}`);
     };
 
-    const handleSubmit = async (values: any, files: File[]) => {
+    const handleSubmit = async (values: any, files: File[], keptImages: string[]) => {
         if (!property) return;
 
         try {
@@ -94,10 +94,10 @@ export default function EditPropertyPage() {
             await propertiesApi.update(property._id, updateData);
 
             // Step 2: Upload new images if any
+            const uploadedUrls: string[] = [];
             if (files.length > 0) {
                 console.log('📸 Uploading', files.length, 'new images...');
 
-                const uploadedUrls: string[] = [];
                 for (const file of files) {
                     try {
                         const imageUrl = await mediaApi.upload(file, 'properties', propertyId);
@@ -108,15 +108,18 @@ export default function EditPropertyPage() {
                         showToast.error('Failed to upload some images');
                     }
                 }
+            }
 
-                // Step 3: Update property with new image URLs (append to existing)
-                if (uploadedUrls.length > 0) {
-                    const existingImages = property.images || [];
-                    await propertiesApi.update(property._id, {
-                        images: [...existingImages, ...uploadedUrls],
-                    });
-                    console.log('✅ Property images updated');
-                }
+            // Step 3: Sync images (kept existing + newly uploaded)
+            const finalImages = [...keptImages, ...uploadedUrls];
+            const originalImages = property.images ?? [];
+            const imagesChanged =
+                finalImages.length !== originalImages.length ||
+                finalImages.some((url, i) => url !== originalImages[i]);
+
+            if (imagesChanged) {
+                await propertiesApi.update(property._id, { images: finalImages });
+                console.log('✅ Property images updated');
             }
 
             if (property.status === 'rejected') {
