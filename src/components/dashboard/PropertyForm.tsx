@@ -44,7 +44,7 @@ interface PropertyFormProps {
     onSubmit: (values: Partial<Property>, files: File[], keptImages: string[]) => void;
     onCancel: () => void;
     loading?: boolean;
-    /** Show agent fee field for agent and real estate agency roles */
+    /** Show agent fee for agent/agency listings, or when admin edits an agent/agency listing */
     showAgentFee?: boolean;
 }
 

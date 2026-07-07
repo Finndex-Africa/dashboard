@@ -6,7 +6,7 @@
 import type { CreatePropertyDto } from '@/services/api/properties.api';
 import type { Property, PropertyPosterRef } from '@/types/dashboard';
 import { UserRole } from './role-redirects';
-import { isAgentLikeRole } from './role-utils';
+import { isAgentLikeRole, canSetAgentFee } from './role-utils';
 
 /** Bedroom count from either field (dashboard form uses bedrooms; main app may store rooms). */
 export function getPropertyBedroomCount(property: {
@@ -48,6 +48,59 @@ export function mapPropertyToFormValues(property: Property): Partial<Property> {
         ...property,
         bedrooms: getPropertyBedroomCount(property),
     };
+}
+
+/** Resolve the primary poster ref (landlordId is the listing owner on the backend). */
+export function getPropertyPosterRef(property: {
+    agentId?: PropertyPosterRef;
+    landlordId?: PropertyPosterRef;
+    userId?: PropertyPosterRef;
+    owner?: PropertyPosterRef;
+}): PropertyPosterRef | undefined {
+    return property.landlordId ?? property.agentId ?? property.userId ?? property.owner;
+}
+
+/** userType from a populated poster ref, when the API includes it. */
+export function getPropertyPosterUserType(property: {
+    agentId?: PropertyPosterRef;
+    landlordId?: PropertyPosterRef;
+    userId?: PropertyPosterRef;
+    owner?: PropertyPosterRef;
+}): string | undefined {
+    const refs = [property.landlordId, property.agentId, property.userId, property.owner];
+    for (const ref of refs) {
+        if (typeof ref === 'object' && ref?.userType) {
+            return ref.userType;
+        }
+    }
+    return undefined;
+}
+
+/** True when the listing was posted by an agent or real estate agency account. */
+export function isPropertyPostedByAgentLike(property: {
+    agentId?: PropertyPosterRef;
+    landlordId?: PropertyPosterRef;
+    userId?: PropertyPosterRef;
+    owner?: PropertyPosterRef;
+}): boolean {
+    const posterType = getPropertyPosterUserType(property);
+    return posterType ? isAgentLikeRole(posterType) : false;
+}
+
+/** Show/send agent fee: agent/agency on own listings, or admin on agent/agency listings. */
+export function canEditPropertyAgentFee(
+    role: UserRole | string | undefined,
+    property?: {
+        agentId?: PropertyPosterRef;
+        landlordId?: PropertyPosterRef;
+        userId?: PropertyPosterRef;
+        owner?: PropertyPosterRef;
+    } | null,
+): boolean {
+    if (canSetAgentFee(role)) return true;
+    if (!property) return false;
+    const isAdmin = role === 'admin' || role === 'admin_property';
+    return isAdmin && isPropertyPostedByAgentLike(property);
 }
 
 /** Display name for the user who posted the property (matches admin review modal "Listed By"). */
