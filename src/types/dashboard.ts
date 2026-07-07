@@ -60,6 +60,7 @@ export type PropertyPosterRef =
           lastName?: string;
           name?: string;
           email?: string;
+          userType?: string;
       };
 
 export interface Property {
