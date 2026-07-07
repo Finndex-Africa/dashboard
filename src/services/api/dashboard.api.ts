@@ -31,8 +31,12 @@ export interface AdminDashboardStats {
         homeSeeker: number;
         landlord: number;
         agent: number;
+        realEstateAgency?: number;
         serviceProvider: number;
         blocked: number;
+    };
+    agentApplications?: {
+        pending: number;
     };
     properties: {
         total: number;

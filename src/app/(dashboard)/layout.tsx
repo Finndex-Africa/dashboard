@@ -20,6 +20,7 @@ import {
     MenuOutlined,
     CloseOutlined,
     SafetyCertificateOutlined,
+    SolutionOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
@@ -53,7 +54,7 @@ export default function DashboardLayout({
             key: '/properties',
             icon: <AppstoreOutlined />,
             label: 'Properties',
-            roles: ['home_seeker', 'landlord', 'agent', 'admin', 'admin_property'],
+            roles: ['home_seeker', 'landlord', 'agent', 'real_estate_agency', 'admin', 'admin_property'],
         },
         {
             key: '/services',
@@ -65,7 +66,7 @@ export default function DashboardLayout({
             key: '/bookings',
             icon: <CalendarOutlined />,
             label: 'Bookings',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin'],
+            roles: ['home_seeker', 'landlord', 'agent', 'real_estate_agency', 'service_provider', 'admin'],
         },
         {
             key: '/advertisements',
@@ -86,22 +87,28 @@ export default function DashboardLayout({
             roles: ['admin'],
         },
         {
+            key: '/agent-applications',
+            icon: <SolutionOutlined />,
+            label: 'Agent Applications',
+            roles: ['admin', 'admin_property', 'admin_services'],
+        },
+        {
             key: '/notifications',
             icon: <BellOutlined />,
             label: 'Notifications',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
+            roles: ['home_seeker', 'landlord', 'agent', 'real_estate_agency', 'service_provider', 'admin', 'admin_property', 'admin_services'],
         },
         {
             key: '/messages',
             icon: <MessageOutlined />,
             label: 'Messages',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
+            roles: ['home_seeker', 'landlord', 'agent', 'real_estate_agency', 'service_provider', 'admin', 'admin_property', 'admin_services'],
         },
         {
             key: '/profile',
             icon: <UserOutlined />,
             label: 'Profile',
-            roles: ['home_seeker', 'landlord', 'agent', 'service_provider', 'admin', 'admin_property', 'admin_services'],
+            roles: ['home_seeker', 'landlord', 'agent', 'real_estate_agency', 'service_provider', 'admin', 'admin_property', 'admin_services'],
         },
     ];
 

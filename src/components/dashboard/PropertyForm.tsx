@@ -44,6 +44,8 @@ interface PropertyFormProps {
     onSubmit: (values: Partial<Property>, files: File[], keptImages: string[]) => void;
     onCancel: () => void;
     loading?: boolean;
+    /** Show agent fee field for agent and real estate agency roles */
+    showAgentFee?: boolean;
 }
 
 export function PropertyForm({
@@ -51,6 +53,7 @@ export function PropertyForm({
     onSubmit,
     onCancel,
     loading,
+    showAgentFee = false,
 }: PropertyFormProps) {
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -306,6 +309,33 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                 </Row>
+                {showAgentFee && (
+                    <Row gutter={16}>
+                        <Col xs={24} sm={12}>
+                            <Form.Item
+                                name="agentFee"
+                                label="Agent Fee (USD)"
+                                tooltip="Your listing fee shown to home seekers on the property details page"
+                                rules={[
+                                    {
+                                        type: 'number',
+                                        min: 0,
+                                        message: 'Agent fee must be zero or greater',
+                                    },
+                                ]}
+                            >
+                                <InputNumber
+                                    size="large"
+                                    style={{ width: '100%', borderRadius: '8px' }}
+                                    placeholder="e.g., 150"
+                                    min={0}
+                                    formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                    parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                )}
             </div>
 
             <Divider style={{ margin: '24px 0' }} />

@@ -25,6 +25,8 @@ export interface CreatePropertyDto {
     area?: number;
     maxGuests?: number;
     furnished?: boolean;
+    /** Agent/agency listing fee (USD) */
+    agentFee?: number;
     isPremium?: boolean;
     images?: string[];
     videos?: string[];

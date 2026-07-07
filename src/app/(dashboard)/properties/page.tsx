@@ -510,6 +510,11 @@ function PropertiesPageContent() {
                             <Descriptions.Item label="Location">{propertyForReview.location}</Descriptions.Item>
                             <Descriptions.Item label="Type">{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
                             <Descriptions.Item label="Price">${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
+                            {propertyForReview.agentFee != null && propertyForReview.agentFee > 0 && (
+                                <Descriptions.Item label="Agent Fee">
+                                    ${propertyForReview.agentFee.toLocaleString()}
+                                </Descriptions.Item>
+                            )}
                             <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
                             <Descriptions.Item label="Bedrooms">
                                 {getPropertyBedroomCount(propertyForReview) ?? '—'}

@@ -43,6 +43,7 @@ import {
     type ServiceView,
     type ServiceTab,
 } from '@/lib/services-utils';
+import { SERVICE_CATEGORY_OPTIONS } from '@/lib/service-categories';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -474,10 +475,11 @@ function ServicesPageContent() {
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Categories</Select.Option>
-                            <Select.Option value="Plumbing">Plumbing</Select.Option>
-                            <Select.Option value="Electrical">Electrical</Select.Option>
-                            <Select.Option value="Cleaning">Cleaning</Select.Option>
-                            <Select.Option value="Moving">Moving</Select.Option>
+                            {SERVICE_CATEGORY_OPTIONS.map((cat) => (
+                                <Select.Option key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                </Select.Option>
+                            ))}
                         </Select>
                     </Col>
                 </Row>

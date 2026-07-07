@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-export type UserRole = 'admin' | 'admin_property' | 'admin_services' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker'; // admin = general admin
+export type UserRole = 'admin' | 'admin_property' | 'admin_services' | 'agent' | 'real_estate_agency' | 'landlord' | 'service_provider' | 'home_seeker'; // admin = general admin
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'blocked';
 
 export interface User {
@@ -37,6 +37,7 @@ export interface UserStats {
   homeSeeker: number;
   landlord: number; // Legacy - same as agent
   agent: number;
+  realEstateAgency?: number;
   serviceProvider: number;
   newUsersThisMonth: number;
   verifiedUsers: number;

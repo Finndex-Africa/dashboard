@@ -32,6 +32,7 @@ import { Column } from '@ant-design/plots';
 import { usersApi } from '@/services/api/users.api';
 import type { User } from '@/types/users';
 import { useAuth } from '@/providers/AuthProvider';
+import { getRoleColor, getRoleLabel } from '@/lib/role-utils';
 
 const { Title, Text } = Typography;
 
@@ -153,28 +154,7 @@ export default function UsersPage() {
         }
     };
 
-    // Helper functions for role display
-    const getRoleColor = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'red';
-            case 'landlord': return 'blue';
-            case 'agent': return 'green';
-            case 'service_provider': return 'orange';
-            case 'home_seeker': return 'blue';
-            default: return 'default';
-        }
-    };
-
-    const getRoleLabel = (role: User['userType']) => {
-        switch (role) {
-            case 'admin': return 'Admin';
-            case 'landlord': return 'Landlord';
-            case 'agent': return 'Agent';
-            case 'service_provider': return 'Service Provider';
-            case 'home_seeker': return 'Home Seeker';
-            default: return role;
-        }
-    };
+    // Helper functions for role display — see lib/role-utils.ts
 
     // Filter users based on search term and verification status
     const filteredUsers = users.filter(user => {
@@ -204,6 +184,7 @@ export default function UsersPage() {
     const adminUsers = users.filter(u => u.userType === 'admin').length;
     const landlordUsers = users.filter(u => u.userType === 'landlord').length;
     const agentUsers = users.filter(u => u.userType === 'agent').length;
+    const realEstateAgencyUsers = users.filter(u => u.userType === 'real_estate_agency').length;
     const serviceProviderUsers = users.filter(u => u.userType === 'service_provider').length;
     const homeSeekerUsers = users.filter(u => u.userType === 'home_seeker').length;
     const verifiedUsers = users.filter(u => u.verified).length;
@@ -236,10 +217,11 @@ export default function UsersPage() {
             dataIndex: 'userType',
             key: 'userType',
             filters: [
-                { text: 'admin', value: 'admin' },
+                { text: 'Admin', value: 'admin' },
                 { text: 'Landlord', value: 'landlord' },
                 { text: 'Agent', value: 'agent' },
-                { text: 'Service_rovider', value: 'service_provider' },
+                { text: 'Real Estate Agency', value: 'real_estate_agency' },
+                { text: 'Service Provider', value: 'service_provider' },
                 { text: 'Home Seeker', value: 'home_seeker' },
             ],
             onFilter: (value: any, record: User) => record.userType === value,

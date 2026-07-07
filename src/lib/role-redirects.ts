@@ -6,7 +6,7 @@
  * - All other users go directly to task-based pages
  */
 
-export type UserRole = 'admin' | 'admin_property' | 'admin_services' | 'agent' | 'landlord' | 'service_provider' | 'home_seeker';
+export type UserRole = 'admin' | 'admin_property' | 'admin_services' | 'agent' | 'real_estate_agency' | 'landlord' | 'service_provider' | 'home_seeker';
 
 /**
  * Get the post-login redirect path for a given user role
@@ -17,6 +17,7 @@ export function getRoleRedirectPath(role: UserRole | string): string {
     admin_property: '/dashboard',
     admin_services: '/dashboard',
     agent: '/properties?view=mine',
+    real_estate_agency: '/properties?view=mine',
     landlord: '/properties?view=mine',
     service_provider: '/services?view=mine',
     home_seeker: '/properties?tab=active',
