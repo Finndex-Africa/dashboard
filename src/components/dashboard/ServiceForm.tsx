@@ -15,6 +15,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { Service } from '@/types/dashboard';
 import { showToast } from '@/lib/toast';
+import { SERVICE_CATEGORY_OPTIONS } from '@/lib/service-categories';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -127,16 +128,11 @@ export function ServiceForm({
                                 placeholder="Select category"
                                 style={{ borderRadius: '8px' }}
                             >
-                                <Select.Option value="electrical">Electrical</Select.Option>
-                                <Select.Option value="plumbing">Plumbing</Select.Option>
-                                <Select.Option value="cleaning">Cleaning</Select.Option>
-                                <Select.Option value="painting_decoration">Painting & Decoration</Select.Option>
-                                <Select.Option value="carpentry_furniture">Carpentry & Furniture</Select.Option>
-                                <Select.Option value="moving_logistics">Moving & Logistics</Select.Option>
-                                <Select.Option value="security_services">Security Services</Select.Option>
-                                <Select.Option value="sanitation_services">Sanitation Services</Select.Option>
-                                <Select.Option value="maintenance">Maintenance</Select.Option>
-                                <Select.Option value="other">Other</Select.Option>
+                                {SERVICE_CATEGORY_OPTIONS.map((cat) => (
+                                    <Select.Option key={cat.value} value={cat.value}>
+                                        {cat.label}
+                                    </Select.Option>
+                                ))}
                             </Select>
                         </Form.Item>
                     </Col>

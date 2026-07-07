@@ -28,6 +28,7 @@ import {
     TeamOutlined,
     ThunderboltOutlined,
     ClockCircleOutlined,
+    SolutionOutlined,
 } from '@ant-design/icons';
 import { Line, Pie } from '@ant-design/plots';
 import { useRouter } from 'next/navigation';
@@ -170,11 +171,15 @@ export default function AdminDashboard() {
     const usrTotal = adminStats?.users?.total ?? extractTotal(rawResponses?.uRes, users.length);
     const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
 
+    const pendingAgentApplications = adminStats?.agentApplications?.pending ?? 0;
+    const realEstateAgencyCount = adminStats?.users?.realEstateAgency ?? 0;
+
     /* ─── quick action cards ─── */
     const quickActions = [
         { label: 'Properties', icon: <HomeOutlined />, path: '/properties', count: propTotal },
         { label: 'Services', icon: <ToolOutlined />, path: '/services', count: svcTotal },
         { label: 'Users', icon: <TeamOutlined />, path: '/users', count: usrTotal },
+        { label: 'Agent Apps', icon: <SolutionOutlined />, path: '/agent-applications', count: pendingAgentApplications || undefined },
         { label: 'Bookings', icon: <CalendarOutlined />, path: '/bookings' },
     ];
 
@@ -422,6 +427,12 @@ export default function AdminDashboard() {
                                 { label: 'Properties', value: propTotal, color: '#0000FF' },
                                 { label: 'Active Services', value: activeServices, color: '#0044CC' },
                                 { label: 'Users', value: usrTotal, color: '#52c41a' },
+                                ...(realEstateAgencyCount > 0
+                                    ? [{ label: 'Real Estate Agencies', value: realEstateAgencyCount, color: '#13c2c2' }]
+                                    : []),
+                                ...(pendingAgentApplications > 0
+                                    ? [{ label: 'Pending Agent Apps', value: pendingAgentApplications, color: '#faad14' }]
+                                    : []),
                             ].map(item => (
                                 <div key={item.label} style={{
                                     display: 'flex', alignItems: 'center', gap: 10,

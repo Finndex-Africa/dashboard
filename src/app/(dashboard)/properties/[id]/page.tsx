@@ -21,6 +21,7 @@ import {
     mapPropertyToFormValues,
     propertyPosterId,
 } from '@/lib/properties-utils';
+import { canSetAgentFee } from '@/lib/role-utils';
 import type { Property } from '@/types/dashboard';
 
 const { Title, Text } = Typography;
@@ -85,7 +86,9 @@ export default function EditPropertyPage() {
             setSubmitting(true);
 
             // If property was rejected, change status to pending for resubmission
-            const updateData = mapPropertyFormToApi(values);
+            const updateData = mapPropertyFormToApi(values, {
+                includeAgentFee: canSetAgentFee(user?.role),
+            });
             if (property.status === 'rejected') {
                 updateData.status = 'pending';
             }
@@ -204,6 +207,7 @@ export default function EditPropertyPage() {
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     loading={submitting}
+                    showAgentFee={canSetAgentFee(user?.role)}
                 />
             </Card>
         </div>

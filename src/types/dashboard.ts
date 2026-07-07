@@ -8,6 +8,9 @@ export enum ServiceCategory {
     SECURITY_SERVICES = 'security_services',
     SANITATION_SERVICES = 'sanitation_services',
     MAINTENANCE = 'maintenance',
+    CATERING = 'catering',
+    CONSTRUCTION = 'construction',
+    LAUNDRY = 'laundry',
     OTHER = 'other'
 }
 
@@ -66,6 +69,8 @@ export interface Property {
     propertyType: string;
     location: string;
     price: number;
+    /** Agent-set listing fee (USD) — agents and real estate agencies only */
+    agentFee?: number | null;
     status: 'pending' | 'approved' | 'rejected' | 'rented' | 'archived' | 'suspended';
     bedrooms?: number;
     bathrooms?: number;

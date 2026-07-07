@@ -14,6 +14,7 @@ import Divider from 'antd/es/divider';
 import Modal from 'antd/es/modal';
 import { UserOutlined, MailOutlined, PhoneOutlined, CameraOutlined, SaveOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '@/providers/AuthProvider';
+import { getRoleLabel } from '@/lib/role-utils';
 
 const { Title, Text } = Typography;
 
@@ -223,10 +224,7 @@ export default function ProfilePage() {
                                 marginTop: '8px'
                             }}
                         >
-                            {user.role === 'landlord' ? 'Landlord' :
-                                user.role === 'agent' ? 'Agent' :
-                                    user.role === 'service_provider' ? 'Service Provider' :
-                                        user.role === 'home_seeker' ? 'Home Seeker' : 'User'}
+                            {getRoleLabel(user.role)}
                         </Text>
                     </div>
                 </div>

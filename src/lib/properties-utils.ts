@@ -6,6 +6,7 @@
 import type { CreatePropertyDto } from '@/services/api/properties.api';
 import type { Property, PropertyPosterRef } from '@/types/dashboard';
 import { UserRole } from './role-redirects';
+import { isAgentLikeRole } from './role-utils';
 
 /** Bedroom count from either field (dashboard form uses bedrooms; main app may store rooms). */
 export function getPropertyBedroomCount(property: {
@@ -16,8 +17,11 @@ export function getPropertyBedroomCount(property: {
 }
 
 /** Map form values to API payload (bedrooms → rooms, same as main FindAfriq app). */
-export function mapPropertyFormToApi(values: Record<string, unknown>): CreatePropertyDto & Record<string, unknown> {
-    const { bedrooms, bathrooms, ...rest } = values;
+export function mapPropertyFormToApi(
+    values: Record<string, unknown>,
+    options?: { includeAgentFee?: boolean },
+): CreatePropertyDto & Record<string, unknown> {
+    const { bedrooms, bathrooms, agentFee, ...rest } = values;
     const payload = { ...rest } as CreatePropertyDto & Record<string, unknown>;
 
     if (bedrooms !== undefined && bedrooms !== null && bedrooms !== '') {
@@ -27,6 +31,12 @@ export function mapPropertyFormToApi(values: Record<string, unknown>): CreatePro
     }
     if (bathrooms !== undefined && bathrooms !== null && bathrooms !== '') {
         payload.bathrooms = Number(bathrooms);
+    }
+
+    if (options?.includeAgentFee && agentFee !== undefined && agentFee !== null && agentFee !== '') {
+        payload.agentFee = Number(agentFee);
+    } else {
+        delete payload.agentFee;
     }
 
     return payload;
@@ -70,6 +80,7 @@ export type PropertyTab = 'active' | 'saved';
 export function getDefaultPropertyView(role: UserRole | string): PropertyView {
   switch (role) {
     case 'agent':
+    case 'real_estate_agency':
     case 'landlord':
       return 'mine';
     case 'admin':
@@ -91,7 +102,7 @@ export function getDefaultPropertyTab(): PropertyTab {
  * Check if user can create properties
  */
 export function canCreateProperty(role: UserRole | string): boolean {
-  return ['agent', 'landlord', 'admin'].includes(role);
+  return ['agent', 'real_estate_agency', 'landlord', 'admin'].includes(role);
 }
 
 /**
@@ -112,7 +123,7 @@ export function canModerateProperties(role: UserRole | string): boolean {
  * Check if user is a property creator (agent/landlord)
  */
 export function isPropertyCreator(role: UserRole | string): boolean {
-  return ['agent', 'landlord'].includes(role);
+  return isAgentLikeRole(role) || role === 'landlord';
 }
 
 /**
