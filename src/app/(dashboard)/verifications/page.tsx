@@ -21,6 +21,12 @@ import {
     SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
+import { getRoleLabel } from '@/lib/role-utils';
+import {
+    getVerificationUserType,
+    shouldShowBusinessRegistrationSection,
+    shouldShowSignedAgentAgreementSection,
+} from '@/lib/verification-utils';
 
 function certificateUrlLooksPdf(url: string): boolean {
     const path = url.split(/[?#]/)[0]?.toLowerCase() ?? '';
@@ -316,6 +322,14 @@ export default function VerificationsPage() {
                                     </Tag>
                                 </div>
                             </div>
+                            {getVerificationUserType(selected) && (
+                                <div className="col-span-2">
+                                    <Text type="secondary">Account Type</Text>
+                                    <div className="font-medium">
+                                        {getRoleLabel(getVerificationUserType(selected))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -334,12 +348,21 @@ export default function VerificationsPage() {
                             </div>
                         )}
 
-                        {selected.businessRegistrationCertificate?.trim() && (
-                            <VerificationDocumentSection
-                                label="Business registration certificate"
-                                url={selected.businessRegistrationCertificate}
-                                viewLabel="View certificate"
-                            />
+                        {shouldShowBusinessRegistrationSection(selected) && (
+                            selected.businessRegistrationCertificate?.trim() ? (
+                                <VerificationDocumentSection
+                                    label="Business registration certificate"
+                                    url={selected.businessRegistrationCertificate}
+                                    viewLabel="View certificate"
+                                />
+                            ) : (
+                                <div>
+                                    <Text type="secondary">Business registration certificate</Text>
+                                    <div className="mt-1 text-sm text-gray-500 italic">
+                                        Not submitted
+                                    </div>
+                                </div>
+                            )
                         )}
 
                         {selected.selfieImage && (
@@ -351,12 +374,21 @@ export default function VerificationsPage() {
                             </div>
                         )}
 
-                        {selected.signedAgentAgreement?.trim() && (
-                            <VerificationDocumentSection
-                                label="Signed agent agreement"
-                                url={selected.signedAgentAgreement}
-                                viewLabel="View agreement"
-                            />
+                        {shouldShowSignedAgentAgreementSection(selected) && (
+                            selected.signedAgentAgreement?.trim() ? (
+                                <VerificationDocumentSection
+                                    label="Signed agent agreement"
+                                    url={selected.signedAgentAgreement}
+                                    viewLabel="View agreement"
+                                />
+                            ) : (
+                                <div>
+                                    <Text type="secondary">Signed agent agreement</Text>
+                                    <div className="mt-1 text-sm text-gray-500 italic">
+                                        Not submitted
+                                    </div>
+                                </div>
+                            )
                         )}
 
                         {selected.status === 'pending' && (
