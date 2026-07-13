@@ -21,6 +21,7 @@ import {
   CloseOutlined,
   SafetyCertificateOutlined,
   FlagOutlined,
+  NotificationOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
@@ -105,6 +106,12 @@ export default function DashboardLayout({
       icon: <FlagOutlined />,
       label: "User Reports",
       roles: ["admin", "admin_property", "admin_services"],
+    },
+    {
+      key: "/notify-me",
+      icon: <NotificationOutlined />,
+      label: "Notify Me",
+      roles: ["admin"],
     },
     {
       key: "/notifications",
