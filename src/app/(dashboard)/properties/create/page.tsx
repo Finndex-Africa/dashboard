@@ -36,7 +36,7 @@ export default function CreatePropertyPage() {
 
             // Step 1: Create property without images
             const response = await propertiesApi.create(
-                mapPropertyFormToApi(values, { includeAgentFee: canSetAgentFee(user?.role) }),
+                mapPropertyFormToApi(values, { includeAgentFee: true }),
             );
             const createdProperty = response.data;
 
@@ -114,7 +114,6 @@ export default function CreatePropertyPage() {
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     loading={submitting}
-                    showAgentFee={canSetAgentFee(user?.role)}
                 />
             </Card>
         </div>

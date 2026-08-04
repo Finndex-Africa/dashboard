@@ -87,7 +87,7 @@ export default function EditPropertyPage() {
 
             // If property was rejected, change status to pending for resubmission
             const updateData = mapPropertyFormToApi(values, {
-                includeAgentFee: canEditPropertyAgentFee(user?.role, property),
+                includeAgentFee: true,
             });
             if (property.status === 'rejected') {
                 updateData.status = 'pending';
@@ -207,7 +207,6 @@ export default function EditPropertyPage() {
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     loading={submitting}
-                    showAgentFee={canEditPropertyAgentFee(user?.role, property)}
                 />
             </Card>
         </div>
