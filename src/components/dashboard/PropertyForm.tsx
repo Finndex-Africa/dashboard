@@ -28,12 +28,12 @@ const AMENITY_OPTIONS = [
     { value: 'Security', icon: '🔒' },
     { value: 'Swimming Pool', icon: '🏊' },
     { value: 'Gym', icon: '💪' },
-    { value: 'Garden', icon: '🌳' },
-    { value: 'Balcony', icon: '🏠' },
+    { value: 'Living Room', icon: '🛋️' },
+    { value: 'Porch', icon: '🌿' },
     { value: 'Air Conditioning', icon: '❄️' },
-    { value: 'Heating', icon: '🔥' },
+    { value: 'Dining Room', icon: '🍽️' },
     { value: 'Laundry', icon: '🧺' },
-    { value: 'Elevator', icon: '🛗' },
+    { value: 'Kitchen', icon: '🍳' },
     { value: 'Generator', icon: '⚙️' },
     { value: 'CCTV', icon: '📹' },
     { value: 'Gate', icon: '🚪' },
@@ -44,8 +44,6 @@ interface PropertyFormProps {
     onSubmit: (values: Partial<Property>, files: File[], keptImages: string[]) => void;
     onCancel: () => void;
     loading?: boolean;
-    /** Show agent fee for agent/agency listings, or when admin edits an agent/agency listing */
-    showAgentFee?: boolean;
 }
 
 export function PropertyForm({
@@ -53,7 +51,6 @@ export function PropertyForm({
     onSubmit,
     onCancel,
     loading,
-    showAgentFee = false,
 }: PropertyFormProps) {
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -309,81 +306,74 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                 </Row>
-                {showAgentFee && (
-                    <Row gutter={16}>
-                        <Col xs={24} sm={12}>
-                            <Form.Item
-                                name="agentFee"
-                                label="Agent Fee (USD)"
-                                tooltip="Your listing fee shown to home seekers on the property details page"
-                                rules={[
-                                    {
-                                        type: 'number',
-                                        min: 0,
-                                        message: 'Agent fee must be zero or greater',
-                                    },
-                                ]}
-                            >
-                                <InputNumber
-                                    size="large"
-                                    style={{ width: '100%', borderRadius: '8px' }}
-                                    placeholder="e.g., 150"
-                                    min={0}
-                                    formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
-                                />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                )}
+            </div>
+
+            {/* Agent Fee */}
+            <Divider style={{ margin: '24px 0' }} />
+            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4" style={{ marginBottom: '24px' }}>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Agent Fee</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                    Set the fee you charge for this listing. It will be shown to seekers on the property page.
+                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Agent Fee (USD)
+                </label>
+                <Form.Item
+                    name="agentFee"
+                    noStyle
+                    getValueFromEvent={(e) => {
+                        const v = e.target.value;
+                        return v === '' ? undefined : Number(v);
+                    }}
+                >
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., 150"
+                    />
+                </Form.Item>
             </div>
 
             <Divider style={{ margin: '24px 0' }} />
 
-            {/* Amenities – same chip grid as user form with yellow selected state */}
+            {/* Amenities – chip grid matching design */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '8px' }}>
                     Amenities
                 </Text>
-                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '16px' }}>
                     Select the amenities available in this property
                 </Text>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                    {AMENITY_OPTIONS.map((amenity) => (
-                        <button
-                            key={amenity.value}
-                            type="button"
-                            onClick={() => toggleAmenity(amenity.value)}
-                            style={{
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: `2px solid ${selectedAmenities.includes(amenity.value) ? '#ffcc00' : '#e5e7eb'}`,
-                                background: selectedAmenities.includes(amenity.value) ? 'rgba(255, 204, 0, 0.15)' : '#fff',
-                                color: selectedAmenities.includes(amenity.value) ? '#111' : '#374151',
-                                textAlign: 'left',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <span style={{ fontSize: '20px' }}>{amenity.icon}</span>
-                            <span style={{ fontSize: '13px', fontWeight: 500 }}>{amenity.value}</span>
-                            {selectedAmenities.includes(amenity.value) && (
-                                <svg
-                                    style={{ marginLeft: 'auto', width: 20, height: 20, color: '#ffcc00' }}
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            )}
-                        </button>
-                    ))}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                    {AMENITY_OPTIONS.map((amenity) => {
+                        const active = selectedAmenities.includes(amenity.value);
+                        return (
+                            <button
+                                key={amenity.value}
+                                type="button"
+                                onClick={() => toggleAmenity(amenity.value)}
+                                style={{
+                                    padding: '14px 16px',
+                                    borderRadius: '10px',
+                                    border: `1.5px solid ${active ? '#667eea' : '#e5e7eb'}`,
+                                    background: active ? 'rgba(102, 126, 234, 0.08)' : '#fff',
+                                    color: active ? '#667eea' : '#374151',
+                                    textAlign: 'left',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    fontWeight: active ? 600 : 400,
+                                }}
+                            >
+                                <span style={{ fontSize: '22px', lineHeight: 1, flexShrink: 0 }}>{amenity.icon}</span>
+                                <span style={{ fontSize: '13px' }}>{amenity.value}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
