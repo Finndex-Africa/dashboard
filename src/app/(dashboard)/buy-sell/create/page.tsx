@@ -29,13 +29,28 @@ export default function CreateBuySellPage() {
         try {
             setSubmitting(true);
 
-            // Step 1: Create listing (auto-approved for admin by backend)
-            const { data: created } = await buySellApi.create({
+            // Step 1: Upload images first so URLs can be included in the initial POST.
+            // The backend requires images[] in the create payload.
+            const imageUrls: string[] = [...(keptImages ?? [])];
+            if (files.length > 0) {
+                for (const file of files) {
+                    try {
+                        const url = await mediaApi.upload(file, 'buy_sell');
+                        imageUrls.push(url);
+                    } catch {
+                        showToast.error('Failed to upload one or more images');
+                    }
+                }
+            }
+
+            // Step 2: Create listing with image URLs already set (auto-approved for admin)
+            await buySellApi.create({
                 title:             values.title,
                 description:       values.description,
                 category:          values.category,
                 price:             values.price,
                 location:          values.location,
+                images:            imageUrls.length > 0 ? imageUrls : undefined,
                 agentFee:          values.agentFee,
                 isPremium:         values.isPremium ?? false,
                 // Land
@@ -56,23 +71,6 @@ export default function CreateBuySellPage() {
                 warranty:          values.warranty,
                 deliveryAvailable: values.deliveryAvailable,
             } as any);
-
-            // Step 2: Upload images if any
-            if (files.length > 0) {
-                const uploadedUrls: string[] = [...(keptImages ?? [])];
-                for (const file of files) {
-                    try {
-                        const imageUrl = await mediaApi.upload(file, 'buy_sell');
-                        uploadedUrls.push(imageUrl);
-                    } catch {
-                        showToast.error('Failed to upload some images');
-                    }
-                }
-
-                if (uploadedUrls.length > 0) {
-                    await buySellApi.update(created._id, { images: uploadedUrls });
-                }
-            }
 
             showToast.success('Listing posted and published successfully');
             router.push('/buy-sell');
