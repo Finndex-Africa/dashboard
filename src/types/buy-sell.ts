@@ -4,7 +4,6 @@ export type BuySellCategory = 'land' | 'house' | 'household_item';
 export type BuySellStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
 export type LandSubcategory = 'residential' | 'commercial' | 'beach' | 'farm';
-export type HouseSubcategory = 'duplex' | 'apartment' | 'commercial';
 export type HouseholdItemSubcategory =
     | 'furniture'
     | 'electronics'
@@ -49,6 +48,8 @@ export interface BuySellListing {
     rejectionReason?: string;
     approvedAt?: string;
     mapCoordinates?: { lat: number; lng: number };
+    /** Agent fee set by agent/agency sellers or admin */
+    agentFee?: number;
 
     // ── Land ────────────────────────────────────────────────────────────────
     landSubcategory?: LandSubcategory;
@@ -59,7 +60,7 @@ export interface BuySellListing {
     whatsappNumber?: string;
 
     // ── House ───────────────────────────────────────────────────────────────
-    houseSubcategory?: HouseSubcategory;
+    // Note: houseSubcategory removed — propertyType now serves as the type selector
     bedrooms?: number;
     bathrooms?: number;
     propertyType?: string;
@@ -77,13 +78,14 @@ export interface BuySellListing {
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 
-export interface UpdateBuySellDto {
-    title?: string;
-    description?: string;
-    price?: number;
-    location?: string;
+export interface CreateBuySellDto {
+    title: string;
+    description: string;
+    category: BuySellCategory;
+    price: number;
+    location: string;
     images?: string[];
-    isPremium?: boolean;
+    agentFee?: number;
     // Land
     landSubcategory?: LandSubcategory;
     landSize?: number;
@@ -92,7 +94,33 @@ export interface UpdateBuySellDto {
     sellerPhone?: string;
     whatsappNumber?: string;
     // House
-    houseSubcategory?: HouseSubcategory;
+    bedrooms?: number;
+    bathrooms?: number;
+    propertyType?: string;
+    amenities?: Array<{ icon?: string; label: string; description?: string | null }>;
+    // Household
+    itemSubcategory?: HouseholdItemSubcategory;
+    condition?: ItemCondition;
+    warranty?: boolean;
+    deliveryAvailable?: boolean;
+}
+
+export interface UpdateBuySellDto {
+    title?: string;
+    description?: string;
+    price?: number;
+    location?: string;
+    images?: string[];
+    isPremium?: boolean;
+    agentFee?: number;
+    // Land
+    landSubcategory?: LandSubcategory;
+    landSize?: number;
+    unit?: LandUnit;
+    ownershipStatus?: string;
+    sellerPhone?: string;
+    whatsappNumber?: string;
+    // House
     bedrooms?: number;
     bathrooms?: number;
     propertyType?: string;

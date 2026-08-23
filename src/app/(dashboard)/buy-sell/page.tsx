@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Typography from 'antd/es/typography';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
@@ -21,16 +21,19 @@ import {
     CheckCircleOutlined,
     ClockCircleOutlined,
     PauseCircleOutlined,
+    PlusOutlined,
     SearchOutlined,
     UserOutlined,
 } from '@ant-design/icons';
 import { BuySellTable } from '@/components/dashboard/BuySellTable';
 import type { BuySellListing, BuySellSeller } from '@/types/buy-sell';
 import { buySellApi } from '@/services/api/buy-sell.api';
+import type { BuySellPagination } from '@/services/api/buy-sell.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
 import {
     canModerateBuySell,
+    getBuySellSellerEmail,
     getBuySellSellerDisplayName,
     getBuySellCategoryLabel,
     getStatusColor,
@@ -50,19 +53,28 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 const { TextArea } = Input;
 
-export default function BuySellPage() {
+const PAGE_SIZE = 20;
+
+// ─── Inner content (uses useSearchParams to force client-side rendering) ───────
+
+function BuySellPageContent() {
     const { user } = useAuth();
     const router = useRouter();
+    useSearchParams(); // Forces CSR boundary — prevents FOUC
 
     // ── State ──────────────────────────────────────────────────────────────────
     const [listings, setListings]               = useState<BuySellListing[]>([]);
     const [loading, setLoading]                 = useState(true);
     const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+    const [pagination, setPagination]           = useState<BuySellPagination>({
+        currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: PAGE_SIZE,
+    });
 
     // Filters
-    const [searchText, setSearchText]           = useState('');
-    const [categoryFilter, setCategoryFilter]   = useState<string>('all');
-    const [statusFilter, setStatusFilter]       = useState<string>('all');
+    const [searchText, setSearchText]         = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter]     = useState<string>('all');
+    const [currentPage, setCurrentPage]       = useState(1);
 
     // Review modal
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -79,17 +91,25 @@ export default function BuySellPage() {
     useEffect(() => {
         if (user?.role) fetchListings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role]);
+    }, [user?.role, currentPage, categoryFilter, statusFilter]);
 
-    const fetchListings = async () => {
+    const fetchListings = async (page = currentPage) => {
         try {
             setLoading(true);
-            const response = await buySellApi.getAll({ page: 1, limit: 100 });
+            const response = await buySellApi.getAll({
+                page,
+                limit: PAGE_SIZE,
+                category: categoryFilter as any,
+                status:   statusFilter   as any,
+                search:   searchText || undefined,
+            });
             const raw = response.data;
             const items: BuySellListing[] = Array.isArray(raw)
                 ? raw
                 : (raw as any)?.data ?? [];
+            const pag: BuySellPagination | undefined = (raw as any)?.pagination;
             setListings(items);
+            if (pag) setPagination(pag);
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to load listings');
             setListings([]);
@@ -98,7 +118,16 @@ export default function BuySellPage() {
         }
     };
 
-    // ── Client-side filtering ──────────────────────────────────────────────────
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handleFilterSearch = () => {
+        setCurrentPage(1);
+        fetchListings(1);
+    };
+
+    // ── Client-side filtering (for search text, since it's applied server-side on submit) ──
     const filtered = listings.filter((l) => {
         if (searchText) {
             const q = searchText.toLowerCase();
@@ -107,14 +136,12 @@ export default function BuySellPage() {
                 !l.location?.toLowerCase().includes(q)
             ) return false;
         }
-        if (categoryFilter !== 'all' && l.category !== categoryFilter) return false;
-        if (statusFilter   !== 'all' && l.status   !== statusFilter)   return false;
         return true;
     });
 
-    // ── Stats ──────────────────────────────────────────────────────────────────
+    // ── Stats (from paginated totals; fallback to local count) ─────────────────
     const stats = {
-        total:     listings.length,
+        total:     pagination.totalItems || listings.length,
         pending:   listings.filter((l) => l.status === 'pending').length,
         approved:  listings.filter((l) => l.status === 'approved').length,
         suspended: listings.filter((l) => l.status === 'suspended').length,
@@ -263,9 +290,26 @@ export default function BuySellPage() {
     return (
         <div className="space-y-6">
             {/* ── Header ────────────────────────────────────────────────────── */}
-            <div>
-                <Title level={2} className="mb-1">Buy &amp; Sell</Title>
-                <Text type="secondary">Manage all Buy &amp; Sell listings</Text>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                    <Title level={2} className="mb-1">Buy &amp; Sell</Title>
+                    <Text type="secondary">Manage all Buy &amp; Sell listings</Text>
+                </div>
+                {isAdmin && (
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        size="large"
+                        onClick={() => router.push('/buy-sell/create')}
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            border: 'none',
+                            borderRadius: 8,
+                        }}
+                    >
+                        Post Buy &amp; Sell
+                    </Button>
+                )}
             </div>
 
             {/* ── Stats ─────────────────────────────────────────────────────── */}
@@ -322,13 +366,14 @@ export default function BuySellPage() {
                             prefix={<SearchOutlined />}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
+                            onSearch={handleFilterSearch}
                         />
                     </Col>
                     <Col xs={12} md={7}>
                         <Select
                             size="large"
                             value={categoryFilter}
-                            onChange={setCategoryFilter}
+                            onChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Categories</Select.Option>
@@ -341,7 +386,7 @@ export default function BuySellPage() {
                         <Select
                             size="large"
                             value={statusFilter}
-                            onChange={setStatusFilter}
+                            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Status</Select.Option>
@@ -360,6 +405,12 @@ export default function BuySellPage() {
                     listings={filtered}
                     loading={loading}
                     actionLoadingId={actionLoadingId}
+                    pagination={{
+                        current:  pagination.currentPage,
+                        total:    pagination.totalItems,
+                        pageSize: pagination.itemsPerPage,
+                        onChange: handlePageChange,
+                    }}
                     onReview={canModerateBuySell(user?.role) ? handleReviewClick : undefined}
                     onApprove={canModerateBuySell(user?.role) ? handleApprove : undefined}
                     onReject={canModerateBuySell(user?.role) ? handleRejectClick : undefined}
@@ -449,6 +500,11 @@ export default function BuySellPage() {
                                 <Descriptions.Item label="Views / Saves">
                                     {reviewListing.views ?? 0} / {reviewListing.saves ?? 0}
                                 </Descriptions.Item>
+                                {reviewListing.agentFee != null && (
+                                    <Descriptions.Item label="Agent Fee">
+                                        {formatBuySellPrice(reviewListing.agentFee)}
+                                    </Descriptions.Item>
+                                )}
 
                                 {/* Land */}
                                 {reviewListing.category === 'land' && (
@@ -537,39 +593,42 @@ export default function BuySellPage() {
                                 </div>
                             )}
 
-                            {/* ── Seller ── */}
-                            {seller && (
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 12,
-                                        padding: '12px 14px',
-                                        border: '1px solid #f0f0f0',
-                                        borderRadius: 8,
-                                        background: '#fafafa',
-                                        marginBottom: 16,
-                                    }}
-                                >
-                                    <Avatar
-                                        size={44}
-                                        src={seller.avatar ?? undefined}
-                                        icon={!seller.avatar ? <UserOutlined /> : undefined}
-                                    />
-                                    <div>
-                                        <div style={{ fontWeight: 600, color: '#262626', fontSize: 14 }}>
-                                            {getBuySellSellerDisplayName(reviewListing)}
-                                            {seller.verified && (
-                                                <Tag color="blue" style={{ marginLeft: 6, fontSize: 11 }}>Verified</Tag>
-                                            )}
-                                        </div>
-                                        <div style={{ color: '#595959', fontSize: 12 }}>
-                                            {seller.email}{seller.phone ? ` · ${seller.phone}` : ''}
-                                        </div>
+                            {/* ── Seller (identified by email in admin view) ── */}
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '12px 14px',
+                                    border: '1px solid #f0f0f0',
+                                    borderRadius: 8,
+                                    background: '#fafafa',
+                                    marginBottom: 16,
+                                }}
+                            >
+                                <Avatar
+                                    size={44}
+                                    src={seller?.avatar ?? undefined}
+                                    icon={!seller?.avatar ? <UserOutlined /> : undefined}
+                                />
+                                <div>
+                                    <div style={{ fontWeight: 600, color: '#262626', fontSize: 14 }}>
+                                        {getBuySellSellerEmail(reviewListing)}
+                                        {seller?.verified && (
+                                            <Tag color="blue" style={{ marginLeft: 6, fontSize: 11 }}>Verified</Tag>
+                                        )}
                                     </div>
-                                    <Tag style={{ marginLeft: 'auto' }}>{seller.userType}</Tag>
+                                    {seller && (
+                                        <div style={{ color: '#595959', fontSize: 12 }}>
+                                            {getBuySellSellerDisplayName(reviewListing)}
+                                            {seller.phone ? ` · ${seller.phone}` : ''}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                                {seller?.userType && (
+                                    <Tag style={{ marginLeft: 'auto' }}>{seller.userType}</Tag>
+                                )}
+                            </div>
 
                             {/* ── Review actions ── */}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
@@ -621,5 +680,15 @@ export default function BuySellPage() {
                 />
             </Modal>
         </div>
+    );
+}
+
+// ─── Default export — wraps in Suspense to prevent FOUC ───────────────────────
+
+export default function BuySellPage() {
+    return (
+        <Suspense>
+            <BuySellPageContent />
+        </Suspense>
     );
 }

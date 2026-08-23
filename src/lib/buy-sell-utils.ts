@@ -24,6 +24,17 @@ export function getBuySellSellerDisplayName(listing: BuySellListing): string {
     return fullName || ref.name || ref.email || ref._id || '—';
 }
 
+/**
+ * Resolves the seller's email — used in admin views to identify sellers.
+ * Falls back to name or id when email is not available.
+ */
+export function getBuySellSellerEmail(listing: BuySellListing): string {
+    const ref = listing.sellerId;
+    if (!ref) return '—';
+    if (typeof ref === 'string') return ref;
+    return ref.email || getBuySellSellerDisplayName(listing);
+}
+
 /** Resolves the seller's id string (populated or raw). */
 export function getBuySellSellerId(listing: BuySellListing): string | undefined {
     const ref = listing.sellerId;

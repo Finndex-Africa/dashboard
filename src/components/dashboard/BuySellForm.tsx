@@ -18,35 +18,54 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import { showToast } from '@/lib/toast';
 import {
     LAND_SUBCATEGORY_OPTIONS,
-    HOUSE_SUBCATEGORY_OPTIONS,
     HOUSEHOLD_SUBCATEGORY_OPTIONS,
     LAND_UNIT_OPTIONS,
     ITEM_CONDITION_OPTIONS,
 } from '@/lib/buy-sell-categories';
 import { getBuySellCategoryLabel, getStatusColor, getStatusLabel } from '@/lib/buy-sell-utils';
-import type { BuySellListing } from '@/types/buy-sell';
+import type { BuySellCategory, BuySellListing } from '@/types/buy-sell';
 
 const { TextArea } = Input;
 const { Text } = Typography;
 
+// ─── Property type options (replaces houseSubcategory) ───────────────────────
+const PROPERTY_TYPE_OPTIONS = [
+    { value: 'apartment',  label: 'Apartment' },
+    { value: 'duplex',     label: 'Duplex' },
+    { value: 'commercial', label: 'Commercial' },
+    { value: 'villa',      label: 'Villa' },
+    { value: 'bungalow',   label: 'Bungalow' },
+    { value: 'penthouse',  label: 'Penthouse' },
+    { value: 'townhouse',  label: 'Townhouse' },
+    { value: 'studio',     label: 'Studio' },
+    { value: 'other',      label: 'Other' },
+];
+
+// ─── Category options for create mode ────────────────────────────────────────
+const CATEGORY_OPTIONS: { value: BuySellCategory; label: string }[] = [
+    { value: 'land',           label: 'Land' },
+    { value: 'house',          label: 'House' },
+    { value: 'household_item', label: 'Household Item' },
+];
+
 // ─── Amenity options (same set as PropertyForm) ───────────────────────────────
 const AMENITY_OPTIONS = [
-    { value: 'Water',          icon: '💧' },
-    { value: 'Electricity',    icon: '⚡' },
-    { value: 'WiFi',           icon: '📶' },
-    { value: 'Parking',        icon: '🚗' },
-    { value: 'Security',       icon: '🔒' },
-    { value: 'Swimming Pool',  icon: '🏊' },
-    { value: 'Gym',            icon: '💪' },
-    { value: 'Living Room',    icon: '🛋️' },
-    { value: 'Porch',          icon: '🌿' },
+    { value: 'Water',            icon: '💧' },
+    { value: 'Electricity',      icon: '⚡' },
+    { value: 'WiFi',             icon: '📶' },
+    { value: 'Parking',          icon: '🚗' },
+    { value: 'Security',         icon: '🔒' },
+    { value: 'Swimming Pool',    icon: '🏊' },
+    { value: 'Gym',              icon: '💪' },
+    { value: 'Living Room',      icon: '🛋️' },
+    { value: 'Porch',            icon: '🌿' },
     { value: 'Air Conditioning', icon: '❄️' },
-    { value: 'Dining Room',    icon: '🍽️' },
-    { value: 'Laundry',        icon: '🧺' },
-    { value: 'Kitchen',        icon: '🍳' },
-    { value: 'Generator',      icon: '⚙️' },
-    { value: 'CCTV',           icon: '📹' },
-    { value: 'Gate',           icon: '🚪' },
+    { value: 'Dining Room',      icon: '🍽️' },
+    { value: 'Laundry',          icon: '🧺' },
+    { value: 'Kitchen',          icon: '🍳' },
+    { value: 'Generator',        icon: '⚙️' },
+    { value: 'CCTV',             icon: '📹' },
+    { value: 'Gate',             icon: '🚪' },
 ] as const;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -57,8 +76,11 @@ export interface BuySellFormSubmitPayload {
 }
 
 interface BuySellFormProps {
-    /** Listing being edited — drives initial values and category */
-    listing: BuySellListing;
+    /**
+     * Listing being edited — drives initial values and category.
+     * Omit (or pass undefined) for create mode.
+     */
+    listing?: BuySellListing;
     onSubmit: (payload: BuySellFormSubmitPayload) => void;
     onCancel: () => void;
     loading?: boolean;
@@ -78,20 +100,28 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFormProps) {
-    const [form]               = Form.useForm();
-    const [fileList, setFileList]               = useState<UploadFile[]>([]);
+    const isCreate = !listing;
+
+    const [form]                                    = Form.useForm();
+    const [fileList, setFileList]                   = useState<UploadFile[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+    const [activeCategory, setActiveCategory]       = useState<BuySellCategory | null>(
+        listing?.category ?? null,
+    );
 
-    const category = listing.category;
+    const category = activeCategory;
 
-    // ── Initialise form + file list ───────────────────────────────────────────
+    // ── Initialise form + file list (edit mode only) ──────────────────────────
     useEffect(() => {
+        if (!listing) return;
+
         form.setFieldsValue({
             title:             listing.title,
             description:       listing.description,
             price:             listing.price,
             location:          listing.location,
             isPremium:         listing.isPremium ?? false,
+            agentFee:          listing.agentFee,
             // Land
             landSubcategory:   listing.landSubcategory,
             landSize:          listing.landSize,
@@ -100,14 +130,13 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
             sellerPhone:       listing.sellerPhone,
             whatsappNumber:    listing.whatsappNumber,
             // House
-            houseSubcategory:  listing.houseSubcategory,
             bedrooms:          listing.bedrooms,
             bathrooms:         listing.bathrooms,
             propertyType:      listing.propertyType,
             // Household
             itemSubcategory:   listing.itemSubcategory,
             condition:         listing.condition,
-            warranty:          listing.warranty  ?? false,
+            warranty:          listing.warranty          ?? false,
             deliveryAvailable: listing.deliveryAvailable ?? false,
         });
 
@@ -124,7 +153,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
         }
 
         // Pre-select amenities that are already saved (house category)
-        if (category === 'house' && listing.amenities?.length) {
+        if (listing.category === 'house' && listing.amenities?.length) {
             setSelectedAmenities(listing.amenities.map((a) => a.label));
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,7 +176,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
             showToast.error('Image must be smaller than 10MB!');
             return Upload.LIST_IGNORE;
         }
-        return false; // Manual upload on submit
+        return false;
     };
 
     // ── Submit ────────────────────────────────────────────────────────────────
@@ -182,12 +211,42 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
             onFinish={handleFinish}
             style={{ marginTop: 20 }}
         >
-            {/* ── Status badge (read-only context) ─────────────────────────── */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                <Tag color="blue">{getBuySellCategoryLabel(category)}</Tag>
-                <Tag color={getStatusColor(listing.status)}>{getStatusLabel(listing.status)}</Tag>
-                {listing.isPremium && <Tag color="gold">Featured</Tag>}
-            </div>
+            {/* ── Edit-mode status context ──────────────────────────────────── */}
+            {!isCreate && listing && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                    <Tag color="blue">{getBuySellCategoryLabel(listing.category)}</Tag>
+                    <Tag color={getStatusColor(listing.status)}>{getStatusLabel(listing.status)}</Tag>
+                    {listing.isPremium && <Tag color="gold">Featured</Tag>}
+                </div>
+            )}
+
+            {/* ── Create-mode: Category selector ───────────────────────────── */}
+            {isCreate && (
+                <>
+                    <SectionTitle>What are you selling?</SectionTitle>
+                    <Form.Item
+                        name="category"
+                        label="Category"
+                        rules={[{ required: true, message: 'Please select a category' }]}
+                    >
+                        <Select
+                            size="large"
+                            placeholder="Select category"
+                            style={{ borderRadius: 8 }}
+                            onChange={(v: BuySellCategory) => {
+                                setActiveCategory(v);
+                                // Reset category-specific fields when switching
+                                setSelectedAmenities([]);
+                            }}
+                        >
+                            {CATEGORY_OPTIONS.map((o) => (
+                                <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                    <Divider style={{ margin: '20px 0' }} />
+                </>
+            )}
 
             {/* ── Basic Information ─────────────────────────────────────────── */}
             <SectionTitle>Basic Information</SectionTitle>
@@ -239,6 +298,18 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                             formatter={(v) => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                             parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
                             placeholder="0"
+                        />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={10}>
+                    <Form.Item name="agentFee" label="Agent Fee ($)">
+                        <InputNumber
+                            size="large"
+                            min={0}
+                            style={{ width: '100%', borderRadius: 8 }}
+                            formatter={(v) => (v ? `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+                            parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                            placeholder="Optional"
                         />
                     </Form.Item>
                 </Col>
@@ -300,18 +371,20 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     <SectionTitle>House Details</SectionTitle>
                     <Row gutter={16}>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="House Subcategory" name="houseSubcategory">
-                                <Select size="large" placeholder="Select subcategory" allowClear style={{ borderRadius: 8 }}>
-                                    {HOUSE_SUBCATEGORY_OPTIONS.map((o) => (
+                            <Form.Item
+                                label="Property Type"
+                                name="propertyType"
+                                rules={[{ required: true, message: 'Property type is required' }]}
+                            >
+                                <Select size="large" placeholder="Select property type" allowClear style={{ borderRadius: 8 }}>
+                                    {PROPERTY_TYPE_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
                                 </Select>
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Property Type" name="propertyType">
-                                <Input size="large" placeholder="e.g. Duplex, Bungalow, Penthouse" style={{ borderRadius: 8 }} />
-                            </Form.Item>
+                            {/* spacer */}
                         </Col>
                         <Col xs={24} sm={12}>
                             <Form.Item
@@ -463,7 +536,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 )}
             </Upload>
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                Minimum 4 images required. Max 10MB per image.
+                Minimum 4 images recommended. Max 10MB per image.
             </Text>
 
             {/* ── Action buttons ────────────────────────────────────────────── */}
@@ -489,10 +562,10 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         border: 'none',
                         borderRadius: 8,
-                        minWidth: 140,
+                        minWidth: 160,
                     }}
                 >
-                    Save Changes
+                    {isCreate ? 'Post Listing' : 'Save Changes'}
                 </Button>
             </div>
         </Form>

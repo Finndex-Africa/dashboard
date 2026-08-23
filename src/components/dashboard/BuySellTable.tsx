@@ -19,7 +19,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { BuySellListing } from '@/types/buy-sell';
 import {
-    getBuySellSellerDisplayName,
+    getBuySellSellerEmail,
     getBuySellCategoryLabel,
     getStatusColor,
     getStatusLabel,
@@ -31,6 +31,12 @@ interface BuySellTableProps {
     listings: BuySellListing[];
     loading?: boolean;
     actionLoadingId?: string | null;
+    pagination?: {
+        current: number;
+        total: number;
+        pageSize: number;
+        onChange: (page: number, pageSize: number) => void;
+    };
     onReview?: (listing: BuySellListing) => void;
     onApprove?: (listing: BuySellListing) => void;
     onReject?: (listing: BuySellListing) => void;
@@ -45,6 +51,7 @@ export function BuySellTable({
     listings,
     loading,
     actionLoadingId,
+    pagination,
     onReview,
     onApprove,
     onReject,
@@ -132,10 +139,20 @@ export function BuySellTable({
             render: (price: number) => formatBuySellPrice(price),
         },
         {
-            title: 'Seller',
+            title: 'Agent Fee',
+            key: 'agentFee',
+            render: (_, record) =>
+                record.agentFee != null ? (
+                    <span className="text-gray-700 text-sm">{formatBuySellPrice(record.agentFee)}</span>
+                ) : (
+                    <span className="text-gray-400 text-xs">—</span>
+                ),
+        },
+        {
+            title: 'Seller (Email)',
             key: 'seller',
             render: (_, record) => (
-                <span className="text-gray-900">{getBuySellSellerDisplayName(record)}</span>
+                <span className="text-gray-900 text-sm">{getBuySellSellerEmail(record)}</span>
             ),
         },
         {
@@ -286,11 +303,22 @@ export function BuySellTable({
             dataSource={listings}
             loading={loading}
             rowKey="_id"
-            pagination={{
-                pageSize: 10,
-                showTotal: (total) => `Total ${total} listing${total !== 1 ? 's' : ''}`,
-                showSizeChanger: true,
-            }}
+            pagination={
+                pagination
+                    ? {
+                          current: pagination.current,
+                          total: pagination.total,
+                          pageSize: pagination.pageSize,
+                          onChange: pagination.onChange,
+                          showTotal: (total) => `Total ${total} listing${total !== 1 ? 's' : ''}`,
+                          showSizeChanger: true,
+                      }
+                    : {
+                          pageSize: 20,
+                          showTotal: (total) => `Total ${total} listing${total !== 1 ? 's' : ''}`,
+                          showSizeChanger: true,
+                      }
+            }
             className="custom-table"
             scroll={{ x: 'max-content' }}
         />

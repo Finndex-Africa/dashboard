@@ -1,5 +1,11 @@
 import { apiClient } from '@/lib/api-client';
-import type { BuySellListing, BuySellCategory, BuySellStatus, UpdateBuySellDto } from '@/types/buy-sell';
+import type {
+    BuySellListing,
+    BuySellCategory,
+    BuySellStatus,
+    CreateBuySellDto,
+    UpdateBuySellDto,
+} from '@/types/buy-sell';
 
 // ─── Filter / response shapes ─────────────────────────────────────────────────
 
@@ -11,6 +17,18 @@ export interface BuySellFilters {
     /** Pass 'all' or omit to skip the filter */
     category?: BuySellCategory | 'all';
     search?: string;
+}
+
+export interface BuySellPagination {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+}
+
+export interface BuySellListResponse {
+    data: BuySellListing[];
+    pagination: BuySellPagination;
 }
 
 // ─── API module ───────────────────────────────────────────────────────────────
@@ -25,19 +43,25 @@ export const buySellApi = {
         if (filters?.status   && filters.status   !== 'all') params.append('status',   filters.status);
         if (filters?.category && filters.category !== 'all') params.append('category', filters.category);
         if (filters?.search)  params.append('search',  filters.search);
-        return apiClient.get<any>(`/admin/buy-sell?${params.toString()}`);
+        return apiClient.get<BuySellListResponse>(`/admin/buy-sell?${params.toString()}`);
     },
 
     // ── Admin: pending queue ─────────────────────────────────────────────────
 
     getPending: async (page = 1, limit = 20) => {
-        return apiClient.get<any>(`/admin/buy-sell/pending?page=${page}&limit=${limit}`);
+        return apiClient.get<BuySellListResponse>(`/admin/buy-sell/pending?page=${page}&limit=${limit}`);
     },
 
     // ── Single listing ───────────────────────────────────────────────────────
 
     getById: async (id: string) => {
         return apiClient.get<BuySellListing>(`/admin/buy-sell/${id}`);
+    },
+
+    // ── Create (admin-post — auto-approved by backend) ────────────────────────
+
+    create: async (data: CreateBuySellDto) => {
+        return apiClient.post<BuySellListing>('/buy-sell', data);
     },
 
     // ── Moderation ───────────────────────────────────────────────────────────

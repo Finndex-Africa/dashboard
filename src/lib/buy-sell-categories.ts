@@ -2,7 +2,6 @@ import type {
     BuySellCategory,
     BuySellListing,
     HouseholdItemSubcategory,
-    HouseSubcategory,
     ItemCondition,
     LandSubcategory,
     LandUnit,
@@ -21,12 +20,6 @@ export const LAND_SUBCATEGORY_LABELS: Record<LandSubcategory, string> = {
     commercial: 'Commercial Land',
     beach: 'Beach Land',
     farm: 'Farm Land',
-};
-
-export const HOUSE_SUBCATEGORY_LABELS: Record<HouseSubcategory, string> = {
-    duplex: 'Duplex',
-    apartment: 'Apartment',
-    commercial: 'Commercial',
 };
 
 export const HOUSEHOLD_SUBCATEGORY_LABELS: Record<HouseholdItemSubcategory, string> = {
@@ -60,11 +53,6 @@ export const LAND_SUBCATEGORY_OPTIONS = (Object.keys(LAND_SUBCATEGORY_LABELS) as
     label: LAND_SUBCATEGORY_LABELS[key],
 }));
 
-export const HOUSE_SUBCATEGORY_OPTIONS = (Object.keys(HOUSE_SUBCATEGORY_LABELS) as HouseSubcategory[]).map((key) => ({
-    value: key,
-    label: HOUSE_SUBCATEGORY_LABELS[key],
-}));
-
 export const HOUSEHOLD_SUBCATEGORY_OPTIONS = (
     Object.keys(HOUSEHOLD_SUBCATEGORY_LABELS) as HouseholdItemSubcategory[]
 ).map((key) => ({
@@ -86,7 +74,7 @@ export const ITEM_CONDITION_OPTIONS = (Object.keys(ITEM_CONDITION_LABELS) as Ite
 
 /** Returns the human-readable subcategory label for any listing. */
 export function getSubcategoryLabel(
-    listing: Pick<BuySellListing, 'category' | 'landSubcategory' | 'houseSubcategory' | 'itemSubcategory'>,
+    listing: Pick<BuySellListing, 'category' | 'landSubcategory' | 'itemSubcategory'>,
 ): string {
     switch (listing.category) {
         case 'land':
@@ -94,9 +82,7 @@ export function getSubcategoryLabel(
                 ? (LAND_SUBCATEGORY_LABELS[listing.landSubcategory] ?? listing.landSubcategory)
                 : '—';
         case 'house':
-            return listing.houseSubcategory
-                ? (HOUSE_SUBCATEGORY_LABELS[listing.houseSubcategory] ?? listing.houseSubcategory)
-                : '—';
+            return '—';
         case 'household_item':
             return listing.itemSubcategory
                 ? (HOUSEHOLD_SUBCATEGORY_LABELS[listing.itemSubcategory] ?? listing.itemSubcategory)
