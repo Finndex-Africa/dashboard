@@ -29,6 +29,8 @@ import {
   ThunderboltOutlined,
   ClockCircleOutlined,
   FlagOutlined,
+  ShoppingOutlined,
+  PlusCircleOutlined,
 } from "@ant-design/icons";
 import { Line, Pie } from "@ant-design/plots";
 import { useRouter } from "next/navigation";
@@ -246,6 +248,16 @@ export default function AdminDashboard() {
       count: pendingUserReports || undefined,
     },
     { label: "Bookings", icon: <CalendarOutlined />, path: "/bookings" },
+    {
+      label: "Buy and Sell",
+      icon: <ShoppingOutlined />,
+      path: "/buy-sell",
+    },
+    {
+      label: "Post Buy & Sell",
+      icon: <PlusCircleOutlined />,
+      path: "/buy-sell/create",
+    },
   ];
 
   /* ─── stat cards ─── */

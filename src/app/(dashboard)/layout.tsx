@@ -22,6 +22,7 @@ import {
   SafetyCertificateOutlined,
   FlagOutlined,
   NotificationOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
@@ -69,6 +70,12 @@ export default function DashboardLayout({
       icon: <ShopOutlined />,
       label: "Services",
       roles: ["home_seeker", "service_provider", "admin", "admin_services"],
+    },
+    {
+      key: "/buy-sell",
+      icon: <ShoppingOutlined />,
+      label: "Buy and Sell",
+      roles: ["admin"],
     },
     {
       key: "/bookings",
