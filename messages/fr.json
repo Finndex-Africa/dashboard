@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "title": "Tableau de bord FindAfriq",
+    "description": "Gérez vos biens et services FindAfriq"
+  },
+  "languageSwitcher": {
+    "label": "Langue",
+    "changeLanguage": "Changer de langue"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "properties": "Biens",
+    "services": "Services",
+    "buyAndSell": "Acheter et vendre",
+    "bookings": "Réservations",
+    "advertisements": "Publicités",
+    "users": "Utilisateurs",
+    "verifications": "Vérifications",
+    "userReports": "Signalements",
+    "notifyMe": "Alertes",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logOut": "Se déconnecter",
+    "logoAlt": "FindAfriq",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "defaultUserName": "Utilisateur"
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "admin_property": "Administrateur des biens",
+    "admin_services": "Administrateur des services",
+    "home_seeker": "Chercheur de logement",
+    "landlord": "Propriétaire",
+    "agent": "Agent immobilier",
+    "real_estate_agency": "Agence immobilière",
+    "service_provider": "Prestataire de services",
+    "user": "Utilisateur"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "view": "Consulter",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "reset": "Réinitialiser",
+    "loading": "Chargement…",
+    "noData": "Aucune donnée",
+    "actions": "Actions",
+    "yes": "Oui",
+    "no": "Non",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "submit": "Envoyer",
+    "retry": "Réessayer",
+    "all": "Tous"
+  },
+  "status": {
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "draft": "Brouillon",
+    "published": "Publié",
+    "verified": "Vérifié",
+    "unverified": "Non vérifié",
+    "completed": "Terminé",
+    "cancelled": "Annulé"
+  },
+  "auth": {
+    "signingIn": "Connexion en cours…",
+    "redirecting": "Redirection…",
+    "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
+    "unauthorized": "Vous n'avez pas l'autorisation de consulter cette page."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "languageHelp": "Choisissez la langue utilisée dans le tableau de bord."
+  },
+  "dashboardHome": {
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "justNow": "À l'instant"
+  }
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -61,6 +62,7 @@ export function BuySellTable({
     onRepublish,
     onToggleFeatured,
 }: BuySellTableProps) {
+    const locale = useLocale();
     const columns: ColumnsType<BuySellListing> = [
         {
             title: 'Listing',
@@ -185,7 +187,7 @@ export function BuySellTable({
             key: 'createdAt',
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             render: (date: string) =>
-                new Date(date).toLocaleDateString('en-US', {
+                new Date(date).toLocaleDateString(locale, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',

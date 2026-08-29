@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
@@ -27,6 +28,7 @@ import type { Notification } from '@/types/dashboard';
 const { Title, Text } = Typography;
 
 export default function NotificationsPage() {
+    const locale = useLocale();
     const [loading, setLoading] = useState(true);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -384,7 +386,7 @@ export default function NotificationsPage() {
                                             {notification.message}
                                         </p>
                                         <p className="text-xs text-gray-400">
-                                            {new Date(notification.createdAt).toLocaleDateString('en-US', {
+                                            {new Date(notification.createdAt).toLocaleDateString(locale, {
                                                 month: 'short',
                                                 day: 'numeric',
                                                 year: 'numeric',
@@ -452,7 +454,7 @@ export default function NotificationsPage() {
                         <div>
                             <Text type="secondary">Created</Text>
                             <div className="font-medium">
-                                {new Date(selectedNotification.createdAt).toLocaleDateString('en-US', {
+                                {new Date(selectedNotification.createdAt).toLocaleDateString(locale, {
                                     month: 'long',
                                     day: 'numeric',
                                     year: 'numeric',

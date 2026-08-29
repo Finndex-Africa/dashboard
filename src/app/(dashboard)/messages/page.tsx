@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { StreamChat } from 'stream-chat';
@@ -28,6 +29,7 @@ const { Title, Text } = Typography;
 
 // Custom channel preview component with better UI
 const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
+    const locale = useLocale();
     const { channel, setActiveChannel, activeChannel } = props;
     const { client } = useChatContext();
 
@@ -55,7 +57,7 @@ const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
         const hours = diff / (1000 * 60 * 60);
 
         if (hours < 24) {
-            return messageDate.toLocaleTimeString('en-US', {
+            return messageDate.toLocaleTimeString(locale, {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
@@ -66,7 +68,7 @@ const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
             return 'Yesterday';
         }
 
-        return messageDate.toLocaleDateString('en-US', {
+        return messageDate.toLocaleDateString(locale, {
             month: 'short',
             day: 'numeric'
         });

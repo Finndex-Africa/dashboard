@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -47,6 +48,7 @@ export function ServicesTable({
     savedIds = [],
     approvingId,
 }: ServicesTableProps) {
+    const locale = useLocale();
     const getStatusColor = (status: Service['status']) => {
         switch (status) {
             case 'active':
@@ -132,7 +134,7 @@ export function ServicesTable({
             dataIndex: 'createdAt',
             key: 'createdAt',
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date) => new Date(date).toLocaleDateString('en-US', {
+            render: (date) => new Date(date).toLocaleDateString(locale, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',

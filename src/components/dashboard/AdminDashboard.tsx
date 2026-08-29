@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import Card from "antd/es/card";
 import Row from "antd/es/row";
@@ -45,25 +46,31 @@ import type { Property } from "@/types/dashboard";
 const { Title, Text } = Typography;
 
 /* ─── helpers ─── */
-function greet(): string {
+function greetKey(): "goodMorning" | "goodAfternoon" | "goodEvening" {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "goodMorning";
+  if (h < 18) return "goodAfternoon";
+  return "goodEvening";
 }
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(
+  dateString: string,
+  locale: string,
+  justNow: string,
+): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffMins < 1) return justNow;
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (diffMins < 60) return rtf.format(-diffMins, "minute");
+  if (diffHours < 24) return rtf.format(-diffHours, "hour");
+  if (diffDays < 7) return rtf.format(-diffDays, "day");
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 function fmt(value: number, prefix = ""): string {
@@ -115,6 +122,8 @@ function parseAdminDashboardStats(
 
 /* ─── main ─── */
 export default function AdminDashboard() {
+    const locale = useLocale();
+    const t = useTranslations("dashboardHome");
   const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
   const [services, setServices] = useState<any[]>([]);
@@ -357,7 +366,7 @@ export default function AdminDashboard() {
   const activity = notifications.slice(0, 8).map((n) => ({
     action: n.title || "Activity",
     detail: n.message || "",
-    time: formatTimeAgo(n.createdAt),
+    time: formatTimeAgo(n.createdAt, locale, t("justNow")),
     status: badgeStatus(n.type),
   }));
 
@@ -498,7 +507,7 @@ export default function AdminDashboard() {
             }}
           >
             <ClockCircleOutlined style={{ marginRight: 6 }} />
-            {new Date().toLocaleDateString("en-US", {
+            {new Date().toLocaleDateString(locale, {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -514,7 +523,7 @@ export default function AdminDashboard() {
               fontWeight: 700,
             }}
           >
-            {greet()}, {userName}
+            {t(greetKey())}, {userName}
           </Title>
           <Text
             style={{

@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "title": "FindAfriq Dashboard",
+    "description": "Manage your FindAfriq properties and services"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "changeLanguage": "Change language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "services": "Services",
+    "buyAndSell": "Buy and Sell",
+    "bookings": "Bookings",
+    "advertisements": "Advertisements",
+    "users": "Users",
+    "verifications": "Verifications",
+    "userReports": "User Reports",
+    "notifyMe": "Notify Me",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logOut": "Log out",
+    "logoAlt": "FindAfriq",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "defaultUserName": "User"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "admin_property": "Property Admin",
+    "admin_services": "Services Admin",
+    "home_seeker": "Home Seeker",
+    "landlord": "Landlord",
+    "agent": "Agent",
+    "real_estate_agency": "Real Estate Agency",
+    "service_provider": "Service Provider",
+    "user": "User"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "loading": "Loading…",
+    "noData": "No data",
+    "actions": "Actions",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "retry": "Retry",
+    "all": "All"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "active": "Active",
+    "inactive": "Inactive",
+    "draft": "Draft",
+    "published": "Published",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "auth": {
+    "signingIn": "Signing you in…",
+    "redirecting": "Redirecting…",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "unauthorized": "You do not have permission to view this page."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageHelp": "Choose the language used across the dashboard."
+  },
+  "dashboardHome": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "justNow": "Just now"
+  }
+}
