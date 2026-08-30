@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
@@ -28,6 +29,10 @@ import { useAuth } from '@/providers/AuthProvider';
 const { Title, Text } = Typography;
 
 export default function BookingsPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_misc = useTranslations("misc");
     const { user: currentUser } = useAuth();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +61,7 @@ export default function BookingsPage() {
             }
             setBookings(list);
         } catch {
-            message.error('Failed to load bookings');
+            message.error(t_errors2("loadBookings"));
         } finally {
             setLoading(false);
         }
@@ -166,7 +171,7 @@ export default function BookingsPage() {
             key: 'actions',
             render: (_: unknown, record: Booking) => (
                 <div className="flex gap-1">
-                    <Tooltip title="View Details">
+                    <Tooltip title={t_common("viewDetails")}>
                         <Button
                             type="text"
                             size="small"
@@ -179,7 +184,7 @@ export default function BookingsPage() {
                     </Tooltip>
                     {record.status === 'pending' && (
                         <>
-                            <Tooltip title="Confirm">
+                            <Tooltip title={t_common("confirm")}>
                                 <Button
                                     type="text"
                                     size="small"
@@ -188,7 +193,7 @@ export default function BookingsPage() {
                                     onClick={() => handleAction(record._id, 'confirm')}
                                 />
                             </Tooltip>
-                            <Tooltip title="Cancel">
+                            <Tooltip title={t_common("cancel")}>
                                 <Button
                                     type="text"
                                     size="small"
@@ -200,7 +205,7 @@ export default function BookingsPage() {
                         </>
                     )}
                     {record.status === 'confirmed' && (
-                        <Tooltip title="Mark Complete">
+                        <Tooltip title={t_misc("markComplete")}>
                             <Button
                                 type="text"
                                 size="small"
@@ -271,7 +276,7 @@ export default function BookingsPage() {
 
             {/* Booking Detail Modal */}
             <Modal
-                title="Booking Details"
+                title={t_listing("bookingDetails")}
                 open={viewModalOpen}
                 onCancel={() => setViewModalOpen(false)}
                 width={600}
@@ -279,7 +284,7 @@ export default function BookingsPage() {
                     selectedBooking?.status === 'pending'
                         ? [
                               <Button key="cancel" danger loading={actionLoading} onClick={() => handleAction(selectedBooking._id, 'cancel')}>
-                                  Cancel Booking
+                                  {t_misc("cancelBooking")}
                               </Button>,
                               <Button
                                   key="confirm"
@@ -287,7 +292,7 @@ export default function BookingsPage() {
                                   loading={actionLoading}
                                   onClick={() => handleAction(selectedBooking._id, 'confirm')}
                               >
-                                  Confirm Booking
+                                  {t_misc("confirmBooking")}
                               </Button>,
                           ]
                         : selectedBooking?.status === 'confirmed'
@@ -299,7 +304,7 @@ export default function BookingsPage() {
                                     onClick={() => handleAction(selectedBooking._id, 'complete')}
                                     style={{ background: '#52c41a', borderColor: '#52c41a' }}
                                 >
-                                    Mark Complete
+                                    {t_misc("markComplete")}
                                 </Button>,
                             ]
                           : [<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]

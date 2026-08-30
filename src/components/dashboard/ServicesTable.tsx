@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from "next-intl";
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -48,6 +48,9 @@ export function ServicesTable({
     savedIds = [],
     approvingId,
 }: ServicesTableProps) {
+    const t_misc = useTranslations("misc");
+    const t_common = useTranslations("common");
+    const t_listing = useTranslations("listing");
     const locale = useLocale();
     const getStatusColor = (status: Service['status']) => {
         switch (status) {
@@ -159,19 +162,19 @@ export function ServicesTable({
 
                     {/* Admin: Review new submissions awaiting verification */}
                     {serviceNeedsReview(record) && onReview ? (
-                        <Tooltip title="Review before verifying or rejecting">
+                        <Tooltip title={t_listing("reviewBeforeVerifying")}>
                             <Button
                                 type="primary"
                                 size="small"
                                 icon={<FileSearchOutlined />}
                                 onClick={() => onReview(record)}
                             >
-                                Review
+                                {t_common("review")}
                             </Button>
                         </Tooltip>
                     ) : serviceNeedsReview(record) && onVerify && onReject ? (
                         <>
-                            <Tooltip title="Verify">
+                            <Tooltip title={t_common("verify")}>
                                 <Button
                                     type="primary"
                                     size="small"
@@ -183,24 +186,24 @@ export function ServicesTable({
                                         borderColor: '#52c41a',
                                     }}
                                 >
-                                    Verify
+                                    {t_common("verify")}
                                 </Button>
                             </Tooltip>
-                            <Tooltip title="Reject">
+                            <Tooltip title={t_common("reject")}>
                                 <Button
                                     danger
                                     size="small"
                                     icon={<CloseOutlined />}
                                     onClick={() => onReject(record)}
                                 >
-                                    Reject
+                                    {t_common("reject")}
                                 </Button>
                             </Tooltip>
                         </>
                     ) : (
                         <>
                             {serviceNeedsActivation(record) && onActivate && (
-                                <Tooltip title="Activate service">
+                                <Tooltip title={t_misc("activateService")}>
                                     <Button
                                         type="primary"
                                         size="small"
@@ -212,12 +215,12 @@ export function ServicesTable({
                                             borderColor: '#52c41a',
                                         }}
                                     >
-                                        Activate
+                                        {t_common("activate")}
                                     </Button>
                                 </Tooltip>
                             )}
                             {onView && (
-                                <Tooltip title="View">
+                                <Tooltip title={t_common("view")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -235,7 +238,7 @@ export function ServicesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'active' && onUnpublish && (
-                                <Tooltip title="Unpublish">
+                                <Tooltip title={t_common("unpublish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeInvisibleOutlined />}
@@ -245,7 +248,7 @@ export function ServicesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'suspended' && onRepublish && (
-                                <Tooltip title="Republish">
+                                <Tooltip title={t_common("republish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -255,7 +258,7 @@ export function ServicesTable({
                                 </Tooltip>
                             )}
                             {onDelete && (
-                                <Tooltip title="Delete">
+                                <Tooltip title={t_common("delete")}>
                                     <Button
                                         type="text"
                                         danger

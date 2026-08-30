@@ -122,6 +122,7 @@ function parseAdminDashboardStats(
 
 /* ─── main ─── */
 export default function AdminDashboard() {
+    const t_home = useTranslations("home");
     const locale = useLocale();
     const t = useTranslations("dashboardHome");
   const router = useRouter();
@@ -533,7 +534,7 @@ export default function AdminDashboard() {
               marginTop: 6,
             }}
           >
-            Here&apos;s what&apos;s happening across your platform today.
+            {t_home("todayIntro")}
           </Text>
 
           {/* Quick action pills */}
@@ -737,10 +738,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Growth Overview
+                  {t_home("growthOverview")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  Monthly registration trends
+                  {t_home("monthlyTrends")}
                 </Text>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -865,10 +866,10 @@ export default function AdminDashboard() {
                 strong
                 style={{ fontSize: "clamp(16px, 3vw, 20px)", display: "block" }}
               >
-                Property Types
+                {t_home("propertyTypes")}
               </Text>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Distribution breakdown
+                {t_home("distributionBreakdown")}
               </Text>
             </div>
 
@@ -980,10 +981,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Top Properties
+                  {t_home("topProperties")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  By engagement score
+                  {t_home("byEngagement")}
                 </Text>
               </div>
               <TrophyOutlined style={{ fontSize: 20, color: "#faad14" }} />
@@ -1084,7 +1085,7 @@ export default function AdminDashboard() {
                     type="secondary"
                     style={{ marginTop: 8, display: "inline-block" }}
                   >
-                    No properties yet
+                    {t_home("noPropertiesYet")}
                   </Text>
                 </div>
               )}
@@ -1119,10 +1120,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Recent Activity
+                  {t_home("recentActivity")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  Latest platform events
+                  {t_home("latestEvents")}
                 </Text>
               </div>
               <ThunderboltOutlined style={{ fontSize: 20, color: "#0000FF" }} />
@@ -1189,7 +1190,7 @@ export default function AdminDashboard() {
                     type="secondary"
                     style={{ marginTop: 8, display: "inline-block" }}
                   >
-                    No recent activity
+                    {t_home("noRecentActivity")}
                   </Text>
                 </div>
               )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
@@ -33,6 +34,12 @@ export function ServiceForm({
     onCancel,
     loading,
 }: ServiceFormProps) {
+    const t_hints = useTranslations("hints");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_listing = useTranslations("listing");
+    const t_placeholder = useTranslations("placeholder");
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState<UploadFile[]>([]);
 
@@ -76,12 +83,12 @@ export function ServiceForm({
     const beforeUpload = (file: File) => {
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
-            showToast.error('You can only upload image files!');
+            showToast.error(t_errors2("imageOnly"));
             return Upload.LIST_IGNORE;
         }
         const isLt10M = file.size / 1024 / 1024 < 10;
         if (!isLt10M) {
-            showToast.error('Image must be smaller than 10MB!');
+            showToast.error(t_errors2("imageMax10"));
             return Upload.LIST_IGNORE;
         }
         return false; // Prevent auto upload, we'll handle it manually
@@ -98,7 +105,7 @@ export function ServiceForm({
             {/* Basic Information Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Basic Information
+                    {t_form("basicInformation")}
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24}>
@@ -109,7 +116,7 @@ export function ServiceForm({
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., Professional Cleaning Service"
+                                placeholder={t_hints("e_g_professional_cleaning_service")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -120,12 +127,12 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="category"
-                            label="Category"
+                            label={t_common("category")}
                             rules={[{ required: true, message: 'Please select category' }]}
                         >
                             <Select
                                 size="large"
-                                placeholder="Select category"
+                                placeholder={t_placeholder("selectCategory")}
                                 style={{ borderRadius: '8px' }}
                             >
                                 {SERVICE_CATEGORY_OPTIONS.map((cat) => (
@@ -139,12 +146,12 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="location"
-                            label="Location"
+                            label={t_common("location")}
                             rules={[{ required: true, message: 'Please enter location' }]}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., Paynesville City, Montserrado"
+                                placeholder={t_hints("e_g_paynesville_city_montserrado")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -157,17 +164,17 @@ export function ServiceForm({
             {/* Business Details Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Business Details
+                    {t_listing("businessDetails")}
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="businessName"
-                            label="Business Name"
+                            label={t_form("businessName")}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., ABC Services Ltd"
+                                placeholder={t_hints("e_g_abc_services_ltd")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -175,7 +182,7 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="experience"
-                            label="Years of Experience"
+                            label={t_form("yearsOfExperience")}
                         >
                             <InputNumber
                                 size="large"
@@ -190,11 +197,11 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="phoneNumber"
-                            label="Phone Number"
+                            label={t_form("phoneNumber")}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., +231886149219"
+                                placeholder={t_hints("e_g_231886149219")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -202,11 +209,11 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="whatsappNumber"
-                            label="WhatsApp Number"
+                            label={t_form("whatsappNumber")}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., +231886149219"
+                                placeholder={t_hints("e_g_231886149219")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -216,11 +223,11 @@ export function ServiceForm({
                     <Col xs={24}>
                         <Form.Item
                             name="verificationNumber"
-                            label="License/Verification Number"
+                            label={t_form("licenseNumber")}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., LIC-12345"
+                                placeholder={t_hints("e_g_lic_12345")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -233,18 +240,18 @@ export function ServiceForm({
             {/* Pricing Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Pricing & Duration
+                    {t_form("pricingDuration")}
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="price"
-                            label="Price (USD) - Optional"
+                            label={t_form("priceUsdOptional")}
                         >
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
-                                placeholder="Enter price (optional)"
+                                placeholder={t_placeholder("enterPriceOptional")}
                                 min={0}
                                 formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                                 parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
@@ -254,12 +261,12 @@ export function ServiceForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="priceUnit"
-                            label="Price Unit"
+                            label={t_form("priceUnit")}
                             initialValue="hour"
                         >
                             <Select
                                 size="large"
-                                placeholder="Select unit"
+                                placeholder={t_placeholder("selectUnit")}
                                 style={{ borderRadius: '8px' }}
                             >
                                 <Select.Option value="hour">Per Hour</Select.Option>
@@ -275,11 +282,11 @@ export function ServiceForm({
                     <Col xs={24}>
                         <Form.Item
                             name="duration"
-                            label="Typical Duration"
+                            label={t_form("typicalDuration")}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., 2-3 hours"
+                                placeholder={t_hints("e_g_2_3_hours")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -292,11 +299,11 @@ export function ServiceForm({
             {/* Description Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#4facfe', display: 'block', marginBottom: '16px' }}>
-                    Description
+                    {t_common("description")}
                 </Text>
                 <Form.Item
                     name="description"
-                    label="Service Description"
+                    label={t_form("serviceDescription")}
                     rules={[{ required: true, message: 'Please enter description' }]}
                 >
                     <TextArea
@@ -354,7 +361,7 @@ export function ServiceForm({
                     onClick={onCancel}
                     style={{ borderRadius: '8px', minWidth: '100px' }}
                 >
-                    Cancel
+                    {t_common("cancel")}
                 </Button>
                 <Button
                     type="primary"

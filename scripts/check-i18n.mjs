@@ -63,7 +63,7 @@ const walk = (dir) =>
 const DECL =
   /(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations)\(\s*(?:\{[^}]*namespace:\s*)?["']([^"']+)["']/g;
 // tX("key") — skips template literals containing ${…}, which are dynamic
-const CALL = /\b(t[A-Za-z]*)\(\s*["'`]([^"'`$]+)["'`]/g;
+const CALL = /\b(t[A-Za-z_0-9]*)\(\s*["'`]([^"'`$]+)["'`]/g;
 
 for (const file of walk(SRC)) {
   const text = readFileSync(file, "utf8");

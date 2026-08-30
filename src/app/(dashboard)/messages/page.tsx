@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from "next-intl";
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { StreamChat } from 'stream-chat';
@@ -136,6 +136,8 @@ const CustomChannelPreview = (props: ChannelPreviewUIComponentProps) => {
 };
 
 export default function MessagesPage() {
+    const t_common = useTranslations("common");
+    const t_misc = useTranslations("misc");
     const { user } = useAuth();
     const [client, setClient] = useState<StreamChat | null>(null);
     const [loading, setLoading] = useState(true);
@@ -210,7 +212,7 @@ export default function MessagesPage() {
         return (
             <div className="space-y-6">
                 <Title level={2} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
-                    Messages
+                    {t_common("messages")}
                 </Title>
                 <Card className="shadow-sm">
                     <div className="flex justify-center items-center min-h-[500px]">
@@ -228,7 +230,7 @@ export default function MessagesPage() {
         return (
             <div className="space-y-6">
                 <Title level={2} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
-                    Messages
+                    {t_common("messages")}
                 </Title>
                 <Card className="shadow-sm">
                     <Empty
@@ -244,7 +246,7 @@ export default function MessagesPage() {
         return (
             <div className="space-y-6">
                 <Title level={2} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
-                    Messages
+                    {t_common("messages")}
                 </Title>
                 <Card className="shadow-sm">
                     <Empty
@@ -268,7 +270,7 @@ export default function MessagesPage() {
     return (
         <div className="space-y-6">
             <Title level={2} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
-                Messages
+                {t_common("messages")}
             </Title>
 
             <Card
@@ -314,13 +316,13 @@ export default function MessagesPage() {
                                             className="text-center"
                                             style={{ fontSize: '16px', color: '#8c8c8c' }}
                                         >
-                                            No messages yet
+                                            {t_misc("noMessages")}
                                         </Text>
                                         <Text
                                             className="text-center mt-1"
                                             style={{ fontSize: '14px', color: '#bfbfbf' }}
                                         >
-                                            Your conversations will appear here
+                                            {t_misc("conversationsHere")}
                                         </Text>
                                     </div>
                                 )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -17,6 +18,10 @@ import { useAuth } from '@/providers/AuthProvider';
 const { Title, Text } = Typography;
 
 export default function CreateBuySellPage() {
+    const t_nav2 = useTranslations("nav2");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router   = useRouter();
     const [submitting, setSubmitting] = useState(false);
@@ -38,7 +43,7 @@ export default function CreateBuySellPage() {
                         const url = await mediaApi.upload(file, 'buy_sell');
                         imageUrls.push(url);
                     } catch {
-                        showToast.error('Failed to upload one or more images');
+                        showToast.error(t_errors2("uploadOneOrMore"));
                     }
                 }
             }
@@ -72,7 +77,7 @@ export default function CreateBuySellPage() {
                 deliveryAvailable: values.deliveryAvailable,
             } as any);
 
-            showToast.success('Listing posted and published successfully');
+            showToast.success(t_toasts("listingPosted"));
             router.push('/buy-sell');
         } catch (error: any) {
             console.error('Failed to create Buy & Sell listing:', error);
@@ -86,11 +91,11 @@ export default function CreateBuySellPage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="Only admins can post Buy & Sell listings."
                 extra={
                     <Button type="primary" onClick={() => router.push('/buy-sell')}>
-                        Go to Buy &amp; Sell
+                        {t_nav2("goToBuySell")}
                     </Button>
                 }
             />
@@ -105,7 +110,7 @@ export default function CreateBuySellPage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Buy &amp; Sell
+                    {t_nav2("backToBuySell")}
                 </Button>
                 <Title level={2}>Post Buy &amp; Sell Listing</Title>
                 <Text type="secondary">Create a listing on behalf of the platform</Text>

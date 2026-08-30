@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from 'react';
 import Card from 'antd/es/card';
 import Table from 'antd/es/table';
@@ -24,6 +25,9 @@ const { Title, Text } = Typography;
 const PAGE_SIZE = 20;
 
 export default function NotifyMePage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_misc = useTranslations("misc");
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [entries, setEntries] = useState<NotifyMeEntry[]>([]);
@@ -58,7 +62,7 @@ export default function NotifyMePage() {
                     total: pag?.total ?? result.data.length,
                 });
             } catch {
-                message.error('Failed to load notify-me registrations');
+                message.error(t_errors2("loadNotifyMe"));
             } finally {
                 setLoading(false);
             }
@@ -118,11 +122,11 @@ export default function NotifyMePage() {
             render: (isUser: boolean) =>
                 isUser ? (
                     <Tag color="blue" icon={<UserOutlined />}>
-                        Registered
+                        {t_common("registered")}
                     </Tag>
                 ) : (
                     <Tag color="default" icon={<TeamOutlined />}>
-                        Guest
+                        {t_common("guest")}
                     </Tag>
                 ),
         },
@@ -158,10 +162,10 @@ export default function NotifyMePage() {
                         WebkitTextFillColor: 'transparent',
                     }}
                 >
-                    Notify Me
+                    {t_misc("notifyMe")}
                 </Title>
                 <Text type="secondary">
-                    Users and guests who want to be notified about the upcoming buy &amp; sell feature
+                    {t_misc("notifyMeIntro")}
                 </Text>
             </div>
 

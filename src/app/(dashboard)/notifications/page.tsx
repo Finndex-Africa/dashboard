@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Card from 'antd/es/card';
 import Row from 'antd/es/row';
@@ -28,6 +28,10 @@ import type { Notification } from '@/types/dashboard';
 const { Title, Text } = Typography;
 
 export default function NotificationsPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_misc = useTranslations("misc");
+    const t_toasts = useTranslations("toasts");
     const locale = useLocale();
     const [loading, setLoading] = useState(true);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -64,20 +68,20 @@ export default function NotificationsPage() {
 
         try {
             await notificationsApi.markAsRead(notification._id);
-            message.success('Notification marked as read');
+            message.success(t_toasts("notificationRead"));
             fetchNotifications();
         } catch (error: any) {
-            message.error('Failed to mark notification as read');
+            message.error(t_errors2("markNotificationRead"));
         }
     };
 
     const handleMarkAllAsRead = async () => {
         try {
             await notificationsApi.markAllAsRead();
-            message.success('All notifications marked as read');
+            message.success(t_toasts("allNotificationsRead"));
             fetchNotifications();
         } catch (error: any) {
-            message.error('Failed to mark all notifications as read');
+            message.error(t_errors2("markAllRead"));
         }
     };
 
@@ -90,10 +94,10 @@ export default function NotificationsPage() {
             onOk: async () => {
                 try {
                     await notificationsApi.delete(notification._id);
-                    message.success('Notification deleted successfully');
+                    message.success(t_toasts("notificationDeleted"));
                     fetchNotifications();
                 } catch (error: any) {
-                    message.error('Failed to delete notification');
+                    message.error(t_errors2("deleteNotification"));
                 }
             },
         });
@@ -202,7 +206,7 @@ export default function NotificationsPage() {
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent'
                     }}>
-                        Notifications
+                        {t_common("notifications")}
                     </Title>
                     <Text type="secondary">View and manage your notifications</Text>
                 </div>
@@ -220,7 +224,7 @@ export default function NotificationsPage() {
                             padding: '0 24px',
                         }}
                     >
-                        Mark All as Read
+                        {t_misc("markAllAsRead")}
                     </Button>
                 )}
             </div>
@@ -282,7 +286,7 @@ export default function NotificationsPage() {
                             value={typeFilter}
                             onChange={setTypeFilter}
                             style={{ width: '100%', borderRadius: '8px' }}
-                            placeholder="Type"
+                            placeholder={t_common("type")}
                         >
                             <Select.Option value="all">All Types</Select.Option>
                             <Select.Option value="info">Info</Select.Option>
@@ -297,7 +301,7 @@ export default function NotificationsPage() {
                             value={statusFilter}
                             onChange={setStatusFilter}
                             style={{ width: '100%', borderRadius: '8px' }}
-                            placeholder="Status"
+                            placeholder={t_common("status")}
                         >
                             <Select.Option value="all">All Status</Select.Option>
                             <Select.Option value="unread">Unread</Select.Option>
@@ -347,7 +351,7 @@ export default function NotificationsPage() {
                                             handleMarkAsRead(notification);
                                         }}
                                     >
-                                        Mark Read
+                                        {t_misc("markRead")}
                                     </Button>
                                 ),
                                 <Button
@@ -359,7 +363,7 @@ export default function NotificationsPage() {
                                         handleDelete(notification);
                                     }}
                                 >
-                                    Delete
+                                    {t_common("delete")}
                                 </Button>,
                             ].filter(Boolean)}
                         >
@@ -419,7 +423,7 @@ export default function NotificationsPage() {
                 onCancel={() => setViewModalOpen(false)}
                 footer={[
                     <Button key="close" size="large" onClick={() => setViewModalOpen(false)} style={{ borderRadius: '8px' }}>
-                        Close
+                        {t_common("close")}
                     </Button>,
                 ]}
                 width={600}

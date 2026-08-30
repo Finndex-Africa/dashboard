@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -27,6 +28,12 @@ import type { Property } from '@/types/dashboard';
 const { Title, Text } = Typography;
 
 export default function EditPropertyPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_nav2 = useTranslations("nav2");
+    const t_placeholder = useTranslations("placeholder");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams();
@@ -58,7 +65,7 @@ export default function EditPropertyPage() {
                     propertyPosterId(fetchedProperty.landlordId) === user?.id;
 
                 if (!isOwner) {
-                    showToast.error('You can only edit your own properties');
+                    showToast.error(t_errors2("editOwnProperties"));
                     router.push('/properties');
                     return;
                 }
@@ -67,7 +74,7 @@ export default function EditPropertyPage() {
             setProperty(fetchedProperty);
         } catch (error: any) {
             console.error('Failed to fetch property:', error);
-            showToast.error('Failed to load property');
+            showToast.error(t_errors2("loadProperty"));
             router.push('/properties');
         } finally {
             setLoading(false);
@@ -108,7 +115,7 @@ export default function EditPropertyPage() {
                         console.log('✅ Uploaded:', imageUrl);
                     } catch (error) {
                         console.error('❌ Failed to upload image:', error);
-                        showToast.error('Failed to upload some images');
+                        showToast.error(t_errors2("uploadSomeImages"));
                     }
                 }
             }
@@ -126,9 +133,9 @@ export default function EditPropertyPage() {
             }
 
             if (property.status === 'rejected') {
-                showToast.success('Property updated and resubmitted for approval');
+                showToast.success(t_toasts("propertyResubmitted"));
             } else {
-                showToast.success('Property updated successfully');
+                showToast.success(t_toasts("propertyUpdated"));
             }
 
             // Redirect back to properties
@@ -146,11 +153,11 @@ export default function EditPropertyPage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to edit properties."
                 extra={
                     <Button type="primary" onClick={() => router.push('/properties')}>
-                        Go to Properties
+                        {t_nav2("goToProperties")}
                     </Button>
                 }
             />
@@ -169,11 +176,11 @@ export default function EditPropertyPage() {
         return (
             <Result
                 status="404"
-                title="Property Not Found"
+                title={t_listing("propertyNotFound")}
                 subTitle="The property you're looking for doesn't exist."
                 extra={
                     <Button type="primary" onClick={handleCancel}>
-                        Go to Properties
+                        {t_nav2("goToProperties")}
                     </Button>
                 }
             />
@@ -188,14 +195,14 @@ export default function EditPropertyPage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Properties
+                    {t_nav2("backToProperties")}
                 </Button>
                 <Title level={2}>Edit Property</Title>
                 <Text type="secondary">Update property details</Text>
                 {property.status === 'rejected' && (
                     <div style={{ marginTop: 8 }}>
                         <Text type="danger">
-                            This property was rejected. Updating it will resubmit for approval.
+                            {t_placeholder("rejectedProperty")}
                         </Text>
                     </div>
                 )}
