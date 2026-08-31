@@ -93,5 +93,31 @@
     "goodAfternoon": "Bon après-midi",
     "goodEvening": "Bonsoir",
     "justNow": "À l'instant"
+  },
+  "exchangeRates": {
+    "title": "Taux de change",
+    "help": "Contrôle le taux USD vers RWF utilisé sur la plateforme. Les prix des annonces restent dans la devise choisie par le vendeur ; ce taux ne sert qu'à la conversion approximative affichée à côté.",
+    "effectiveRate": "Taux actuellement utilisé",
+    "source": "Source",
+    "updated": "Dernière mise à jour",
+    "changedBy": "Modifié par",
+    "sourceLive": "En direct (Wise)",
+    "sourceOverride": "Remplacement manuel",
+    "sourceFallback": "Taux de secours",
+    "sourceNone": "Non défini",
+    "fallbackLabel": "Taux de secours",
+    "fallbackHelp": "Utilisé lorsque le fournisseur en direct est indisponible. C'est ce que voient les utilisateurs pendant une panne : gardez-le à jour.",
+    "overrideLabel": "Remplacer le taux en direct",
+    "overrideHelp": "Fixe le taux et ignore complètement le fournisseur en direct.",
+    "overrideRateLabel": "Taux de remplacement",
+    "overrideRateRequired": "Saisissez un taux ou désactivez le remplacement.",
+    "save": "Enregistrer",
+    "saved": "Paramètres de taux enregistrés",
+    "saveFailed": "Impossible d'enregistrer les paramètres",
+    "loadFailed": "Impossible de charger les paramètres de taux",
+    "wiseNotConfigured": "Les taux en direct ne sont pas configurés",
+    "wiseNotConfiguredHelp": "WISE_API_TOKEN n'est pas défini sur le serveur : le taux de secours ci-dessous est utilisé. Le définir nécessite un déploiement — les identifiants d'API ne sont volontairement pas modifiables ici.",
+    "noRate": "Aucun taux RWF disponible",
+    "noRateHelp": "Les prix en RWF ne peuvent pas être affichés tant qu'un taux de secours n'est pas défini ci-dessous ou que les taux en direct ne sont pas configurés. Rien n'est deviné entre-temps."
   }
 }
