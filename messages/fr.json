@@ -7,6 +7,12 @@
     "label": "Langue",
     "changeLanguage": "Changer de langue"
   },
+  "currencySwitcher": {
+    "label": "Devise",
+    "changeCurrency": "Changer de devise",
+    "listedAt": "Publié à {price}",
+    "approx": "env."
+  },
   "nav": {
     "dashboard": "Tableau de bord",
     "properties": "Biens",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
+import { CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY, type Currency } from '@/lib/currency/config';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
 import Select from 'antd/es/select';
@@ -103,6 +104,11 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
     const isCreate = !listing;
 
     const [form]                                    = Form.useForm();
+
+    /* Price/fee labels, prefix and precision all follow the chosen currency. */
+    const selectedCurrency: Currency =
+        (Form.useWatch('currency', form) as Currency) ?? DEFAULT_CURRENCY;
+    const currencyMeta = CURRENCY_META[selectedCurrency] ?? CURRENCY_META[DEFAULT_CURRENCY];
     const [fileList, setFileList]                   = useState<UploadFile[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
     const [activeCategory, setActiveCategory]       = useState<BuySellCategory | null>(
@@ -285,30 +291,44 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                         <Input size="large" placeholder="e.g. Kibagabaga, Kigali" style={{ borderRadius: 8 }} />
                     </Form.Item>
                 </Col>
-                <Col xs={24} sm={10}>
+                <Col xs={24} sm={7}>
                     <Form.Item
                         name="price"
-                        label="Price ($)"
+                        label={`Price (${currencyMeta.label})`}
                         rules={[{ required: true, message: 'Price is required' }]}
                     >
                         <InputNumber
                             size="large"
                             min={0}
                             style={{ width: '100%', borderRadius: 8 }}
-                            formatter={(v) => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                            precision={currencyMeta.decimals}
+                            formatter={(v) => `${currencyMeta.symbol} ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            parser={(v) => String(v ?? '').replace(/[^0-9.]/g, '') as any}
                             placeholder="0"
                         />
                     </Form.Item>
                 </Col>
-                <Col xs={24} sm={10}>
-                    <Form.Item name="agentFee" label="Agent Fee ($)">
+                <Col xs={24} sm={6}>
+                    <Form.Item name="currency" label="Currency" initialValue={DEFAULT_CURRENCY}>
+                        <Select size="large" style={{ borderRadius: 8 }}>
+                            {CURRENCIES.map((c) => (
+                                <Select.Option key={c} value={c}>
+                                    {CURRENCY_META[c].label}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={7}>
+                    {/* Denominated in the same currency as the price above. */}
+                    <Form.Item name="agentFee" label={`Agent Fee (${currencyMeta.label})`}>
                         <InputNumber
                             size="large"
                             min={0}
                             style={{ width: '100%', borderRadius: 8 }}
-                            formatter={(v) => (v ? `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
-                            parser={(v) => v?.replace(/\$\s?|(,*)/g, '') as any}
+                            precision={currencyMeta.decimals}
+                            formatter={(v) => (v ? `${currencyMeta.symbol} ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+                            parser={(v) => String(v ?? '').replace(/[^0-9.]/g, '') as any}
                             placeholder="Optional"
                         />
                     </Form.Item>

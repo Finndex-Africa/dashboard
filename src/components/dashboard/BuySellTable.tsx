@@ -18,13 +18,13 @@ import {
     StarFilled,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import type { BuySellListing } from '@/types/buy-sell';
 import {
     getBuySellSellerEmail,
     getBuySellCategoryLabel,
     getStatusColor,
     getStatusLabel,
-    formatBuySellPrice,
 } from '@/lib/buy-sell-utils';
 import { getSubcategoryLabel } from '@/lib/buy-sell-categories';
 
@@ -63,6 +63,7 @@ export function BuySellTable({
     onToggleFeatured,
 }: BuySellTableProps) {
     const locale = useLocale();
+    const money = useMoney();
     const columns: ColumnsType<BuySellListing> = [
         {
             title: 'Listing',
@@ -138,14 +139,17 @@ export function BuySellTable({
             dataIndex: 'price',
             key: 'price',
             sorter: (a, b) => a.price - b.price,
-            render: (price: number) => formatBuySellPrice(price),
+            render: (price: number, record) =>
+                money.forListing(price, record.currency).display,
         },
         {
             title: 'Agent Fee',
             key: 'agentFee',
             render: (_, record) =>
                 record.agentFee != null ? (
-                    <span className="text-gray-700 text-sm">{formatBuySellPrice(record.agentFee)}</span>
+                    <span className="text-gray-700 text-sm">
+                        {money.forListing(record.agentFee, record.currency).display}
+                    </span>
                 ) : (
                     <span className="text-gray-400 text-xs">—</span>
                 ),

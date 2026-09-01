@@ -206,7 +206,7 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Budget (Optional)"
+                label="Budget (USD, optional)"
                 name="budget"
             >
                 <InputNumber

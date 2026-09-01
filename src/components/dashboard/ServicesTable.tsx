@@ -9,6 +9,7 @@ import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
 import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import type { ColumnsType } from 'antd/es/table';
 import { getServiceCategoryLabel, getServiceProviderLabel, serviceNeedsReview, serviceNeedsActivation } from '@/lib/services-utils';
 
@@ -48,6 +49,7 @@ export function ServicesTable({
     savedIds = [],
     approvingId,
 }: ServicesTableProps) {
+    const money = useMoney();
     const locale = useLocale();
     const getStatusColor = (status: Service['status']) => {
         switch (status) {
@@ -95,8 +97,11 @@ export function ServicesTable({
             title: 'Price',
             dataIndex: 'price',
             key: 'price',
-            sorter: (a, b) => (a.price ?? 0) - (b.price ?? 0),
-            render: (price) => price ? `$${price.toLocaleString()}` : '-',
+            // Sort on normalized USD so RWF rows don't all sort to the top.
+            sorter: (a, b) =>
+                (a.priceUsd ?? a.price ?? 0) - (b.priceUsd ?? b.price ?? 0),
+            render: (price, record) =>
+                price ? money.forListing(price, record.currency).display : '-',
         },
         {
             title: 'Rating',

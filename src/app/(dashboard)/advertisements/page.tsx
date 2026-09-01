@@ -29,12 +29,14 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { advertisementsApi, type Advertisement } from '@/services/api/advertisements.api';
 import AdvertisementForm from '@/components/dashboard/AdvertisementForm';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
 export default function AdvertisementsPage() {
+    const money = useMoney();
     const { user } = useAuth();
     const router = useRouter();
     const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
@@ -191,7 +193,12 @@ export default function AdvertisementsPage() {
             title: 'Budget',
             dataIndex: 'budget',
             key: 'budget',
-            render: (budget) => budget ? `$${budget.toLocaleString()}` : '-',
+            /*
+              Ad budgets have no currency field on the backend — they are stored
+              as plain USD. Converting the stored USD figure for display is
+              correct; the entry field below stays USD and says so.
+            */
+            render: (budget) => budget ? money.fromUsd(budget) : '-',
         },
         {
             title: 'Actions',
@@ -300,8 +307,8 @@ export default function AdvertisementsPage() {
                         <Statistic
                             title="Total Budget"
                             value={totalBudget}
-                            prefix="$"
-                            precision={2}
+                            /* Budgets are stored as plain USD (no currency field). */
+                            valueRender={() => money.fromUsd(totalBudget)}
                             valueStyle={{ color: '#cf1322' }}
                         />
                     </Card>

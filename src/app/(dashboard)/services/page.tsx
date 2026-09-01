@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { ServicesTable } from '@/components/dashboard/ServicesTable';
 import type { Service } from '@/types/dashboard';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { servicesApi } from '@/services/api/services.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -50,6 +51,7 @@ const { Search } = Input;
 const { TextArea } = Input;
 
 function ServicesPageContent() {
+    const money = useMoney();
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -523,7 +525,21 @@ function ServicesPageContent() {
                             <Descriptions.Item label="Category">{getServiceCategoryLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Provider">{getServiceProviderLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Location">{serviceForReview.location || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Price">{serviceForReview.price != null ? `$${serviceForReview.price.toLocaleString()}` : '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Price">
+                                {serviceForReview.price == null ? '—' : (() => {
+                                    const p = money.forListing(serviceForReview.price, serviceForReview.currency);
+                                    return (
+                                        <>
+                                            <strong>{p.display}</strong>
+                                            {p.isConverted && (
+                                                <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                    Listed at {p.original}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Descriptions.Item>
                             <Descriptions.Item label="Business">{getServiceBusinessLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Description">
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>

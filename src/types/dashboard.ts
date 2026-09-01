@@ -1,3 +1,5 @@
+import type { Currency } from '@/lib/currency/config';
+
 export enum ServiceCategory {
     ELECTRICAL = 'electrical',
     PLUMBING = 'plumbing',
@@ -21,6 +23,10 @@ export interface Service {
     category: string;
     location: string;
     price: number;
+    /** Currency the owner priced in; absent on pre-multi-currency rows (all USD). */
+    currency?: Currency;
+    /** Backend-normalized USD price. Use this, never raw `price`, for any total. */
+    priceUsd?: number;
     priceUnit?: string;
     duration?: string;
     status: 'pending' | 'active' | 'rejected' | 'inactive' | 'suspended';
@@ -70,7 +76,11 @@ export interface Property {
     propertyType: string;
     location: string;
     price: number;
-    /** Agent-set listing fee (USD) — agents and real estate agencies only */
+    /** Currency the owner priced in; absent on pre-multi-currency rows (all USD). */
+    currency?: Currency;
+    /** Backend-normalized USD price. Use this, never raw `price`, for any total. */
+    priceUsd?: number;
+    /** Agent-set fee, denominated in this listing's `currency` — agents and real estate agencies only */
     agentFee?: number | null;
     status: 'pending' | 'approved' | 'rejected' | 'rented' | 'archived' | 'suspended';
     bedrooms?: number;

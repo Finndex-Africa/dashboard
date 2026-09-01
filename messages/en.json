@@ -7,6 +7,12 @@
     "label": "Language",
     "changeLanguage": "Change language"
   },
+  "currencySwitcher": {
+    "label": "Currency",
+    "changeCurrency": "Change currency",
+    "listedAt": "Listed at {price}",
+    "approx": "approx."
+  },
   "nav": {
     "dashboard": "Dashboard",
     "properties": "Properties",

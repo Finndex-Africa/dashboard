@@ -49,6 +49,7 @@ export default function CreateBuySellPage() {
                 description:       values.description,
                 category:          values.category,
                 price:             values.price,
+                currency:          values.currency,
                 location:          values.location,
                 images:            imageUrls.length > 0 ? imageUrls : undefined,
                 agentFee:          values.agentFee,
