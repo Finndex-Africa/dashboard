@@ -7,6 +7,12 @@
     "label": "Language",
     "changeLanguage": "Change language"
   },
+  "currencySwitcher": {
+    "label": "Currency",
+    "changeCurrency": "Change currency",
+    "listedAt": "Listed at {price}",
+    "approx": "approx."
+  },
   "nav": {
     "dashboard": "Dashboard",
     "properties": "Properties",
@@ -134,6 +140,32 @@
     "goodAfternoon": "Good afternoon",
     "goodEvening": "Good evening",
     "justNow": "Just now"
+  },
+  "exchangeRates": {
+    "title": "Exchange rates",
+    "help": "Controls the USD to RWF rate used across the platform. Listing prices stay in the currency their seller chose; this rate only drives the approximate conversion shown alongside them.",
+    "effectiveRate": "Rate in use now",
+    "source": "Source",
+    "updated": "Last updated",
+    "changedBy": "Last changed by",
+    "sourceLive": "Live (Wise)",
+    "sourceOverride": "Manual override",
+    "sourceFallback": "Fallback",
+    "sourceNone": "Not set",
+    "fallbackLabel": "Fallback rate",
+    "fallbackHelp": "Used whenever the live provider is unavailable. This is what users see during an outage, so keep it current.",
+    "overrideLabel": "Override the live rate",
+    "overrideHelp": "Pins the rate and ignores the live provider entirely.",
+    "overrideRateLabel": "Override rate",
+    "overrideRateRequired": "Enter a rate, or turn the override off.",
+    "save": "Save",
+    "saved": "Exchange rate settings saved",
+    "saveFailed": "Could not save settings",
+    "loadFailed": "Could not load exchange rate settings",
+    "wiseNotConfigured": "Live rates are not configured",
+    "wiseNotConfiguredHelp": "WISE_API_TOKEN is not set on the server, so the fallback rate below is being used. Setting it requires a deploy — API credentials are deliberately not editable here.",
+    "noRate": "No RWF rate available",
+    "noRateHelp": "RWF prices cannot be shown until a fallback rate is set below, or live rates are configured. Nothing is guessed in the meantime."
   },
   "nav2": {
     "goToDashboard": "Go to Dashboard",

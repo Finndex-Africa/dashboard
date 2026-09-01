@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import { ServicesTable } from '@/components/dashboard/ServicesTable';
 import type { Service } from '@/types/dashboard';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { servicesApi } from '@/services/api/services.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -51,6 +52,7 @@ const { Search } = Input;
 const { TextArea } = Input;
 
 function ServicesPageContent() {
+    const money = useMoney();
     const t_common = useTranslations("common");
     const t_errors2 = useTranslations("errors2");
     const t_listing = useTranslations("listing");
@@ -528,7 +530,21 @@ function ServicesPageContent() {
                             <Descriptions.Item label={t_common("category")}>{getServiceCategoryLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label={t_common("provider")}>{getServiceProviderLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label={t_common("location")}>{serviceForReview.location || '—'}</Descriptions.Item>
-                            <Descriptions.Item label={t_common("price")}>{serviceForReview.price != null ? `$${serviceForReview.price.toLocaleString()}` : '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("price")}>
+                                {serviceForReview.price == null ? '—' : (() => {
+                                    const p = money.forListing(serviceForReview.price, serviceForReview.currency);
+                                    return (
+                                        <>
+                                            <strong>{p.display}</strong>
+                                            {p.isConverted && (
+                                                <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                    Listed at {p.original}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Descriptions.Item>
                             <Descriptions.Item label={t_common("business")}>{getServiceBusinessLabel(serviceForReview) || '—'}</Descriptions.Item>
                             <Descriptions.Item label={t_common("description")}>
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>

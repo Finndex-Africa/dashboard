@@ -6,6 +6,7 @@ import Spin from 'antd/es/spin';
 import Typography from 'antd/es/typography';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/global/LanguageSwitcher';
+import ExchangeRateSettings from '@/components/settings/ExchangeRateSettings';
 
 const { Title, Text } = Typography;
 
@@ -22,12 +23,16 @@ export default function SettingsPage() {
                     <Spin size="large" />
                 </div>
             ) : (
-                <Card title={t('language')}>
-                    <div className="space-y-3 max-w-sm">
-                        <Text type="secondary">{t('languageHelp')}</Text>
-                        <LanguageSwitcher block />
-                    </div>
-                </Card>
+                <div className="space-y-6">
+                    <Card title={t('language')}>
+                        <div className="space-y-3 max-w-sm">
+                            <Text type="secondary">{t('languageHelp')}</Text>
+                            <LanguageSwitcher block />
+                        </div>
+                    </Card>
+
+                    <ExchangeRateSettings />
+                </div>
             )}
         </div>
     );

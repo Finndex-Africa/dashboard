@@ -23,12 +23,14 @@ import {
   FlagOutlined,
   NotificationOutlined,
   ShoppingOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/providers/AuthProvider";
 import LanguageSwitcher from "@/components/global/LanguageSwitcher";
+import CurrencySwitcher from "@/components/global/CurrencySwitcher";
 import { getRoleRedirectPath } from "@/lib/role-redirects";
 
 const { Content, Sider } = Layout;
@@ -169,6 +171,15 @@ export default function DashboardLayout({
         "admin_services",
       ],
     },
+    {
+      // Holds the USD/RWF exchange-rate controls. Scoped to full admins because
+      // GET/PATCH /currency/settings is guarded by @Roles(UserRole.ADMIN) —
+      // showing it to the scoped admin roles would render a page that 403s.
+      key: "/settings",
+      icon: <SettingOutlined />,
+      label: t("settings"),
+      roles: ["admin"],
+    },
   ];
 
   // Filter menu items based on user role
@@ -283,9 +294,10 @@ export default function DashboardLayout({
             }}
           />
 
-          {/* Sidebar Footer - Language + Logout */}
+          {/* Sidebar Footer - Language + Currency + Logout */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 space-y-3">
             <LanguageSwitcher block />
+            <CurrencySwitcher block />
             <Button
               block
               size="large"
@@ -404,6 +416,7 @@ export default function DashboardLayout({
             {/* Drawer Footer */}
             <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 space-y-3">
               <LanguageSwitcher block />
+              <CurrencySwitcher block />
               <Button
                 block
                 size="large"

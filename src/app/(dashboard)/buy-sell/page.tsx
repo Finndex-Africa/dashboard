@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { BuySellTable } from '@/components/dashboard/BuySellTable';
 import type { BuySellListing, BuySellSeller } from '@/types/buy-sell';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { buySellApi } from '@/services/api/buy-sell.api';
 import type { BuySellPagination } from '@/services/api/buy-sell.api';
 import { showToast } from '@/lib/toast';
@@ -39,7 +40,6 @@ import {
     getBuySellCategoryLabel,
     getStatusColor,
     getStatusLabel,
-    formatBuySellPrice,
 } from '@/lib/buy-sell-utils';
 import {
     getSubcategoryLabel,
@@ -68,6 +68,7 @@ function BuySellPageContent() {
     const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
+    const money = useMoney();
     useSearchParams(); // Forces CSR boundary — prevents FOUC
 
     // ── State ──────────────────────────────────────────────────────────────────
@@ -497,7 +498,19 @@ function BuySellPageContent() {
                             <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small" style={{ marginBottom: 16 }}>
                                 <Descriptions.Item label={t_common("title")} span={2}>{reviewListing.title}</Descriptions.Item>
                                 <Descriptions.Item label={t_common("price")}>
-                                    <strong>{formatBuySellPrice(reviewListing.price)}</strong>
+                                    {(() => {
+                                        const p = money.forListing(reviewListing.price, reviewListing.currency);
+                                        return (
+                                            <>
+                                                <strong>{p.display}</strong>
+                                                {p.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {p.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t_common("location")}>{reviewListing.location}</Descriptions.Item>
                                 <Descriptions.Item label={t_common("category")}>
@@ -510,7 +523,19 @@ function BuySellPageContent() {
                                 </Descriptions.Item>
                                 {reviewListing.agentFee != null && (
                                     <Descriptions.Item label={t_form("agentFee")}>
-                                        {formatBuySellPrice(reviewListing.agentFee)}
+                                        {(() => {
+                                        const p = money.forListing(reviewListing.agentFee, reviewListing.currency);
+                                        return (
+                                            <>
+                                                <strong>{p.display}</strong>
+                                                {p.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {p.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                     </Descriptions.Item>
                                 )}
 

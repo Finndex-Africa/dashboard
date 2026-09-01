@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useMoney } from "@/lib/currency/CurrencyProvider";
 import { useState, useEffect } from "react";
 import Card from "antd/es/card";
 import Row from "antd/es/row";
@@ -124,6 +125,7 @@ function parseAdminDashboardStats(
 export default function AdminDashboard() {
     const t_home = useTranslations("home");
     const locale = useLocale();
+    const money = useMoney();
     const t = useTranslations("dashboardHome");
   const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -231,7 +233,16 @@ export default function AdminDashboard() {
   const activeServices = adminStats?.services?.active ?? svcTotal;
   const usrTotal =
     adminStats?.users?.total ?? extractTotal(rawResponses?.uRes, users.length);
-  const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
+  /*
+    Summed from `priceUsd`, not `price`. Adding a 900 USD listing to a
+    1,300,000 RWF one as bare numbers produces a total that means nothing.
+    Rows written before multi-currency have no `priceUsd` but were all USD,
+    so falling back to `price` is safe for those.
+  */
+  const portfolioValueUsd = properties.reduce(
+    (sum, p) => sum + (p.priceUsd ?? p.price ?? 0),
+    0,
+  );
 
   const pendingUserReports = adminStats?.userReports?.pending ?? 0;
   const realEstateAgencyCount = adminStats?.users?.realEstateAgency ?? 0;
@@ -281,8 +292,9 @@ export default function AdminDashboard() {
     },
     {
       title: "Portfolio Value",
-      value: portfolioValue,
-      prefix: "$",
+      value: portfolioValueUsd,
+      /** Renders via the currency formatter rather than the plain number one. */
+      isMoney: true,
       change: 8.2,
       icon: <DollarOutlined />,
       color: "#0000CC",
@@ -643,7 +655,7 @@ export default function AdminDashboard() {
                       color: "#111",
                     }}
                   >
-                    {fmt(s.value, s.prefix)}
+                    {s.isMoney ? money.compactFromUsd(s.value) : fmt(s.value)}
                   </div>
                 </div>
                 <div
@@ -1064,7 +1076,7 @@ export default function AdminDashboard() {
                       {/* Price + bar */}
                       <div style={{ textAlign: "right", minWidth: 90 }}>
                         <Text strong style={{ fontSize: 14 }}>
-                          ${(prop.price || 0).toLocaleString()}
+                          {money.forListing(prop.price || 0, prop.currency).display}
                         </Text>
                         <Progress
                           percent={pct}

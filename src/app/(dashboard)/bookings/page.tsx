@@ -24,11 +24,29 @@ import {
 } from '@ant-design/icons';
 import { bookingsApi } from '@/services/api/bookings.api';
 import type { Booking } from '@/types/dashboard';
+import { useMoney, useCurrency } from '@/lib/currency/CurrencyProvider';
+import { convert, isCurrency, DEFAULT_CURRENCY, type Currency } from '@/lib/currency/config';
 import { useAuth } from '@/providers/AuthProvider';
 
 const { Title, Text } = Typography;
 
 export default function BookingsPage() {
+    const money = useMoney();
+    const { rates } = useCurrency();
+
+    /*
+      Bookings carry no currency of their own — `totalPrice` is the service's
+      price times duration, so it inherits the service's currency. Read it back
+      off the populated service; anything else silently prices RWF as dollars.
+    */
+    const bookingCurrency = (b: Booking): Currency => {
+        const svc = typeof b.serviceId === 'object' ? b.serviceId : null;
+        const code = (svc as { currency?: string } | null)?.currency;
+        return isCurrency(code) ? code : DEFAULT_CURRENCY;
+    };
+    /** A booking's total normalized to USD, so mixed-currency sums are valid. */
+    const bookingUsd = (b: Booking): number =>
+        convert(b.totalPrice || 0, bookingCurrency(b), 'USD', rates) ?? 0;
     const t_common = useTranslations("common");
     const t_errors2 = useTranslations("errors2");
     const t_listing = useTranslations("listing");
@@ -114,9 +132,9 @@ export default function BookingsPage() {
     const pendingCount = bookings.filter((b) => b.status === 'pending').length;
     const confirmedCount = bookings.filter((b) => b.status === 'confirmed').length;
     const completedCount = bookings.filter((b) => b.status === 'completed').length;
-    const totalRevenue = bookings
+    const totalRevenueUsd = bookings
         .filter((b) => b.paymentStatus === 'completed')
-        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+        .reduce((sum, b) => sum + bookingUsd(b), 0);
 
     const columns = [
         {
@@ -145,8 +163,10 @@ export default function BookingsPage() {
             title: 'Amount',
             dataIndex: 'totalPrice',
             key: 'totalPrice',
-            render: (v: number) => `$${(v || 0).toLocaleString()}`,
-            sorter: (a: Booking, b: Booking) => (a.totalPrice || 0) - (b.totalPrice || 0),
+            render: (v: number, record: Booking) =>
+                money.forListing(v || 0, bookingCurrency(record)).display,
+            // Sort on the USD-normalized figure, not the raw one.
+            sorter: (a: Booking, b: Booking) => bookingUsd(a) - bookingUsd(b),
         },
         {
             title: 'Status',
@@ -233,14 +253,14 @@ export default function BookingsPage() {
                     { title: 'Pending', value: pendingCount, icon: <ClockCircleOutlined />, color: '#faad14' },
                     { title: 'Confirmed', value: confirmedCount, icon: <CheckCircleOutlined />, color: '#1890ff' },
                     { title: 'Completed', value: completedCount, icon: <CheckCircleOutlined />, color: '#52c41a' },
-                    { title: 'Revenue', value: totalRevenue, icon: <DollarOutlined />, color: '#722ed1', prefix: '$' },
+                    { title: 'Revenue', value: totalRevenueUsd, icon: <DollarOutlined />, color: '#722ed1', isMoney: true },
                 ].map((s) => (
                     <Col xs={12} lg={4} key={s.title}>
                         <Card style={{ borderRadius: 12 }} styles={{ body: { padding: 16 } }}>
                             <Statistic
                                 title={s.title}
                                 value={s.value}
-                                prefix={s.prefix}
+                                valueRender={s.isMoney ? () => money.fromUsd(s.value) : undefined}
                                 valueStyle={{ color: s.color, fontWeight: 700, fontSize: 22 }}
                             />
                         </Card>
@@ -331,7 +351,9 @@ export default function BookingsPage() {
                             </div>
                             <div>
                                 <Text type="secondary">Amount</Text>
-                                <div className="font-medium text-lg">${(selectedBooking.totalPrice || 0).toLocaleString()}</div>
+                                <div className="font-medium text-lg">
+                                    {money.forListing(selectedBooking.totalPrice || 0, bookingCurrency(selectedBooking)).display}
+                                </div>
                             </div>
                             <div>
                                 <Text type="secondary">Status</Text>

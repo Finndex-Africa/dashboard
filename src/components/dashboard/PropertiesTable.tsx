@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from "next-intl";
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -45,6 +46,7 @@ export function PropertiesTable({
     const t_common = useTranslations("common");
     const t_listing = useTranslations("listing");
     const locale = useLocale();
+    const money = useMoney();
     const getStatusColor = (status: Property['status']) => {
         switch (status) {
             case 'approved':
@@ -92,8 +94,11 @@ export function PropertiesTable({
             title: 'Price',
             dataIndex: 'price',
             key: 'price',
-            sorter: (a, b) => a.price - b.price,
-            render: (price) => `$${price.toLocaleString()}`,
+            // Sort on the normalized USD figure — ordering raw amounts puts
+            // every RWF listing above every USD one regardless of real value.
+            sorter: (a, b) => (a.priceUsd ?? a.price) - (b.priceUsd ?? b.price),
+            render: (price, record) =>
+                money.forListing(price, record.currency).display,
         },
         {
             title: 'Bedrooms',

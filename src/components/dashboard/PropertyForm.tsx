@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
+import { CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY, type Currency } from '@/lib/currency/config';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
 import Select from 'antd/es/select';
@@ -57,9 +58,15 @@ export function PropertyForm({
     const t_common = useTranslations("common");
     const t_errors2 = useTranslations("errors2");
     const t_form = useTranslations("form");
+    const t_currency = useTranslations("currencySwitcher");
     const t_listing = useTranslations("listing");
     const t_placeholder = useTranslations("placeholder");
     const [form] = Form.useForm();
+    /* Price label, prefix and precision all follow the chosen currency. */
+    const selectedCurrency: Currency =
+        (Form.useWatch('currency', form) as Currency) ?? DEFAULT_CURRENCY;
+    const currencyMeta = CURRENCY_META[selectedCurrency] ?? CURRENCY_META[DEFAULT_CURRENCY];
+
     const [fileList, setFileList] = useState<UploadFile[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
@@ -245,10 +252,10 @@ export function PropertyForm({
                     {t_listing("propertyDetails")}
                 </Text>
                 <Row gutter={16}>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24} sm={8}>
                         <Form.Item
                             name="price"
-                            label={t_form("priceUsd")}
+                            label={`${t_common("price")} (${currencyMeta.label})`}
                             rules={[{ required: true, message: 'Please enter price' }]}
                         >
                             <InputNumber
@@ -256,12 +263,29 @@ export function PropertyForm({
                                 style={{ width: '100%', borderRadius: '8px' }}
                                 placeholder="0"
                                 min={0}
-                                formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+                                // RWF has no minor unit — offering cents there is wrong.
+                                precision={currencyMeta.decimals}
+                                formatter={(value) => `${currencyMeta.symbol} ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                parser={(value) => String(value ?? '').replace(/[^0-9.]/g, '') as any}
                             />
                         </Form.Item>
                     </Col>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24} sm={8}>
+                        <Form.Item
+                            name="currency"
+                            label={t_currency("label")}
+                            initialValue={DEFAULT_CURRENCY}
+                        >
+                            <Select size="large" style={{ borderRadius: '8px' }}>
+                                {CURRENCIES.map((c) => (
+                                    <Select.Option key={c} value={c}>
+                                        {CURRENCY_META[c].label}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={8}>
                         <Form.Item name="area" label={t_form("areaSqFt")}>
                             <InputNumber
                                 size="large"

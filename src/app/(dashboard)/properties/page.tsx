@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 import type { Property } from '@/types/dashboard';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { propertiesApi } from '@/services/api/properties.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -50,6 +51,7 @@ const { Search } = Input;
 const { TextArea } = Input;
 
 function PropertiesPageContent() {
+    const money = useMoney();
     const t_common = useTranslations("common");
     const t_errors2 = useTranslations("errors2");
     const t_form = useTranslations("form");
@@ -202,7 +204,12 @@ function PropertiesPageContent() {
         approved: properties.filter(p => p.status === 'approved').length,
         pending: properties.filter(p => p.status === 'pending').length,
         rejected: properties.filter(p => p.status === 'rejected').length,
-        totalValue: properties.reduce((sum, p) => sum + (p.price || 0), 0),
+        // Summed from normalized USD — adding a USD price to an RWF one as
+        // bare numbers yields a total that means nothing.
+        totalValueUsd: properties.reduce(
+            (sum, p) => sum + (p.priceUsd ?? p.price ?? 0),
+            0,
+        ),
     };
 
     // Handlers
@@ -429,8 +436,8 @@ function PropertiesPageContent() {
                         <Card>
                             <Statistic
                                 title={t_listing("totalValue")}
-                                value={stats.totalValue}
-                                prefix="$"
+                                valueRender={() => money.fromUsd(stats.totalValueUsd)}
+                                value={stats.totalValueUsd}
                             />
                         </Card>
                     </Col>
@@ -515,10 +522,36 @@ function PropertiesPageContent() {
                             <Descriptions.Item label={t_common("title")}>{propertyForReview.title}</Descriptions.Item>
                             <Descriptions.Item label={t_common("location")}>{propertyForReview.location}</Descriptions.Item>
                             <Descriptions.Item label={t_common("type")}>{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
-                            <Descriptions.Item label={t_common("price")}>${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("price")}>
+                                {(() => {
+                                    const p = money.forListing(propertyForReview.price, propertyForReview.currency);
+                                    return (
+                                        <>
+                                            <strong>{p.display}</strong>
+                                            {p.isConverted && (
+                                                <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                    Listed at {p.original}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Descriptions.Item>
                             {propertyForReview.agentFee != null && propertyForReview.agentFee > 0 && (
                                 <Descriptions.Item label={t_form("agentFee")}>
-                                    ${propertyForReview.agentFee.toLocaleString()}
+                                    {(() => {
+                                        const f = money.forListing(propertyForReview.agentFee, propertyForReview.currency);
+                                        return (
+                                            <>
+                                                <strong>{f.display}</strong>
+                                                {f.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {f.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </Descriptions.Item>
                             )}
                             <Descriptions.Item label={t_form("area")}>{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
