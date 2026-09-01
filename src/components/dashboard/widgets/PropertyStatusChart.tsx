@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { Card, Spin } from 'antd';
 import { Pie } from '@ant-design/plots';
@@ -11,6 +12,7 @@ interface PropertyStatusChartProps {
 }
 
 export default function PropertyStatusChart({ userId, userRole }: PropertyStatusChartProps) {
+    const t_home = useTranslations("home");
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -91,7 +93,7 @@ export default function PropertyStatusChart({ userId, userRole }: PropertyStatus
         return (
             <Card bordered={false}>
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                    No property data available
+                    {t_home("noPropertyData")}
                 </div>
             </Card>
         );

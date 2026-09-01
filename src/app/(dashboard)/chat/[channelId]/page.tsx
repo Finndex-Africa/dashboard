@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
@@ -20,6 +21,7 @@ import Button from 'antd/es/button';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 
 export default function ChatPage() {
+    const t_nav2 = useTranslations("nav2");
     const params = useParams();
     const channelId = params?.channelId as string;
     const router = useRouter();
@@ -115,7 +117,7 @@ export default function ChatPage() {
                         onClick={handleBackToMessages}
                         type="text"
                     >
-                        Back to Messages
+                        {t_nav2("backToMessages")}
                     </Button>
                 </div>
                 <Card>
@@ -137,14 +139,14 @@ export default function ChatPage() {
                         onClick={handleBackToMessages}
                         type="text"
                     >
-                        Back to Messages
+                        {t_nav2("backToMessages")}
                     </Button>
                 </div>
                 <Card>
                     <div className="text-center py-12">
                         <p className="text-red-500 mb-4">{error || 'Unable to load conversation'}</p>
                         <Button type="primary" onClick={handleBackToMessages}>
-                            Back to Messages
+                            {t_nav2("backToMessages")}
                         </Button>
                     </div>
                 </Card>
@@ -161,14 +163,14 @@ export default function ChatPage() {
                         onClick={handleBackToMessages}
                         type="text"
                     >
-                        Back to Messages
+                        {t_nav2("backToMessages")}
                     </Button>
                 </div>
                 <Card>
                     <div className="text-center py-12">
                         <p className="text-gray-500 mb-4">Unable to connect to chat</p>
                         <Button type="primary" onClick={handleBackToMessages}>
-                            Back to Messages
+                            {t_nav2("backToMessages")}
                         </Button>
                     </div>
                 </Card>
@@ -184,7 +186,7 @@ export default function ChatPage() {
                     onClick={handleBackToMessages}
                     type="text"
                 >
-                    Back to Messages
+                    {t_nav2("backToMessages")}
                 </Button>
             </div>
 

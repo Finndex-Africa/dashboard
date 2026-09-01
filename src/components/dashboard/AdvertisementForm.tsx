@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { Form, Input, Select, DatePicker, InputNumber, Button, Upload, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
@@ -20,6 +21,11 @@ interface AdvertisementFormProps {
 }
 
 export default function AdvertisementForm({ advertisement, onSuccess, onCancel }: AdvertisementFormProps) {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_placeholder = useTranslations("placeholder");
+    const t_toasts = useTranslations("toasts");
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -51,10 +57,10 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
         try {
             setUploading(true);
             const imageUrl = await mediaApi.upload(file, 'advertisements');
-            message.success('Image uploaded successfully');
+            message.success(t_toasts("imageUploaded"));
             return imageUrl;
         } catch (error) {
-            message.error('Failed to upload image');
+            message.error(t_errors2("uploadImage"));
             throw error;
         } finally {
             setUploading(false);
@@ -85,10 +91,10 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
 
             if (advertisement) {
                 await advertisementsApi.update(advertisement._id, data);
-                message.success('Advertisement updated successfully');
+                message.success(t_toasts("adUpdated"));
             } else {
                 await advertisementsApi.create(data);
-                message.success('Advertisement created successfully');
+                message.success(t_toasts("adCreated"));
             }
 
             form.resetFields();
@@ -106,12 +112,12 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
         beforeUpload: (file: File) => {
             const isImage = file.type.startsWith('image/');
             if (!isImage) {
-                message.error('You can only upload image files!');
+                message.error(t_errors2("imageOnly"));
                 return false;
             }
             const isLt5M = file.size / 1024 / 1024 < 5;
             if (!isLt5M) {
-                message.error('Image must be smaller than 5MB!');
+                message.error(t_errors2("imageMax5"));
                 return false;
             }
             return false; // Prevent auto upload
@@ -130,20 +136,20 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             autoComplete="off"
         >
             <Form.Item
-                label="Advertisement Title"
+                label={t_form("advertisementTitle")}
                 name="title"
                 rules={[{ required: true, message: 'Please enter advertisement title' }]}
             >
-                <Input placeholder="Enter advertisement title" size="large" />
+                <Input placeholder={t_placeholder("enterAdTitle")} size="large" />
             </Form.Item>
 
             <Form.Item
-                label="Description"
+                label={t_common("description")}
                 name="description"
                 rules={[{ required: true, message: 'Please enter description' }]}
             >
                 <TextArea
-                    placeholder="Enter advertisement description"
+                    placeholder={t_placeholder("enterAdDescription")}
                     rows={4}
                     showCount
                     maxLength={500}
@@ -151,7 +157,7 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Advertisement Image"
+                label={t_form("advertisementImage")}
                 name="image"
             >
                 <Upload
@@ -169,7 +175,7 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Link URL"
+                label={t_form("linkUrl")}
                 name="linkUrl"
                 rules={[
                     { type: 'url', message: 'Please enter a valid URL' },
@@ -179,11 +185,11 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Placement"
+                label={t_form("placement")}
                 name="placement"
                 rules={[{ required: true, message: 'Please select placement' }]}
             >
-                <Select placeholder="Select where this ad will appear" size="large">
+                <Select placeholder={t_placeholder("selectPlacement")} size="large">
                     <Select.Option value="home">Home Page</Select.Option>
                     <Select.Option value="properties">Properties Page</Select.Option>
                     <Select.Option value="services">Services Page</Select.Option>
@@ -193,7 +199,7 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Campaign Duration"
+                label={t_form("campaignDuration")}
                 name="dateRange"
                 rules={[{ required: true, message: 'Please select campaign duration' }]}
             >
@@ -206,11 +212,11 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
             </Form.Item>
 
             <Form.Item
-                label="Budget (Optional)"
+                label={t_form("budgetOptional")}
                 name="budget"
             >
                 <InputNumber
-                    placeholder="Enter budget amount"
+                    placeholder={t_placeholder("enterBudget")}
                     style={{ width: '100%' }}
                     size="large"
                     prefix="$"
@@ -221,7 +227,7 @@ export default function AdvertisementForm({ advertisement, onSuccess, onCancel }
 
             <Form.Item className="mb-0 flex justify-end gap-2">
                 <Button onClick={onCancel} size="large">
-                    Cancel
+                    {t_common("cancel")}
                 </Button>
                 <Button
                     type="primary"

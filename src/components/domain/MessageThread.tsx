@@ -1,9 +1,11 @@
 "use client";
+import { useTranslations } from "next-intl";
 import React, { useState, useRef } from "react";
 
 type Message = { id: string; from: "me" | "other"; text: string; at: string };
 
 export default function MessageThread({ initial = [] as Message[] }: { initial?: Message[] }) {
+    const t_placeholder = useTranslations("placeholder");
     const [messages, setMessages] = useState<Message[]>(initial);
     const [text, setText] = useState("");
     const idCounter = useRef(0);
@@ -25,7 +27,7 @@ export default function MessageThread({ initial = [] as Message[] }: { initial?:
                 ))}
             </div>
             <div className="mt-3 flex gap-2">
-                <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message" />
+                <input className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={t_placeholder("writeMessage")} />
                 <button className="btn btn-primary" onClick={send}>Send</button>
             </div>
         </div>

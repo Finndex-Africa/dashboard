@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -18,6 +19,10 @@ import { canSetAgentFee } from '@/lib/role-utils';
 const { Title, Text } = Typography;
 
 export default function CreatePropertyPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_nav2 = useTranslations("nav2");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
@@ -54,7 +59,7 @@ export default function CreatePropertyPage() {
                         console.log('✅ Uploaded:', imageUrl);
                     } catch (error) {
                         console.error('❌ Failed to upload image:', error);
-                        showToast.error('Failed to upload some images');
+                        showToast.error(t_errors2("uploadSomeImages"));
                     }
                 }
 
@@ -67,7 +72,7 @@ export default function CreatePropertyPage() {
                 }
             }
 
-            showToast.success('Property created successfully');
+            showToast.success(t_toasts("propertyCreated"));
 
             // Redirect back to properties with appropriate view
             const defaultView = user?.role ? getDefaultPropertyView(user.role) : 'mine';
@@ -84,11 +89,11 @@ export default function CreatePropertyPage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to create properties."
                 extra={
                     <Button type="primary" onClick={() => router.push('/properties')}>
-                        Go to Properties
+                        {t_nav2("goToProperties")}
                     </Button>
                 }
             />
@@ -103,7 +108,7 @@ export default function CreatePropertyPage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Properties
+                    {t_nav2("backToProperties")}
                 </Button>
                 <Title level={2}>Create New Property</Title>
                 <Text type="secondary">Fill in the details to list a new property</Text>

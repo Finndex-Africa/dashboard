@@ -26,7 +26,9 @@ import {
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/providers/AuthProvider";
+import LanguageSwitcher from "@/components/global/LanguageSwitcher";
 import { getRoleRedirectPath } from "@/lib/role-redirects";
 
 const { Content, Sider } = Layout;
@@ -36,6 +38,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("nav");
+  const tRoles = useTranslations("roles");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
@@ -49,13 +53,13 @@ export default function DashboardLayout({
     {
       key: "/dashboard",
       icon: <HomeOutlined />,
-      label: "Dashboard",
+      label: t("dashboard"),
       roles: ["admin", "admin_property", "admin_services"],
     },
     {
       key: "/properties",
       icon: <AppstoreOutlined />,
-      label: "Properties",
+      label: t("properties"),
       roles: [
         "home_seeker",
         "landlord",
@@ -68,19 +72,19 @@ export default function DashboardLayout({
     {
       key: "/services",
       icon: <ShopOutlined />,
-      label: "Services",
+      label: t("services"),
       roles: ["home_seeker", "service_provider", "admin", "admin_services"],
     },
     {
       key: "/buy-sell",
       icon: <ShoppingOutlined />,
-      label: "Buy and Sell",
+      label: t("buyAndSell"),
       roles: ["admin"],
     },
     {
       key: "/bookings",
       icon: <CalendarOutlined />,
-      label: "Bookings",
+      label: t("bookings"),
       roles: [
         "home_seeker",
         "landlord",
@@ -93,37 +97,37 @@ export default function DashboardLayout({
     {
       key: "/advertisements",
       icon: <TrophyOutlined />,
-      label: "Advertisements",
+      label: t("advertisements"),
       roles: ["admin"],
     },
     {
       key: "/users",
       icon: <TeamOutlined />,
-      label: "Users",
+      label: t("users"),
       roles: ["admin"],
     },
     {
       key: "/verifications",
       icon: <SafetyCertificateOutlined />,
-      label: "Verifications",
+      label: t("verifications"),
       roles: ["admin"],
     },
     {
       key: "/user-reports",
       icon: <FlagOutlined />,
-      label: "User Reports",
+      label: t("userReports"),
       roles: ["admin", "admin_property", "admin_services"],
     },
     {
       key: "/notify-me",
       icon: <NotificationOutlined />,
-      label: "Notify Me",
+      label: t("notifyMe"),
       roles: ["admin"],
     },
     {
       key: "/notifications",
       icon: <BellOutlined />,
-      label: "Notifications",
+      label: t("notifications"),
       roles: [
         "home_seeker",
         "landlord",
@@ -138,7 +142,7 @@ export default function DashboardLayout({
     {
       key: "/messages",
       icon: <MessageOutlined />,
-      label: "Messages",
+      label: t("messages"),
       roles: [
         "home_seeker",
         "landlord",
@@ -153,7 +157,7 @@ export default function DashboardLayout({
     {
       key: "/profile",
       icon: <UserOutlined />,
-      label: "Profile",
+      label: t("profile"),
       roles: [
         "home_seeker",
         "landlord",
@@ -261,7 +265,7 @@ export default function DashboardLayout({
           >
             <img
               src="/images/logos/Header%20Logo-Findafriq.png"
-              alt="FindAfriq"
+              alt={t("logoAlt")}
               className="h-10 object-contain"
             />
           </div>
@@ -279,8 +283,9 @@ export default function DashboardLayout({
             }}
           />
 
-          {/* Sidebar Footer - Logout Button */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          {/* Sidebar Footer - Language + Logout */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 space-y-3">
+            <LanguageSwitcher block />
             <Button
               block
               size="large"
@@ -291,7 +296,7 @@ export default function DashboardLayout({
                 fontWeight: 500,
               }}
             >
-              Log out
+              {t("logOut")}
             </Button>
           </div>
         </Sider>
@@ -323,7 +328,7 @@ export default function DashboardLayout({
               >
                 <img
                   src="/images/logos/Header%20Logo-Findafriq.png"
-                  alt="FindAfriq"
+                  alt={t("logoAlt")}
                   className="h-8 object-contain"
                 />
               </div>
@@ -367,10 +372,10 @@ export default function DashboardLayout({
                 />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: "16px" }}>
-                    {`${user?.firstName || user?.email?.split("@")[0] || "User"}${user?.lastName ? " " + user.lastName : ""}`}
+                    {`${user?.firstName || user?.email?.split("@")[0] || t("defaultUserName")}${user?.lastName ? " " + user.lastName : ""}`}
                   </div>
                   <div style={{ fontSize: "14px", color: "#717171" }}>
-                    {user?.role?.replace("_", " ") || "User"}
+                    {user?.role && tRoles.has(user.role) ? tRoles(user.role) : tRoles("user")}
                   </div>
                 </div>
               </div>
@@ -397,7 +402,8 @@ export default function DashboardLayout({
             />
 
             {/* Drawer Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
+            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 space-y-3">
+              <LanguageSwitcher block />
               <Button
                 block
                 size="large"
@@ -407,7 +413,7 @@ export default function DashboardLayout({
                   fontWeight: 500,
                 }}
               >
-                <LogoutOutlined /> Log out
+                <LogoutOutlined /> {t("logOut")}
               </Button>
             </div>
           </Drawer>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -17,6 +18,10 @@ import { canCreateService, getDefaultServiceView } from '@/lib/services-utils';
 const { Title, Text } = Typography;
 
 export default function CreateServicePage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_nav2 = useTranslations("nav2");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
@@ -41,7 +46,7 @@ export default function CreateServicePage() {
                         const imageUrl = await mediaApi.upload(file, 'services');
                         uploadedUrls.push(imageUrl);
                     } catch (error) {
-                        showToast.error('Failed to upload some images');
+                        showToast.error(t_errors2("uploadSomeImages"));
                     }
                 }
             }
@@ -75,7 +80,7 @@ export default function CreateServicePage() {
             if (uploadedUrls.length > 0) {
                 cleanData.images = uploadedUrls;
             } else {
-                showToast.error('At least 1 image is required');
+                showToast.error(t_errors2("atLeastOneImage"));
                 setSubmitting(false);
                 return;
             }
@@ -83,7 +88,7 @@ export default function CreateServicePage() {
             // Step 3: Create service with images already included
             const response = await servicesApi.create(cleanData);
 
-            showToast.success('Service created successfully');
+            showToast.success(t_toasts("serviceCreated"));
 
             // Redirect back to services with appropriate view
             const defaultView = user?.role ? getDefaultServiceView(user.role) : 'mine';
@@ -99,11 +104,11 @@ export default function CreateServicePage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to create services."
                 extra={
                     <Button type="primary" onClick={() => router.push('/services')}>
-                        Go to Services
+                        {t_nav2("goToServices")}
                     </Button>
                 }
             />
@@ -118,7 +123,7 @@ export default function CreateServicePage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Services
+                    {t_nav2("backToServices")}
                 </Button>
                 <Title level={2}>Create New Service</Title>
                 <Text type="secondary">Fill in the details to list a new service</Text>

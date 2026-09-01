@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
@@ -14,6 +15,8 @@ import { AuthService } from '@/services/auth.service';
 import { getRoleRedirectPath, getUserRoleFromToken } from '@/lib/role-redirects';
 
 export function LoginForm() {
+    const t_form = useTranslations("form");
+    const t_toasts = useTranslations("toasts");
     const [loading, setLoading] = useState(false);
     const [rememberedEmail, setRememberedEmail] = useState('');
     const [form] = Form.useForm();
@@ -37,7 +40,7 @@ export function LoginForm() {
                 password: values.password
             });
 
-            message.success('Login successful');
+            message.success(t_toasts("loginSuccess"));
             if (typeof window !== 'undefined') {
                 if (values.remember) {
                     window.localStorage.setItem('remembered_email', values.email);
@@ -90,7 +93,7 @@ export function LoginForm() {
             >
                 <Input
                     prefix={<UserOutlined className="text-gray-400" />}
-                    placeholder="Email"
+                    placeholder={t_form("email")}
                 />
             </Form.Item>
 
@@ -100,7 +103,7 @@ export function LoginForm() {
             >
                 <Input.Password
                     prefix={<LockOutlined className="text-gray-400" />}
-                    placeholder="Password"
+                    placeholder={t_form("password")}
                 />
             </Form.Item>
 
@@ -114,7 +117,7 @@ export function LoginForm() {
                         href="/forgot-password"
                         className="text-sm text-blue-600 hover:text-blue-800"
                     >
-                        Forgot password?
+                        {t_form("forgotPassword")}
                     </Link>
                 </div>
             </Form.Item>
@@ -137,7 +140,7 @@ export function LoginForm() {
                         href="/register"
                         className="text-blue-600 hover:text-blue-800"
                     >
-                        Sign up
+                        {t_form("signUp")}
                     </Link>
                 </Space>
             </div>

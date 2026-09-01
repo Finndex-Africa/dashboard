@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
@@ -37,6 +38,12 @@ import { getRoleColor, getRoleLabel } from '@/lib/role-utils';
 const { Title, Text } = Typography;
 
 export default function UsersPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_misc = useTranslations("misc");
+    const t_toasts = useTranslations("toasts");
+    const locale = useLocale();
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -123,10 +130,10 @@ export default function UsersPage() {
             onOk: async () => {
                 try {
                     await usersApi.delete(user._id);
-                    message.success('User deleted successfully');
+                    message.success(t_toasts("userDeleted"));
                     fetchUsers();
                 } catch (error: any) {
-                    message.error('Failed to delete user');
+                    message.error(t_errors2("deleteUser"));
                 }
             },
         });
@@ -135,7 +142,7 @@ export default function UsersPage() {
     const handleToggleVerification = async (user: User) => {
         // Check if current user is admin
         if (currentUser?.role !== 'admin') {
-            message.error('Only administrators can verify or unverify users');
+            message.error(t_errors2("adminOnlyVerify"));
             return;
         }
 
@@ -262,7 +269,7 @@ export default function UsersPage() {
             dataIndex: 'createdAt',
             key: 'createdAt',
             sorter: (a: User, b: User) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date: string) => new Date(date).toLocaleDateString('en-US', {
+            render: (date: string) => new Date(date).toLocaleDateString(locale, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -286,14 +293,14 @@ export default function UsersPage() {
                                 />
                             </Tooltip>
                         )}
-                        <Tooltip title="View">
+                        <Tooltip title={t_common("view")}>
                             <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
                         </Tooltip>
-                        <Tooltip title="Edit">
-                            <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Edit functionality coming soon')} />
+                        <Tooltip title={t_common("edit")}>
+                            <Button type="text" icon={<EditOutlined />} onClick={() => message.info(t_misc("editComingSoon"))} />
                         </Tooltip>
                         {isAdmin && (
-                            <Tooltip title="Delete">
+                            <Tooltip title={t_common("delete")}>
                                 <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
                             </Tooltip>
                         )}
@@ -419,7 +426,7 @@ export default function UsersPage() {
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={16}>
                         <Input
-                            placeholder="Search by name, email, phone, or role..."
+                            placeholder={t_listing("searchUsers")}
                             allowClear
                             size="large"
                             prefix={<SearchOutlined />}
@@ -457,7 +464,7 @@ export default function UsersPage() {
                 />
             </Card>
 
-            <Modal title="User Details" open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
+            <Modal title={t_listing("userDetails")} open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
                 {selectedUser && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
@@ -473,8 +480,8 @@ export default function UsersPage() {
                         <div><Text type="secondary">Role</Text><div><Tag color={getRoleColor(selectedUser.userType)}>{getRoleLabel(selectedUser.userType)}</Tag></div></div>
                         <div><Text type="secondary">Verification Status</Text><div><Tag color={selectedUser.verified ? 'green' : 'orange'} icon={selectedUser.verified ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>{selectedUser.verified ? 'Verified' : 'Not Verified'}</Tag></div></div>
                         <div><Text type="secondary">Account Status</Text><div><Tag color={selectedUser.status === 'active' ? 'green' : 'red'}>{selectedUser.status === 'active' ? 'Active' : 'Inactive'}</Tag></div></div>
-                        <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
-                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
+                        <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
+                        <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
                     </div>
                 )}
             </Modal>

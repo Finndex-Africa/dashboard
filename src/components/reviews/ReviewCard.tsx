@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useState } from 'react';
 import Card from 'antd/es/card';
 import Avatar from 'antd/es/avatar';
@@ -44,6 +45,11 @@ interface ReviewCardProps {
 }
 
 export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: ReviewCardProps) {
+    const t_hints = useTranslations("hints");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_reviews2 = useTranslations("reviews2");
+    const t_toasts = useTranslations("toasts");
     const { user, isAuthenticated } = useAuth();
     const [isHelpful, setIsHelpful] = useState(review.helpfulBy.includes(user?.id || ''));
     const [helpfulCount, setHelpfulCount] = useState(review.helpfulCount);
@@ -53,7 +59,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
 
     const handleMarkHelpful = async () => {
         if (!isAuthenticated || !user) {
-            message.warning('Please log in to mark reviews as helpful');
+            message.warning(t_reviews2("loginToMarkHelpful"));
             return;
         }
 
@@ -64,25 +70,25 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
             message.success(isHelpful ? 'Removed from helpful' : 'Marked as helpful');
         } catch (error) {
             console.error('Mark helpful error:', error);
-            message.error('Failed to mark as helpful');
+            message.error(t_errors2("markHelpful"));
         }
     };
 
     const handleReport = async () => {
         if (!reportReason.trim()) {
-            message.warning('Please provide a reason for reporting');
+            message.warning(t_reviews2("reasonRequired"));
             return;
         }
 
         setReportLoading(true);
         try {
             await reviewsApi.reportReview(review._id, { reason: reportReason });
-            message.success('Review reported successfully');
+            message.success(t_toasts("reviewReported"));
             setIsReportModalVisible(false);
             setReportReason('');
         } catch (error) {
             console.error('Report error:', error);
-            message.error('Failed to report review');
+            message.error(t_errors2("reportReview"));
         } finally {
             setReportLoading(false);
         }
@@ -98,11 +104,11 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
             async onOk() {
                 try {
                     await reviewsApi.delete(review._id);
-                    message.success('Review deleted successfully');
+                    message.success(t_toasts("reviewDeleted"));
                     if (onUpdate) onUpdate();
                 } catch (error) {
                     console.error('Delete error:', error);
-                    message.error('Failed to delete review');
+                    message.error(t_errors2("deleteReview"));
                 }
             },
         });
@@ -188,7 +194,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                                     icon={<DeleteOutlined />}
                                     onClick={handleDelete}
                                 >
-                                    Delete
+                                    {t_common("delete")}
                                 </Button>
                             )}
 
@@ -198,7 +204,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                                     icon={<WarningOutlined />}
                                     onClick={() => setIsReportModalVisible(true)}
                                 >
-                                    Report
+                                    {t_common("report")}
                                 </Button>
                             )}
                         </Space>
@@ -228,7 +234,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
 
             {/* Report Modal */}
             <Modal
-                title="Report Review"
+                title={t_reviews2("reportReview")}
                 open={isReportModalVisible}
                 onCancel={() => setIsReportModalVisible(false)}
                 onOk={handleReport}
@@ -241,7 +247,7 @@ export default function ReviewCard({ review, onUpdate, showOwnerReply = true }: 
                         rows={4}
                         value={reportReason}
                         onChange={(e) => setReportReason(e.target.value)}
-                        placeholder="e.g., Inappropriate content, spam, false information..."
+                        placeholder={t_hints("e_g_inappropriate_content_spam_false_inf")}
                         style={{ marginTop: '12px' }}
                     />
                 </div>
