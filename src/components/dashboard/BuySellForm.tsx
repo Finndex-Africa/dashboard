@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
 import { CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY, type Currency } from '@/lib/currency/config';
@@ -101,6 +102,12 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFormProps) {
+    const t_hints = useTranslations("hints");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_currency = useTranslations("currencySwitcher");
+    const t_placeholder = useTranslations("placeholder");
     const isCreate = !listing;
 
     const [form]                                    = Form.useForm();
@@ -175,11 +182,11 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
     // ── Upload helpers ────────────────────────────────────────────────────────
     const beforeUpload = (file: File) => {
         if (!file.type.startsWith('image/')) {
-            showToast.error('You can only upload image files!');
+            showToast.error(t_errors2("imageOnly"));
             return Upload.LIST_IGNORE;
         }
         if (file.size / 1024 / 1024 > 10) {
-            showToast.error('Image must be smaller than 10MB!');
+            showToast.error(t_errors2("imageMax10"));
             return Upload.LIST_IGNORE;
         }
         return false;
@@ -232,12 +239,12 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     <SectionTitle>What are you selling?</SectionTitle>
                     <Form.Item
                         name="category"
-                        label="Category"
+                        label={t_common("category")}
                         rules={[{ required: true, message: 'Please select a category' }]}
                     >
                         <Select
                             size="large"
-                            placeholder="Select category"
+                            placeholder={t_placeholder("selectCategory")}
                             style={{ borderRadius: 8 }}
                             onChange={(v: BuySellCategory) => {
                                 setActiveCategory(v);
@@ -260,19 +267,19 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 <Col xs={24}>
                     <Form.Item
                         name="title"
-                        label="Title"
+                        label={t_common("title")}
                         rules={[{ required: true, message: 'Title is required' }]}
                     >
-                        <Input size="large" placeholder="Listing title" style={{ borderRadius: 8 }} />
+                        <Input size="large" placeholder={t_form("listingTitle")} style={{ borderRadius: 8 }} />
                     </Form.Item>
                 </Col>
                 <Col xs={24}>
                     <Form.Item
                         name="description"
-                        label="Description"
+                        label={t_common("description")}
                         rules={[{ required: true, message: 'Description is required' }]}
                     >
-                        <TextArea rows={4} placeholder="Describe the listing…" style={{ borderRadius: 8 }} />
+                        <TextArea rows={4} placeholder={t_placeholder("describeListing")} style={{ borderRadius: 8 }} />
                     </Form.Item>
                 </Col>
             </Row>
@@ -285,16 +292,16 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 <Col xs={24} sm={14}>
                     <Form.Item
                         name="location"
-                        label="Location"
+                        label={t_common("location")}
                         rules={[{ required: true, message: 'Location is required' }]}
                     >
-                        <Input size="large" placeholder="e.g. Kibagabaga, Kigali" style={{ borderRadius: 8 }} />
+                        <Input size="large" placeholder={t_hints("e_g_kibagabaga_kigali")} style={{ borderRadius: 8 }} />
                     </Form.Item>
                 </Col>
                 <Col xs={24} sm={7}>
                     <Form.Item
                         name="price"
-                        label={`Price (${currencyMeta.label})`}
+                        label={`${t_common("price")} (${currencyMeta.label})`}
                         rules={[{ required: true, message: 'Price is required' }]}
                     >
                         <InputNumber
@@ -309,7 +316,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     </Form.Item>
                 </Col>
                 <Col xs={24} sm={6}>
-                    <Form.Item name="currency" label="Currency" initialValue={DEFAULT_CURRENCY}>
+                    <Form.Item name="currency" label={t_currency("label")} initialValue={DEFAULT_CURRENCY}>
                         <Select size="large" style={{ borderRadius: 8 }}>
                             {CURRENCIES.map((c) => (
                                 <Select.Option key={c} value={c}>
@@ -321,7 +328,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 </Col>
                 <Col xs={24} sm={7}>
                     {/* Denominated in the same currency as the price above. */}
-                    <Form.Item name="agentFee" label={`Agent Fee (${currencyMeta.label})`}>
+                    <Form.Item name="agentFee" label={`${t_form("agentFee")} (${currencyMeta.label})`}>
                         <InputNumber
                             size="large"
                             min={0}
@@ -343,8 +350,8 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     <SectionTitle>Land Details</SectionTitle>
                     <Row gutter={16}>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Land Subcategory" name="landSubcategory">
-                                <Select size="large" placeholder="Select subcategory" allowClear style={{ borderRadius: 8 }}>
+                            <Form.Item label={t_form("landSubcategory")} name="landSubcategory">
+                                <Select size="large" placeholder={t_placeholder("selectSubcategory")} allowClear style={{ borderRadius: 8 }}>
                                     {LAND_SUBCATEGORY_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
@@ -352,18 +359,18 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Ownership Status" name="ownershipStatus">
-                                <Input size="large" placeholder="e.g. C of O, Survey Plan" style={{ borderRadius: 8 }} />
+                            <Form.Item label={t_form("ownershipStatus")} name="ownershipStatus">
+                                <Input size="large" placeholder={t_hints("e_g_c_of_o_survey_plan")} style={{ borderRadius: 8 }} />
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Land Size" name="landSize">
-                                <InputNumber size="large" min={0} style={{ width: '100%' }} placeholder="e.g. 5" />
+                            <Form.Item label={t_form("landSize")} name="landSize">
+                                <InputNumber size="large" min={0} style={{ width: '100%' }} placeholder={t_hints("e_g_5")} />
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Unit" name="unit">
-                                <Select size="large" placeholder="Select unit" allowClear style={{ borderRadius: 8 }}>
+                            <Form.Item label={t_form("unit")} name="unit">
+                                <Select size="large" placeholder={t_placeholder("selectUnit")} allowClear style={{ borderRadius: 8 }}>
                                     {LAND_UNIT_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
@@ -371,13 +378,13 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Seller Phone" name="sellerPhone">
-                                <Input size="large" placeholder="Direct phone number" style={{ borderRadius: 8 }} />
+                            <Form.Item label={t_form("sellerPhone")} name="sellerPhone">
+                                <Input size="large" placeholder={t_form("directPhone")} style={{ borderRadius: 8 }} />
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="WhatsApp Number" name="whatsappNumber">
-                                <Input size="large" placeholder="WhatsApp contact" style={{ borderRadius: 8 }} />
+                            <Form.Item label={t_form("whatsappNumber")} name="whatsappNumber">
+                                <Input size="large" placeholder={t_form("whatsappContact")} style={{ borderRadius: 8 }} />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -392,11 +399,11 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     <Row gutter={16}>
                         <Col xs={24} sm={12}>
                             <Form.Item
-                                label="Property Type"
+                                label={t_form("propertyType")}
                                 name="propertyType"
                                 rules={[{ required: true, message: 'Property type is required' }]}
                             >
-                                <Select size="large" placeholder="Select property type" allowClear style={{ borderRadius: 8 }}>
+                                <Select size="large" placeholder={t_placeholder("selectPropertyType")} allowClear style={{ borderRadius: 8 }}>
                                     {PROPERTY_TYPE_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
@@ -408,7 +415,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                         </Col>
                         <Col xs={24} sm={12}>
                             <Form.Item
-                                label="Bedrooms"
+                                label={t_form("bedrooms")}
                                 name="bedrooms"
                                 rules={[{ required: true, message: 'Bedrooms required' }]}
                             >
@@ -417,7 +424,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                         </Col>
                         <Col xs={24} sm={12}>
                             <Form.Item
-                                label="Bathrooms"
+                                label={t_form("bathrooms")}
                                 name="bathrooms"
                                 rules={[{ required: true, message: 'Bathrooms required' }]}
                             >
@@ -430,7 +437,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     {/* Amenities chip grid */}
                     <SectionTitle>Amenities</SectionTitle>
                     <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
-                        Select all amenities available in this house
+                        {t_placeholder("selectAllAmenities")}
                     </Text>
                     <div
                         style={{
@@ -478,8 +485,8 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                     <SectionTitle>Item Details</SectionTitle>
                     <Row gutter={16}>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Item Subcategory" name="itemSubcategory">
-                                <Select size="large" placeholder="Select subcategory" allowClear style={{ borderRadius: 8 }}>
+                            <Form.Item label={t_form("itemSubcategory")} name="itemSubcategory">
+                                <Select size="large" placeholder={t_placeholder("selectSubcategory")} allowClear style={{ borderRadius: 8 }}>
                                     {HOUSEHOLD_SUBCATEGORY_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
@@ -487,8 +494,8 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Form.Item label="Condition" name="condition">
-                                <Select size="large" placeholder="Select condition" allowClear style={{ borderRadius: 8 }}>
+                            <Form.Item label={t_form("condition")} name="condition">
+                                <Select size="large" placeholder={t_placeholder("selectCondition")} allowClear style={{ borderRadius: 8 }}>
                                     {ITEM_CONDITION_OPTIONS.map((o) => (
                                         <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>
                                     ))}
@@ -496,12 +503,12 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={6}>
-                            <Form.Item label="Warranty" name="warranty" valuePropName="checked">
+                            <Form.Item label={t_form("warranty")} name="warranty" valuePropName="checked">
                                 <Switch checkedChildren="Yes" unCheckedChildren="No" />
                             </Form.Item>
                         </Col>
                         <Col xs={24} sm={6}>
-                            <Form.Item label="Delivery Available" name="deliveryAvailable" valuePropName="checked">
+                            <Form.Item label={t_form("deliveryAvailable")} name="deliveryAvailable" valuePropName="checked">
                                 <Switch checkedChildren="Yes" unCheckedChildren="No" />
                             </Form.Item>
                         </Col>
@@ -527,7 +534,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 <div>
                     <Text strong style={{ display: 'block' }}>Featured Listing</Text>
                     <Text type="secondary" style={{ fontSize: 13 }}>
-                        Featured listings are highlighted on the platform. Admin-controlled.
+                        {t_placeholder("featuredHelp")}
                     </Text>
                 </div>
                 <Form.Item name="isPremium" valuePropName="checked" noStyle style={{ marginBottom: 0 }}>
@@ -556,7 +563,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 )}
             </Upload>
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                Minimum 4 images recommended. Max 10MB per image.
+                {t_placeholder("minImages")}
             </Text>
 
             {/* ── Action buttons ────────────────────────────────────────────── */}
@@ -571,7 +578,7 @@ export function BuySellForm({ listing, onSubmit, onCancel, loading }: BuySellFor
                 }}
             >
                 <Button size="large" onClick={onCancel} style={{ borderRadius: 8, minWidth: 100 }}>
-                    Cancel
+                    {t_common("cancel")}
                 </Button>
                 <Button
                     type="primary"

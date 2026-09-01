@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from "next-intl";
 import { useMoney } from '@/lib/currency/CurrencyProvider';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
@@ -43,6 +43,8 @@ export function PropertiesTable({
     savedIds = [],
     approvingId,
 }: PropertiesTableProps) {
+    const t_common = useTranslations("common");
+    const t_listing = useTranslations("listing");
     const locale = useLocale();
     const money = useMoney();
     const getStatusColor = (status: Property['status']) => {
@@ -160,19 +162,19 @@ export function PropertiesTable({
 
                     {/* Admin: Review pending properties (then Approve/Reject from modal) */}
                     {record.status === 'pending' && onReview ? (
-                        <Tooltip title="Review before approving or rejecting">
+                        <Tooltip title={t_listing("reviewBeforeApproving")}>
                             <Button
                                 type="primary"
                                 size="small"
                                 icon={<FileSearchOutlined />}
                                 onClick={() => onReview(record)}
                             >
-                                Review
+                                {t_common("review")}
                             </Button>
                         </Tooltip>
                     ) : record.status === 'pending' && onApprove && onReject ? (
                         <>
-                            <Tooltip title="Approve">
+                            <Tooltip title={t_common("approve")}>
                                 <Button
                                     type="primary"
                                     size="small"
@@ -184,24 +186,24 @@ export function PropertiesTable({
                                         borderColor: '#43e97b',
                                     }}
                                 >
-                                    Approve
+                                    {t_common("approve")}
                                 </Button>
                             </Tooltip>
-                            <Tooltip title="Reject">
+                            <Tooltip title={t_common("reject")}>
                                 <Button
                                     danger
                                     size="small"
                                     icon={<CloseOutlined />}
                                     onClick={() => onReject(record)}
                                 >
-                                    Reject
+                                    {t_common("reject")}
                                 </Button>
                             </Tooltip>
                         </>
                     ) : (
                         <>
                             {onView && (
-                                <Tooltip title="View">
+                                <Tooltip title={t_common("view")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -219,7 +221,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'approved' && onUnpublish && (
-                                <Tooltip title="Unpublish">
+                                <Tooltip title={t_common("unpublish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeInvisibleOutlined />}
@@ -229,7 +231,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'suspended' && onRepublish && (
-                                <Tooltip title="Republish">
+                                <Tooltip title={t_common("republish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -239,7 +241,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {onDelete && (
-                                <Tooltip title="Delete">
+                                <Tooltip title={t_common("delete")}>
                                     <Button
                                         type="text"
                                         danger

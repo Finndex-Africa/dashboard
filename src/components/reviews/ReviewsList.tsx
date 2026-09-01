@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useState, useEffect } from 'react';
 import Card from 'antd/es/card';
 import Empty from 'antd/es/empty';
@@ -27,6 +28,10 @@ interface ReviewsListProps {
 }
 
 export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsListProps) {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_filters = useTranslations("filters");
+    const t_reviews2 = useTranslations("reviews2");
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [averageRating, setAverageRating] = useState(0);
@@ -52,7 +57,7 @@ export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsList
             setTotalPages(response.data.pagination?.totalPages || 1);
         } catch (error) {
             console.error('Error fetching reviews:', error);
-            message.error('Failed to load reviews');
+            message.error(t_errors2("loadReviews"));
         } finally {
             setLoading(false);
         }
@@ -93,7 +98,7 @@ export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsList
         <div style={{ marginTop: '32px' }}>
             <Card style={{ borderRadius: '12px', marginBottom: '24px' }}>
                 <Title level={3} style={{ marginBottom: '24px' }}>
-                    Reviews & Ratings
+                    {t_reviews2("reviewsRatings")}
                 </Title>
 
                 {/* Rating Summary */}
@@ -149,7 +154,7 @@ export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsList
                     value={sortBy}
                     onChange={setSortBy}
                     style={{ width: 200 }}
-                    placeholder="Sort by"
+                    placeholder={t_common("sortBy")}
                 >
                     <Option value="recent">Most Recent</Option>
                     <Option value="helpful">Most Helpful</Option>
@@ -160,7 +165,7 @@ export default function ReviewsList({ itemType, itemId, itemTitle }: ReviewsList
                     value={filterRating}
                     onChange={setFilterRating}
                     style={{ width: 200 }}
-                    placeholder="Filter by rating"
+                    placeholder={t_filters("filterByRating")}
                     allowClear
                 >
                     <Option value={5}>5 Stars</Option>

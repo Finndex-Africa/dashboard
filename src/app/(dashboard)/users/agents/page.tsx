@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
@@ -23,6 +24,9 @@ import type { User } from '@/types/users';
 const { Title } = Typography;
 
 export default function AgentsPage() {
+    const t_common = useTranslations("common");
+    const t_home = useTranslations("home");
+    const t_toasts = useTranslations("toasts");
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -142,16 +146,16 @@ export default function AgentsPage() {
             key: 'actions',
             render: (_: any, record: Agent) => (
                 <Space size="small">
-                    <Tooltip title="View">
+                    <Tooltip title={t_common("view")}>
                         <Button type="text" icon={<EyeOutlined />} />
                     </Tooltip>
-                    <Tooltip title="Edit">
+                    <Tooltip title={t_common("edit")}>
                         <Button type="text" icon={<EditOutlined />} />
                     </Tooltip>
-                    <Tooltip title="Delete">
+                    <Tooltip title={t_common("delete")}>
                         <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
                             setAgents(agents.filter(a => a._id !== record._id));
-                            message.success('Agent removed');
+                            message.success(t_toasts("agentRemoved"));
                         }} />
                     </Tooltip>
                 </Space>
@@ -224,7 +228,7 @@ export default function AgentsPage() {
                 </Col>
             </Row>
 
-            <Card title="Agent Performance" extra={<Select defaultValue="monthly" style={{ width: 120 }}><Select.Option value="monthly">Monthly</Select.Option><Select.Option value="yearly">Yearly</Select.Option></Select>}>
+            <Card title={t_home("agentPerformance")} extra={<Select defaultValue="monthly" style={{ width: 120 }}><Select.Option value="monthly">Monthly</Select.Option><Select.Option value="yearly">Yearly</Select.Option></Select>}>
                 <Column {...chartConfig} height={300} />
             </Card>
 

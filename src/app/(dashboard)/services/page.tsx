@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -52,6 +53,10 @@ const { TextArea } = Input;
 
 function ServicesPageContent() {
     const money = useMoney();
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -217,10 +222,10 @@ function ServicesPageContent() {
             onOk: async () => {
                 try {
                     await servicesApi.delete(service._id);
-                    showToast.success('Service deleted successfully');
+                    showToast.success(t_toasts("serviceDeleted"));
                     fetchServices();
                 } catch (error) {
-                    showToast.error('Failed to delete service');
+                    showToast.error(t_errors2("deleteService"));
                 }
             },
         });
@@ -230,10 +235,10 @@ function ServicesPageContent() {
         try {
             setActionLoading(service._id);
             await servicesApi.verify(service._id);
-            showToast.success('Service verified successfully');
+            showToast.success(t_toasts("serviceVerified"));
             fetchServices();
         } catch (error) {
-            showToast.error('Failed to verify service');
+            showToast.error(t_errors2("verifyService"));
         } finally {
             setActionLoading(null);
         }
@@ -243,7 +248,7 @@ function ServicesPageContent() {
         try {
             setActionLoading(service._id);
             await servicesApi.update(service._id, { status: 'active' });
-            showToast.success('Service activated successfully');
+            showToast.success(t_toasts("serviceActivated"));
             fetchServices();
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to activate service');
@@ -266,20 +271,20 @@ function ServicesPageContent() {
 
     const handleRejectSubmit = async () => {
         if (!selectedService || !rejectionReason.trim()) {
-            showToast.error('Please provide a rejection reason');
+            showToast.error(t_errors2("rejectionReasonRequired"));
             return;
         }
 
         try {
             setActionLoading(selectedService._id);
             await servicesApi.reject(selectedService._id, rejectionReason);
-            showToast.success('Service rejected');
+            showToast.success(t_toasts("serviceRejected"));
             setIsRejectModalOpen(false);
             setSelectedService(null);
             setRejectionReason('');
             fetchServices();
         } catch (error) {
-            showToast.error('Failed to reject service');
+            showToast.error(t_errors2("rejectService"));
         } finally {
             setActionLoading(null);
         }
@@ -298,7 +303,7 @@ function ServicesPageContent() {
             );
             
             await servicesApi.unpublish(service._id);
-            showToast.success('Service unpublished successfully');
+            showToast.success(t_toasts("serviceUnpublished"));
             
             // Refresh to ensure consistency with backend
             await fetchServices();
@@ -330,7 +335,7 @@ function ServicesPageContent() {
             );
             
             await servicesApi.republish(service._id);
-            showToast.success('Service republished successfully');
+            showToast.success(t_toasts("serviceRepublished"));
             
             // Refresh to ensure consistency with backend
             await fetchServices();
@@ -389,7 +394,7 @@ function ServicesPageContent() {
                         onClick={() => router.push('/services/create')}
                         size="large"
                     >
-                        Create Service
+                        {t_listing("createService")}
                     </Button>
                 )}
             </div>
@@ -414,7 +419,7 @@ function ServicesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Total Services"
+                                title={t_listing("totalServices")}
                                 value={stats.total}
                                 prefix={<ToolOutlined />}
                             />
@@ -423,7 +428,7 @@ function ServicesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Verified"
+                                title={t_common("verified")}
                                 value={stats.verified}
                                 valueStyle={{ color: '#52c41a' }}
                                 prefix={<CheckCircleOutlined />}
@@ -433,7 +438,7 @@ function ServicesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Pending"
+                                title={t_common("pending")}
                                 value={stats.pending}
                                 valueStyle={{ color: '#faad14' }}
                                 prefix={<ClockCircleOutlined />}
@@ -448,7 +453,7 @@ function ServicesPageContent() {
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Search
-                            placeholder="Search by title or description..."
+                            placeholder={t_listing("searchTitleDescription")}
                             allowClear
                             size="large"
                             prefix={<SearchOutlined />}
@@ -509,7 +514,7 @@ function ServicesPageContent() {
 
             {/* Review Modal (Admin): view full details then Verify or Reject */}
             <Modal
-                title="Review Service"
+                title={t_listing("reviewService")}
                 open={reviewModalOpen}
                 onCancel={() => {
                     setReviewModalOpen(false);
@@ -521,11 +526,11 @@ function ServicesPageContent() {
                 {serviceForReview && (
                     <>
                         <Descriptions bordered column={1} size="small" className="mb-4">
-                            <Descriptions.Item label="Title">{serviceForReview.title}</Descriptions.Item>
-                            <Descriptions.Item label="Category">{getServiceCategoryLabel(serviceForReview) || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Provider">{getServiceProviderLabel(serviceForReview) || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Location">{serviceForReview.location || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Price">
+                            <Descriptions.Item label={t_common("title")}>{serviceForReview.title}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("category")}>{getServiceCategoryLabel(serviceForReview) || '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("provider")}>{getServiceProviderLabel(serviceForReview) || '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("location")}>{serviceForReview.location || '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("price")}>
                                 {serviceForReview.price == null ? '—' : (() => {
                                     const p = money.forListing(serviceForReview.price, serviceForReview.currency);
                                     return (
@@ -540,8 +545,8 @@ function ServicesPageContent() {
                                     );
                                 })()}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Business">{getServiceBusinessLabel(serviceForReview) || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Description">
+                            <Descriptions.Item label={t_common("business")}>{getServiceBusinessLabel(serviceForReview) || '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("description")}>
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{serviceForReview.description || '—'}</div>
                             </Descriptions.Item>
                         </Descriptions>
@@ -591,7 +596,7 @@ function ServicesPageContent() {
                                 }}
                                 style={{ background: '#52c41a', borderColor: '#52c41a' }}
                             >
-                                Verify
+                                {t_common("verify")}
                             </Button>
                         </div>
                     </>
@@ -600,7 +605,7 @@ function ServicesPageContent() {
 
             {/* Rejection Modal (Admin Only) */}
             <Modal
-                title="Reject Service"
+                title={t_listing("rejectService")}
                 open={isRejectModalOpen}
                 onOk={handleRejectSubmit}
                 onCancel={() => {
@@ -615,7 +620,7 @@ function ServicesPageContent() {
                 </div>
                 <TextArea
                     rows={4}
-                    placeholder="Enter rejection reason (will be sent to the provider via email)..."
+                    placeholder={t_listing("rejectionProvider")}
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                 />

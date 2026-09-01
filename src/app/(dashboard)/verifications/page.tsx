@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Card from 'antd/es/card';
 import Table from 'antd/es/table';
@@ -34,6 +35,7 @@ function certificateUrlLooksPdf(url: string): boolean {
 }
 
 function VerificationDocumentSection({ label, url, viewLabel }: { label: string; url: string; viewLabel?: string }) {
+    const t_form = useTranslations("form");
     if (!url?.trim()) return null;
 
     return (
@@ -54,7 +56,7 @@ function VerificationDocumentSection({ label, url, viewLabel }: { label: string;
                             <div className="min-w-0">
                                 <p className="text-sm font-semibold text-slate-900">PDF document</p>
                                 <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                                    Opens in a new tab so you can review the full document.
+                                    {t_form("opensNewTab")}
                                 </p>
                             </div>
                         </div>
@@ -102,6 +104,11 @@ interface Verification {
 }
 
 export default function VerificationsPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_home = useTranslations("home");
+    const t_listing = useTranslations("listing");
     const [loading, setLoading] = useState(true);
     const [verifications, setVerifications] = useState<Verification[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -128,7 +135,7 @@ export default function VerificationsPage() {
             const s = (statsRes.data as any)?.data ?? statsRes.data;
             setStats(s);
         } catch {
-            message.error('Failed to load verifications');
+            message.error(t_errors2("loadVerifications"));
         } finally {
             setLoading(false);
         }
@@ -217,7 +224,7 @@ export default function VerificationsPage() {
                         setRejectionReason('');
                     }}
                 >
-                    Review
+                    {t_common("review")}
                 </Button>
             ),
         },
@@ -231,7 +238,7 @@ export default function VerificationsPage() {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                 }}>
-                    ID Verifications
+                    {t_home("idVerifications")}
                 </Title>
                 <Text type="secondary">Review and approve user identity documents</Text>
             </div>
@@ -284,7 +291,7 @@ export default function VerificationsPage() {
                     selected?.status === 'pending'
                         ? [
                               <Button key="reject" danger loading={actionLoading} onClick={() => handleAction(selected._id, 'rejected')}>
-                                  Reject
+                                  {t_common("reject")}
                               </Button>,
                               <Button
                                   key="approve"
@@ -293,7 +300,7 @@ export default function VerificationsPage() {
                                   onClick={() => handleAction(selected._id, 'approved')}
                                   style={{ background: '#52c41a', borderColor: '#52c41a' }}
                               >
-                                  Approve
+                                  {t_common("approve")}
                               </Button>,
                           ]
                         : [<Button key="close" onClick={() => setViewOpen(false)}>Close</Button>]
@@ -335,7 +342,7 @@ export default function VerificationsPage() {
                         <div>
                             <Text type="secondary">Front of ID</Text>
                             <div className="mt-1">
-                                <Image src={selected.idFrontImage} alt="Front" style={{ maxHeight: 250, borderRadius: 8 }} />
+                                <Image src={selected.idFrontImage} alt={t_form("front")} style={{ maxHeight: 250, borderRadius: 8 }} />
                             </div>
                         </div>
 
@@ -343,7 +350,7 @@ export default function VerificationsPage() {
                             <div>
                                 <Text type="secondary">Back of ID</Text>
                                 <div className="mt-1">
-                                    <Image src={selected.idBackImage} alt="Back" style={{ maxHeight: 250, borderRadius: 8 }} />
+                                    <Image src={selected.idBackImage} alt={t_common("back")} style={{ maxHeight: 250, borderRadius: 8 }} />
                                 </div>
                             </div>
                         )}
@@ -351,7 +358,7 @@ export default function VerificationsPage() {
                         {shouldShowBusinessRegistrationSection(selected) && (
                             selected.businessRegistrationCertificate?.trim() ? (
                                 <VerificationDocumentSection
-                                    label="Business registration certificate"
+                                    label={t_form("businessCert")}
                                     url={selected.businessRegistrationCertificate}
                                     viewLabel="View certificate"
                                 />
@@ -359,7 +366,7 @@ export default function VerificationsPage() {
                                 <div>
                                     <Text type="secondary">Business registration certificate</Text>
                                     <div className="mt-1 text-sm text-gray-500 italic">
-                                        Not submitted
+                                        {t_common("notSubmitted")}
                                     </div>
                                 </div>
                             )
@@ -369,7 +376,7 @@ export default function VerificationsPage() {
                             <div>
                                 <Text type="secondary">Selfie with ID</Text>
                                 <div className="mt-1">
-                                    <Image src={selected.selfieImage} alt="Selfie" style={{ maxHeight: 250, borderRadius: 8 }} />
+                                    <Image src={selected.selfieImage} alt={t_form("selfie")} style={{ maxHeight: 250, borderRadius: 8 }} />
                                 </div>
                             </div>
                         )}
@@ -377,7 +384,7 @@ export default function VerificationsPage() {
                         {shouldShowSignedAgentAgreementSection(selected) && (
                             selected.signedAgentAgreement?.trim() ? (
                                 <VerificationDocumentSection
-                                    label="Signed agent agreement"
+                                    label={t_form("signedAgreement")}
                                     url={selected.signedAgentAgreement}
                                     viewLabel="View agreement"
                                 />
@@ -385,7 +392,7 @@ export default function VerificationsPage() {
                                 <div>
                                     <Text type="secondary">Signed agent agreement</Text>
                                     <div className="mt-1 text-sm text-gray-500 italic">
-                                        Not submitted
+                                        {t_common("notSubmitted")}
                                     </div>
                                 </div>
                             )
@@ -397,7 +404,7 @@ export default function VerificationsPage() {
                                 <TextArea
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
-                                    placeholder="Reason for rejection..."
+                                    placeholder={t_listing("reasonForRejection")}
                                     rows={3}
                                     className="mt-1"
                                 />
