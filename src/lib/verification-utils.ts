@@ -15,11 +15,6 @@ export function requiresBusinessRegistrationCertificate(userType?: string): bool
   return userType === 'service_provider' || userType === 'real_estate_agency';
 }
 
-/** Individual agents submit a signed agent agreement (not real estate agencies). */
-export function requiresSignedAgentAgreement(userType?: string): boolean {
-  return userType === 'agent';
-}
-
 export function shouldShowBusinessRegistrationSection(
   verification: {
     userId?: string | { userType?: string } | null;
@@ -33,18 +28,14 @@ export function shouldShowBusinessRegistrationSection(
   return Boolean(verification.businessRegistrationCertificate?.trim());
 }
 
+/**
+ * The signed agent agreement is no longer collected. Show it only when a past
+ * submission actually carries one — never as an outstanding requirement.
+ */
 export function shouldShowSignedAgentAgreementSection(
   verification: {
-    userId?: string | { userType?: string } | null;
     signedAgentAgreement?: string | null;
   },
 ): boolean {
-  const userType = getVerificationUserType(verification);
-  if (userType === 'real_estate_agency') {
-    return false;
-  }
-  if (requiresSignedAgentAgreement(userType)) {
-    return true;
-  }
   return Boolean(verification.signedAgentAgreement?.trim());
 }

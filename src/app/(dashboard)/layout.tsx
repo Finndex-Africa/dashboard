@@ -121,9 +121,9 @@ export default function DashboardLayout({
       roles: ["admin", "admin_property", "admin_services"],
     },
     {
-      key: "/notify-me",
+      key: "/service-requests",
       icon: <NotificationOutlined />,
-      label: t("notifyMe"),
+      label: t("serviceRequests"),
       roles: ["admin"],
     },
     {
