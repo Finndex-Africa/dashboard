@@ -381,21 +381,13 @@ export default function VerificationsPage() {
                             </div>
                         )}
 
+                        {/* Legacy documents only — the agreement is no longer requested. */}
                         {shouldShowSignedAgentAgreementSection(selected) && (
-                            selected.signedAgentAgreement?.trim() ? (
-                                <VerificationDocumentSection
-                                    label={t_form("signedAgreement")}
-                                    url={selected.signedAgentAgreement}
-                                    viewLabel="View agreement"
-                                />
-                            ) : (
-                                <div>
-                                    <Text type="secondary">Signed agent agreement</Text>
-                                    <div className="mt-1 text-sm text-gray-500 italic">
-                                        {t_common("notSubmitted")}
-                                    </div>
-                                </div>
-                            )
+                            <VerificationDocumentSection
+                                label={t_form("signedAgreement")}
+                                url={selected.signedAgentAgreement!}
+                                viewLabel="View agreement"
+                            />
                         )}
 
                         {selected.status === 'pending' && (

@@ -23,7 +23,6 @@
     "users": "Utilisateurs",
     "verifications": "Vérifications",
     "userReports": "Signalements",
-    "notifyMe": "Alertes",
     "notifications": "Notifications",
     "messages": "Messages",
     "profile": "Profil",
@@ -32,7 +31,8 @@
     "logoAlt": "FindAfriq",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
-    "defaultUserName": "Utilisateur"
+    "defaultUserName": "Utilisateur",
+    "serviceRequests": "Demandes de service"
   },
   "roles": {
     "admin": "Administrateur",
@@ -289,7 +289,6 @@
     "updateAdStatus": "Impossible de mettre à jour le statut de la publicité",
     "deleteUser": "Impossible de supprimer l'utilisateur",
     "loadBookings": "Impossible de charger les réservations",
-    "loadNotifyMe": "Impossible de charger les inscriptions aux alertes",
     "loadReportDetails": "Impossible de charger les détails du signalement",
     "loadUserReports": "Impossible de charger les signalements",
     "loadVerifications": "Impossible de charger les vérifications",
@@ -313,7 +312,9 @@
     "atLeastOneImage": "Au moins 1 image est requise",
     "editOwnProperties": "Vous ne pouvez modifier que vos propres biens",
     "editOwnServices": "Vous ne pouvez modifier que vos propres services",
-    "adminOnlyVerify": "Seuls les administrateurs peuvent vérifier ou annuler la vérification des utilisateurs"
+    "adminOnlyVerify": "Seuls les administrateurs peuvent vérifier ou annuler la vérification des utilisateurs",
+    "loadServiceRequests": "Échec du chargement des demandes de service",
+    "updateServiceRequest": "Échec de la mise à jour de la demande de service"
   },
   "form": {
     "basicInformation": "Informations générales",
@@ -443,10 +444,8 @@
     "confirmBooking": "Confirmer la réservation",
     "cancelBooking": "Annuler la réservation",
     "userReports": "Signalements",
-    "notifyMe": "Alertes",
     "advertisements": "Publicités",
     "reportsIntro": "Consultez les retours et signalements soumis par les utilisateurs de la plateforme",
-    "notifyMeIntro": "Utilisateurs et visiteurs souhaitant être informés du lancement de la fonctionnalité Acheter & Vendre",
     "noMessages": "Aucun message pour le moment",
     "conversationsHere": "Vos conversations apparaîtront ici",
     "deleteAdConfirm": "Voulez-vous vraiment supprimer cette publicité ?",
@@ -454,7 +453,9 @@
     "photoUploadTodo": "Le téléversement de photos reste à implémenter",
     "contactIntro": "Remplissez le formulaire ci-dessous et nous vous répondrons rapidement.",
     "submitRequest": "Envoyer la demande",
-    "activateService": "Activer le service"
+    "activateService": "Activer le service",
+    "serviceRequests": "Demandes de service",
+    "serviceRequestsIntro": "Ce que les utilisateurs recherchaient lorsqu'ils n'ont trouvé aucun bien, service ou article adapté"
   },
   "reviews2": {
     "reviewsRatings": "Avis et notes",
@@ -473,15 +474,43 @@
     "e_g_5": "par ex. 5",
     "e_g_c_of_o_survey_plan": "par ex. titre foncier, plan cadastral",
     "e_g_kibagabaga_kigali": "par ex. Kibagabaga, Kigali",
-    "e_g_231886149219": "par ex. +231886149219",
+    "e_g_231886149219": "par ex. +250795784530",
     "e_g_150": "par ex. 150",
     "e_g_2_3_hours": "par ex. 2 à 3 heures",
     "e_g_abc_services_ltd": "par ex. ABC Services Ltd",
     "e_g_inappropriate_content_spam_false_inf": "par ex. contenu inapproprié, spam, informations mensongères...",
     "e_g_lic_12345": "par ex. LIC-12345",
     "e_g_luxury_3br_apartment_in_westlands": "par ex. appartement de luxe 3 chambres à Westlands",
-    "e_g_paynesville_city_montserrado": "par ex. Paynesville City, Montserrado",
+    "e_g_paynesville_city_montserrado": "par ex. Kimironko, Kigali",
     "e_g_professional_cleaning_service": "par ex. service de nettoyage professionnel",
     "e_g_westlands_nairobi": "par ex. Westlands, Nairobi"
+  },
+  "serviceRequests": {
+    "total": "Total des demandes",
+    "new": "Nouvelles",
+    "inProgress": "En cours",
+    "resolved": "Résolues",
+    "closed": "Clôturées",
+    "allStatuses": "Tous les statuts",
+    "allCategories": "Toutes les catégories",
+    "name": "Nom",
+    "contact": "Coordonnées",
+    "category": "Catégorie",
+    "details": "Besoin exprimé",
+    "location": "Localisation",
+    "budget": "Budget",
+    "status": "Statut",
+    "submittedAt": "Envoyée le",
+    "adminNotes": "Notes internes",
+    "notesPlaceholder": "Ajouter une note de suivi…",
+    "save": "Enregistrer",
+    "empty": "Aucune demande de service pour le moment",
+    "totalRequests": "{total} demandes au total",
+    "updated": "Demande de service mise à jour",
+    "categoryProperty": "Bien immobilier",
+    "categoryService": "Service",
+    "categoryBuyAndSell": "Achat & Vente",
+    "accessDenied": "Accès refusé",
+    "accessDeniedBody": "Vous n'avez pas l'autorisation de consulter cette page."
   }
 }
