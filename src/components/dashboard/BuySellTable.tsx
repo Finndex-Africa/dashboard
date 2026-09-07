@@ -311,12 +311,14 @@ export function BuySellTable({
                           pageSize: pagination.pageSize,
                           onChange: pagination.onChange,
                           showTotal: (total) => `Total ${total} listing${total !== 1 ? 's' : ''}`,
-                          showSizeChanger: true,
+                          showSizeChanger: false,
+                          hideOnSinglePage: true,
                       }
                     : {
-                          pageSize: 20,
+                          pageSize: 10,
                           showTotal: (total) => `Total ${total} listing${total !== 1 ? 's' : ''}`,
-                          showSizeChanger: true,
+                          showSizeChanger: false,
+                          hideOnSinglePage: true,
                       }
             }
             className="custom-table"

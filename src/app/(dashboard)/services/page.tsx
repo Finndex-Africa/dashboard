@@ -44,6 +44,13 @@ import {
     type ServiceTab,
 } from '@/lib/services-utils';
 import { SERVICE_CATEGORY_OPTIONS } from '@/lib/service-categories';
+import {
+    LIST_PAGE_SIZE,
+    EMPTY_LIST_PAGINATION,
+    extractListItems,
+    extractListPagination,
+    tablePaginationConfig,
+} from '@/lib/list-pagination';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -71,6 +78,9 @@ function ServicesPageContent() {
     const [savedIds, setSavedIds] = useState<string[]>([]);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [serviceForReview, setServiceForReview] = useState<Service | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState(EMPTY_LIST_PAGINATION);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Determine current view/tab based on role and query params
     const isHS = user?.role && isHomeSeeker(user.role);
@@ -81,7 +91,16 @@ function ServicesPageContent() {
     const currentTab = isHS ? (tabParam || getDefaultServiceTab()) : 'active';
     const currentView = !isHS ? (viewParam || getDefaultServiceView(user?.role || 'home_seeker')) : 'all';
 
-    // Fetch services on mount and when view/tab changes
+    const useServerPagination = Boolean(
+        isAdmin || (isHS && currentTab === 'active') || (isSP && currentView === 'all'),
+    );
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
+        return () => clearTimeout(timer);
+    }, [searchText]);
+
+    // Fetch services on mount and when view/tab/page/filters change
     useEffect(() => {
         if (!user?.role) {
             return;
@@ -98,8 +117,9 @@ function ServicesPageContent() {
             return;
         }
 
-        fetchServices();
-    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS]);
+        fetchServices(currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS, currentPage, debouncedSearch, statusFilter, categoryFilter]);
 
     // Load saved services for home_seekers
     useEffect(() => {
@@ -108,7 +128,7 @@ function ServicesPageContent() {
         }
     }, [isHS]);
 
-    const fetchServices = async () => {
+    const fetchServices = async (page = currentPage) => {
         if (!user?.role) {
             return;
         }
@@ -116,71 +136,99 @@ function ServicesPageContent() {
         try {
             setLoading(true);
             let fetchedServices: Service[] = [];
+            let response: unknown = null;
+            const serverFilters = {
+                page,
+                limit: LIST_PAGE_SIZE,
+                status: statusFilter !== 'all' ? statusFilter : undefined,
+                search: debouncedSearch || undefined,
+                category: categoryFilter !== 'all' ? categoryFilter : undefined,
+            };
 
             if (isHS) {
-                // Home seekers: fetch verified/active services only (REDUCED to 10 for fastest loading)
-                const response = await servicesApi.getAll({ page: 1, limit: 10 });
-                const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                fetchedServices = allServices.filter((s: Service) =>
-                    s.verificationStatus === 'verified' && s.status === 'active'
+                response = await servicesApi.getAll({
+                    page,
+                    limit: LIST_PAGE_SIZE,
+                    status: 'active',
+                    verified: true,
+                    category: categoryFilter !== 'all' ? categoryFilter : undefined,
+                    location: debouncedSearch || undefined,
+                });
+                fetchedServices = extractListItems<Service>(response).filter(
+                    (s) => s.verificationStatus === 'verified' && s.status === 'active',
                 );
             } else if (isAdmin) {
-                // Admin: fetch ALL services with no restrictions using admin endpoint
-                if (currentView === 'all') {
-                    // Admin "all" view: use admin endpoint to see ALL services regardless of status
-                    const response = await servicesApi.getAllAdminServices({ page: 1, limit: 10 });
-                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
-                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                } else if (currentView === 'pending') {
-                    // Admin viewing pending: use admin-specific endpoint
-                    const response = await servicesApi.getPendingServices(1, 10);
-                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
-                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                if (currentView === 'pending') {
+                    response = await servicesApi.getPendingServices(page, LIST_PAGE_SIZE);
                 } else {
-                    // Admin viewing "mine" - still use admin endpoint but could filter by user if needed
-                    const response = await servicesApi.getAllAdminServices({ page: 1, limit: 10 });
-                    // Use same pattern as properties: try both response.data (if array) and response.data.data (if nested)
-                    fetchedServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                    response = await servicesApi.getAllAdminServices(serverFilters);
                 }
+                fetchedServices = extractListItems<Service>(response);
             } else if (isSP) {
-                // Service Providers: fetch based on view
                 if (currentView === 'mine') {
-                    const response = await servicesApi.getMyServices();
-                    fetchedServices = Array.isArray(response.data) ? response.data : [];
+                    response = await servicesApi.getMyServices();
+                    fetchedServices = extractListItems<Service>(response);
+                    if (!fetchedServices.length && Array.isArray((response as any)?.data)) {
+                        fetchedServices = (response as any).data;
+                    }
                 } else if (currentView === 'all') {
-                    // Browse all verified services (REDUCED to 10 for fastest loading)
-                    const response = await servicesApi.getAll({ page: 1, limit: 10 });
-                    const allServices = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                    fetchedServices = allServices.filter((s: Service) =>
-                        s.verificationStatus === 'verified' && s.status === 'active'
+                    response = await servicesApi.getAll({
+                        page,
+                        limit: LIST_PAGE_SIZE,
+                        status: 'active',
+                        verified: true,
+                        category: categoryFilter !== 'all' ? categoryFilter : undefined,
+                        location: debouncedSearch || undefined,
+                    });
+                    fetchedServices = extractListItems<Service>(response).filter(
+                        (s) => s.verificationStatus === 'verified' && s.status === 'active',
                     );
                 } else if (currentView === 'pending') {
-                    const response = await servicesApi.getMyServices();
-                    const myServices = Array.isArray(response.data) ? response.data : [];
-                    fetchedServices = myServices.filter((s: Service) => serviceNeedsReview(s));
+                    response = await servicesApi.getMyServices();
+                    const myServices = extractListItems<Service>(response);
+                    const source = myServices.length
+                        ? myServices
+                        : Array.isArray((response as any)?.data)
+                          ? (response as any).data
+                          : [];
+                    fetchedServices = source.filter((s: Service) => serviceNeedsReview(s));
                 }
             }
 
             setServices(fetchedServices);
+            if (useServerPagination) {
+                setPagination(extractListPagination(response, fetchedServices.length, page, LIST_PAGE_SIZE));
+            } else {
+                setPagination({
+                    ...EMPTY_LIST_PAGINATION,
+                    totalItems: fetchedServices.length,
+                    itemsPerPage: LIST_PAGE_SIZE,
+                    totalPages: Math.max(1, Math.ceil(fetchedServices.length / LIST_PAGE_SIZE)),
+                });
+            }
         } catch (error: any) {
             if (error.response?.status !== 404) {
                 const errorMsg = error.response?.data?.message || error.message || 'Failed to load services';
                 showToast.error(errorMsg);
             }
             setServices([]);
+            setPagination(EMPTY_LIST_PAGINATION);
         } finally {
             setLoading(false);
         }
     };
 
-    // Filter services for display
+    // Filter services for display. Admin / server-paged views already apply search & status.
     const filteredServices = services.filter(service => {
-        // Home seeker: filter by tab (active vs saved)
         if (isHS && currentTab === 'saved') {
             if (!savedIds.includes(service._id)) return false;
         }
 
-        // Search filter
+        if (useServerPagination) {
+            if (categoryFilter !== 'all' && service.category !== categoryFilter) return false;
+            return true;
+        }
+
         if (searchText) {
             const search = searchText.toLowerCase();
             const matchesTitle = service.title?.toLowerCase().includes(search);
@@ -188,10 +236,8 @@ function ServicesPageContent() {
             if (!matchesTitle && !matchesDescription) return false;
         }
 
-        // Status filter
         if (statusFilter !== 'all' && service.status !== statusFilter) return false;
 
-        // Category filter
         if (categoryFilter !== 'all' && service.category !== categoryFilter) return false;
 
         return true;
@@ -353,7 +399,35 @@ function ServicesPageContent() {
         showToast.success(isSaved ? 'Service saved' : 'Service unsaved');
     };
 
+    const handleToggleFeatured = async (service: Service) => {
+        const newValue = !service.isPremium;
+        try {
+            setActionLoading(service._id);
+            setServices((prev) =>
+                prev.map((s) => (s._id === service._id ? { ...s, isPremium: newValue } : s)),
+            );
+            await servicesApi.toggleFeatured(service._id, newValue);
+            showToast.success(newValue ? 'Service marked as featured' : 'Featured status removed');
+        } catch (error: any) {
+            setServices((prev) =>
+                prev.map((s) => (s._id === service._id ? { ...s, isPremium: service.isPremium } : s)),
+            );
+            showToast.error(error.response?.data?.message || 'Failed to update featured status');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const resetToFirstPage = () => {
+        setCurrentPage(1);
+    };
+
     const handleTabChange = (key: string) => {
+        setCurrentPage(1);
         if (isHS) {
             router.push(`/services?tab=${key}`);
         } else {
@@ -451,14 +525,20 @@ function ServicesPageContent() {
                             size="large"
                             prefix={<SearchOutlined />}
                             value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
+                            onChange={(e) => {
+                                setSearchText(e.target.value);
+                                resetToFirstPage();
+                            }}
                         />
                     </Col>
                     <Col xs={12} md={6}>
                         <Select
                             size="large"
                             value={statusFilter}
-                            onChange={setStatusFilter}
+                            onChange={(v) => {
+                                setStatusFilter(v);
+                                resetToFirstPage();
+                            }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Status</Select.Option>
@@ -471,7 +551,10 @@ function ServicesPageContent() {
                         <Select
                             size="large"
                             value={categoryFilter}
-                            onChange={setCategoryFilter}
+                            onChange={(v) => {
+                                setCategoryFilter(v);
+                                resetToFirstPage();
+                            }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Categories</Select.Option>
@@ -491,6 +574,16 @@ function ServicesPageContent() {
                     services={filteredServices}
                     loading={loading}
                     adminStatusColumn={isAdmin}
+                    pagination={
+                        useServerPagination
+                            ? tablePaginationConfig(pagination, handlePageChange, 'services')
+                            : {
+                                  pageSize: LIST_PAGE_SIZE,
+                                  showSizeChanger: false,
+                                  hideOnSinglePage: true,
+                                  showTotal: (total) => `Total ${total} services`,
+                              }
+                    }
                     onEdit={(s) => router.push(`/services/${s._id}`)}
                     onDelete={canCreateService(user.role) ? handleDelete : undefined}
                     onReview={canModerateServices(user.role) ? handleReviewClick : undefined}
@@ -500,6 +593,7 @@ function ServicesPageContent() {
                     onUnpublish={canCreateService(user.role) ? handleUnpublish : undefined}
                     onRepublish={canCreateService(user.role) ? handleRepublish : undefined}
                     onSaveToggle={isHS ? handleSaveToggle : undefined}
+                    onToggleFeatured={isAdmin ? handleToggleFeatured : undefined}
                     savedIds={isHS ? savedIds : undefined}
                     approvingId={actionLoading}
                 />

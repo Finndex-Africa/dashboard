@@ -145,13 +145,31 @@ export const servicesApi = {
     },
 
     // Get all services (Admin only) - no restrictions
-    getAllAdminServices: async (filters?: { page?: number; limit?: number; status?: string; search?: string }) => {
+    getAllAdminServices: async (filters?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        category?: string;
+        sort?: string;
+        sortBy?: string;
+        sortOrder?: string;
+    }) => {
         const params = new URLSearchParams();
         if (filters?.page) params.append('page', filters.page.toString());
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.status) params.append('status', filters.status);
         if (filters?.search) params.append('search', filters.search);
+        if (filters?.category) params.append('category', filters.category);
+        if (filters?.sort) params.append('sort', filters.sort);
+        if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+        if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
         return apiClient.get<PaginatedResponse<Service>>(`/admin/services?${params.toString()}`);
+    },
+
+    /** Toggle the isPremium (featured) flag — same pattern as buy-sell. */
+    toggleFeatured: async (id: string, isPremium: boolean) => {
+        return apiClient.patch<Service>(`/services/${id}`, { isPremium });
     },
 
     // Get pending services (Admin only)

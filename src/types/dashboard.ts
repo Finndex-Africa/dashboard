@@ -46,6 +46,8 @@ export interface Service {
     bookings?: number;
     views?: number;
     verified?: boolean;
+    /** Admin-controlled featured flag; same as buy-sell isPremium */
+    isPremium?: boolean;
 
     createdAt: string;
     updatedAt: string;
@@ -190,7 +192,7 @@ export interface Booking {
     paymentReference?: string;
     paidAt?: string;
     // Commission fields
-    platformFee?: number; // 10% FindAfriq fee
+    platformFee?: number; // 10% Findafriq fee
     providerEarnings?: number; // 90% for service provider
     commissionProcessed: boolean;
     commissionProcessedAt?: string;

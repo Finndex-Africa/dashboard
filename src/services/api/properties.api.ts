@@ -118,13 +118,31 @@ export const propertiesApi = {
     },
 
     // Get all properties (Admin only) - no restrictions
-    getAllAdminProperties: async (filters?: { page?: number; limit?: number; status?: string; search?: string }) => {
+    getAllAdminProperties: async (filters?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        propertyType?: string;
+        sort?: string;
+        sortBy?: string;
+        sortOrder?: string;
+    }) => {
         const params = new URLSearchParams();
         if (filters?.page) params.append('page', filters.page.toString());
         if (filters?.limit) params.append('limit', filters.limit.toString());
         if (filters?.status) params.append('status', filters.status);
         if (filters?.search) params.append('search', filters.search);
+        if (filters?.propertyType) params.append('propertyType', filters.propertyType);
+        if (filters?.sort) params.append('sort', filters.sort);
+        if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+        if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
         return apiClient.get<PaginatedResponse<Property>>(`/admin/properties?${params.toString()}`);
+    },
+
+    /** Toggle the isPremium (featured) flag — same pattern as buy-sell. */
+    toggleFeatured: async (id: string, isPremium: boolean) => {
+        return apiClient.patch<Property>(`/properties/${id}`, { isPremium });
     },
 
     // Get pending properties (Admin only)

@@ -41,6 +41,8 @@ import { notificationsApi } from "@/services/api/notifications.api";
 import { dashboardApi } from "@/services/api/dashboard.api";
 import type { AdminDashboardStats } from "@/services/api/dashboard.api";
 import type { Property } from "@/types/dashboard";
+import { applyBrandDisplay } from "@/lib/branding";
+import { extractListItems, extractListPagination } from "@/lib/list-pagination";
 
 const { Title, Text } = Typography;
 
@@ -128,6 +130,7 @@ export default function AdminDashboard() {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [userName, setUserName] = useState("Admin");
+  const [agencyCountFallback, setAgencyCountFallback] = useState(0);
 
   const availableYears = [2024, 2025, 2026];
   const availableMonths = [
@@ -155,7 +158,8 @@ export default function AdminDashboard() {
         localStorage.getItem("user") || sessionStorage.getItem("user");
       if (raw) {
         const u = JSON.parse(raw);
-        setUserName(u.firstName || u.email?.split("@")[0] || "Admin");
+        const branded = applyBrandDisplay(u);
+        setUserName(branded.firstName || branded.email?.split("@")[0] || "Admin");
       }
     } catch {
       /* ignore */
@@ -167,7 +171,7 @@ export default function AdminDashboard() {
     (async () => {
       try {
         setLoading(true);
-        const [pRes, sRes, uRes, nRes, statsRes] = await Promise.all([
+        const [pRes, sRes, uRes, nRes, statsRes, agencyRes] = await Promise.all([
           propertiesApi
             .getAllAdminProperties({ page: 1, limit: 10 })
             .catch(() => ({ data: [] })),
@@ -177,6 +181,9 @@ export default function AdminDashboard() {
           usersApi.getAll({ page: 1, limit: 10 }).catch(() => ({ data: [] })),
           notificationsApi.getAll({ limit: 10 }).catch(() => ({ data: [] })),
           dashboardApi.getAdminStats().catch(() => null),
+          usersApi
+            .getAll({ page: 1, limit: 1, userType: "real_estate_agency" })
+            .catch(() => null),
         ]);
         if (!mounted) return;
         setRawResponses({ pRes, sRes, uRes, nRes });
@@ -189,6 +196,9 @@ export default function AdminDashboard() {
         setServices(ex(sRes));
         setUsers(ex(uRes));
         setNotifications(ex(nRes));
+        const agencyPag = extractListPagination(agencyRes, 0, 1, 1);
+        const agencyItems = extractListItems(agencyRes);
+        setAgencyCountFallback(agencyPag.totalItems || agencyItems.length);
       } catch {
         if (!mounted) return;
         setProperties([]);
@@ -224,7 +234,17 @@ export default function AdminDashboard() {
   const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
 
   const pendingUserReports = adminStats?.userReports?.pending ?? 0;
-  const realEstateAgencyCount = adminStats?.users?.realEstateAgency ?? 0;
+  const usersBreakdown = adminStats?.users as
+    | (AdminDashboardStats["users"] & {
+        real_estate_agency?: number;
+        realEstateAgencies?: number;
+      })
+    | undefined;
+  const realEstateAgencyCount =
+    usersBreakdown?.realEstateAgency ??
+    usersBreakdown?.real_estate_agency ??
+    usersBreakdown?.realEstateAgencies ??
+    agencyCountFallback;
 
   /* ─── quick action cards ─── */
   const quickActions = [
@@ -777,15 +797,11 @@ export default function AdminDashboard() {
                   color: "#0044CC",
                 },
                 { label: "Users", value: usrTotal, color: "#52c41a" },
-                ...(realEstateAgencyCount > 0
-                  ? [
-                      {
-                        label: "Real Estate Agencies",
-                        value: realEstateAgencyCount,
-                        color: "#13c2c2",
-                      },
-                    ]
-                  : []),
+                {
+                  label: "Real Estate Agencies",
+                  value: realEstateAgencyCount,
+                  color: "#13c2c2",
+                },
                 ...(pendingUserReports > 0
                   ? [
                       {

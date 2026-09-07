@@ -20,8 +20,8 @@ const whitneyMedium = DM_Sans({
 })
 
 export const metadata: Metadata = {
-    title: 'FindAfriq Dashboard',
-    description: 'Manage your FindAfriq properties and services',
+    title: 'Findafriq Dashboard',
+    description: 'Manage your Findafriq properties and services',
     icons: {
         icon: '/favicon.ico',
         apple: '/favicon.ico',

@@ -261,7 +261,7 @@ export default function DashboardLayout({
           >
             <img
               src="/images/logos/Header%20Logo-Findafriq.png"
-              alt="FindAfriq"
+              alt="Findafriq"
               className="h-10 object-contain"
             />
           </div>
@@ -323,7 +323,7 @@ export default function DashboardLayout({
               >
                 <img
                   src="/images/logos/Header%20Logo-Findafriq.png"
-                  alt="FindAfriq"
+                  alt="Findafriq"
                   className="h-8 object-contain"
                 />
               </div>

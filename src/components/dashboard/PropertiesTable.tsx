@@ -5,14 +5,16 @@ import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
-import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
 import type { Property } from '@/types/dashboard';
 import { getPropertyBedroomCount, getPropertyPosterDisplayName } from '@/lib/properties-utils';
 import type { ColumnsType } from 'antd/es/table';
+import type { TablePaginationConfig } from 'antd/es/table';
 
 interface PropertiesTableProps {
     properties: Property[];
     loading?: boolean;
+    pagination?: TablePaginationConfig | false;
     onView?: (property: Property) => void;
     onEdit?: (property: Property) => void;
     onDelete?: (property: Property) => void;
@@ -22,6 +24,7 @@ interface PropertiesTableProps {
     onUnpublish?: (property: Property) => void;
     onRepublish?: (property: Property) => void;
     onSaveToggle?: (propertyId: string) => void;
+    onToggleFeatured?: (property: Property) => void;
     savedIds?: string[];
     approvingId?: string | null;
 }
@@ -37,7 +40,9 @@ export function PropertiesTable({
     onReject,
     onUnpublish,
     onRepublish,
+    pagination,
     onSaveToggle,
+    onToggleFeatured,
     savedIds = [],
     approvingId,
 }: PropertiesTableProps) {
@@ -71,7 +76,14 @@ export function PropertiesTable({
             key: 'title',
             render: (title, record) => (
                 <div>
-                    <div className="font-medium text-gray-900">{title}</div>
+                    <div className="font-medium text-gray-900">
+                        {title}
+                        {record.isPremium && (
+                            <Tag color="gold" style={{ marginLeft: 6, fontSize: 10 }}>
+                                Featured
+                            </Tag>
+                        )}
+                    </div>
                     <div className="text-sm text-gray-500">
                         {record.location || ''}
                     </div>
@@ -147,6 +159,16 @@ export function PropertiesTable({
                                 icon={savedIds.includes(record._id) ? <HeartFilled /> : <HeartOutlined />}
                                 onClick={() => onSaveToggle(record._id)}
                                 style={{ color: savedIds.includes(record._id) ? '#ff4d4f' : undefined }}
+                            />
+                        </Tooltip>
+                    )}
+                    {onToggleFeatured && (
+                        <Tooltip title={record.isPremium ? 'Remove Featured' : 'Mark as Featured'}>
+                            <Button
+                                type="text"
+                                icon={record.isPremium ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+                                loading={approvingId === record._id}
+                                onClick={() => onToggleFeatured(record)}
                             />
                         </Tooltip>
                     )}
@@ -254,11 +276,16 @@ export function PropertiesTable({
             dataSource={properties}
             loading={loading}
             rowKey="_id"
-            pagination={{
-                pageSize: 10,
-                showTotal: (total) => `Total ${total} properties`,
-                showSizeChanger: true,
-            }}
+            pagination={
+                pagination !== undefined
+                    ? pagination
+                    : {
+                          pageSize: 10,
+                          showSizeChanger: false,
+                          hideOnSinglePage: true,
+                          showTotal: (total) => `Total ${total} properties`,
+                      }
+            }
             className="custom-table"
         />
     );
