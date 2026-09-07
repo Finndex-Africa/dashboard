@@ -17,6 +17,8 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
+      { protocol: 'https', hostname: 'findafriq.nyc3.cdn.digitaloceanspaces.com' },
+      { protocol: 'https', hostname: 'findafriq.sfo3.digitaloceanspaces.com' },
       { protocol: 'https', hostname: 'finndexafrica.nyc3.cdn.digitaloceanspaces.com' },
       { protocol: 'https', hostname: 'finndexafrica.sfo3.digitaloceanspaces.com' },
       { protocol: 'https', hostname: 'res.cloudinary.com' }, // Legacy support for existing images

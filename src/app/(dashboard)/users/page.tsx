@@ -21,6 +21,7 @@ import {
     UserOutlined,
     TeamOutlined,
     HomeOutlined,
+    BankOutlined,
     ToolOutlined,
     SearchOutlined,
     EyeOutlined,
@@ -34,6 +35,7 @@ import { usersApi } from '@/services/api/users.api';
 import type { User } from '@/types/users';
 import { useAuth } from '@/providers/AuthProvider';
 import { getRoleColor, getRoleLabel } from '@/lib/role-utils';
+import { applyBrandDisplay } from '@/lib/branding';
 
 const { Title, Text } = Typography;
 
@@ -201,17 +203,20 @@ export default function UsersPage() {
         {
             title: 'User',
             key: 'user',
-            render: (_: any, record: User) => (
+            render: (_: any, record: User) => {
+                const display = applyBrandDisplay(record);
+                return (
                 <Space>
                     <Avatar style={{ backgroundColor: '#0000FF' }} size="large">
-                        {(record.firstName || 'U').charAt(0)}{(record.lastName || 'N').charAt(0)}
+                        {(display.firstName || 'U').charAt(0)}{(display.lastName || 'N').charAt(0)}
                     </Avatar>
                     <div>
-                        <div className="font-medium">{record.firstName || ''} {record.lastName || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{record.email}</div>
+                        <div className="font-medium">{display.firstName || ''} {display.lastName || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{display.email}</div>
                     </div>
                 </Space>
-            ),
+                );
+            },
         },
         {
             title: 'Phone',
@@ -378,7 +383,7 @@ export default function UsersPage() {
             </Row>
 
             <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={8}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card className="h-full">
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
@@ -392,7 +397,21 @@ export default function UsersPage() {
                     </Card>
                 </Col>
 
-                <Col xs={24} sm={12} lg={8}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="h-full">
+                        <div className="flex items-start justify-between h-full">
+                            <div className="flex-1">
+                                <p className="text-gray-500 text-sm mb-2">Real Estate Agencies</p>
+                                <Statistic value={realEstateAgencyUsers} valueStyle={{ fontSize: '20px', fontWeight: 'bold', color: '#13c2c2' }} />
+                            </div>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#13c2c220' }}>
+                                <BankOutlined style={{ fontSize: 20, color: '#13c2c2' }} />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
                     <Card className="h-full">
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
@@ -406,7 +425,7 @@ export default function UsersPage() {
                     </Card>
                 </Col>
 
-                <Col xs={24} sm={12} lg={8}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card className="h-full">
                         <div className="flex items-start justify-between h-full">
                             <div className="flex-1">
@@ -465,15 +484,17 @@ export default function UsersPage() {
             </Card>
 
             <Modal title={t_listing("userDetails")} open={viewModalOpen} onCancel={() => setViewModalOpen(false)} footer={[<Button key="close" onClick={() => setViewModalOpen(false)}>Close</Button>]} width={600}>
-                {selectedUser && (
+                {selectedUser && (() => {
+                    const display = applyBrandDisplay(selectedUser);
+                    return (
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
                             <Avatar size={64} style={{ backgroundColor: '#0000FF' }}>
-                                {(selectedUser.firstName || 'U').charAt(0)}{(selectedUser.lastName || 'N').charAt(0)}
+                                {(display.firstName || 'U').charAt(0)}{(display.lastName || 'N').charAt(0)}
                             </Avatar>
                             <div>
-                                <div className="text-xl font-bold">{selectedUser.firstName || ''} {selectedUser.lastName || 'Unknown'}</div>
-                                <div className="text-gray-500">{selectedUser.email}</div>
+                                <div className="text-xl font-bold">{display.firstName || ''} {display.lastName || 'Unknown'}</div>
+                                <div className="text-gray-500">{display.email}</div>
                             </div>
                         </div>
                         <div><Text type="secondary">Phone Number</Text><div className="font-medium">{selectedUser.phone || 'N/A'}</div></div>
@@ -483,7 +504,8 @@ export default function UsersPage() {
                         <div><Text type="secondary">Created</Text><div className="font-medium">{new Date(selectedUser.createdAt).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div>
                         <div><Text type="secondary">Last Updated</Text><div className="font-medium">{selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
                     </div>
-                )}
+                    );
+                })()}
             </Modal>
         </div>
     );

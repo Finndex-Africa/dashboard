@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AuthService, IUser } from '@/services/auth.service';
+import { applyBrandDisplay } from '@/lib/branding';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (token && currentUser && currentUser.role) {
                 setIsAuthenticated(true);
-                setUser(currentUser);
+                setUser(applyBrandDisplay(currentUser));
             } else if (token && !currentUser) {
                 // Token exists but user data is invalid - clear auth
                 auth.logout();
@@ -76,8 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
     };
 
+    const updateUser = (nextUser: IUser | null) => {
+        setUser(nextUser ? applyBrandDisplay(nextUser) : null);
+    };
+
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, isLoading, logout, setUser }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, isLoading, logout, setUser: updateUser }}>
             {children}
         </AuthContext.Provider>
     );

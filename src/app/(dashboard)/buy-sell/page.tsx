@@ -31,6 +31,7 @@ import type { BuySellListing, BuySellSeller } from '@/types/buy-sell';
 import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { buySellApi } from '@/services/api/buy-sell.api';
 import type { BuySellPagination } from '@/services/api/buy-sell.api';
+import { extractListItems, extractListPagination } from '@/lib/list-pagination';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
 import {
@@ -54,7 +55,7 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 const { TextArea } = Input;
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 // ─── Inner content (uses useSearchParams to force client-side rendering) ───────
 
@@ -84,6 +85,7 @@ function BuySellPageContent() {
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter]     = useState<string>('all');
     const [currentPage, setCurrentPage]       = useState(1);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Review modal
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -96,11 +98,16 @@ function BuySellPageContent() {
 
     const isAdmin = user?.role === 'admin';
 
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
+        return () => clearTimeout(timer);
+    }, [searchText]);
+
     // ── Data fetching ──────────────────────────────────────────────────────────
     useEffect(() => {
         if (user?.role) fetchListings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role, currentPage, categoryFilter, statusFilter]);
+    }, [user?.role, currentPage, categoryFilter, statusFilter, debouncedSearch]);
 
     const fetchListings = async (page = currentPage) => {
         try {
@@ -110,15 +117,12 @@ function BuySellPageContent() {
                 limit: PAGE_SIZE,
                 category: categoryFilter as any,
                 status:   statusFilter   as any,
-                search:   searchText || undefined,
+                search:   debouncedSearch || undefined,
             });
-            const raw = response.data;
-            const items: BuySellListing[] = Array.isArray(raw)
-                ? raw
-                : (raw as any)?.data ?? [];
-            const pag: BuySellPagination | undefined = (raw as any)?.pagination;
+            const items = extractListItems<BuySellListing>(response);
+            const pag = extractListPagination(response, items.length, page, PAGE_SIZE);
             setListings(items);
-            if (pag) setPagination(pag);
+            setPagination(pag);
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to load listings');
             setListings([]);
@@ -134,6 +138,10 @@ function BuySellPageContent() {
     const handleFilterSearch = () => {
         setCurrentPage(1);
         fetchListings(1);
+    };
+
+    const resetToFirstPage = () => {
+        setCurrentPage(1);
     };
 
     // ── Client-side filtering (for search text, since it's applied server-side on submit) ──
@@ -374,7 +382,10 @@ function BuySellPageContent() {
                             size="large"
                             prefix={<SearchOutlined />}
                             value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
+                            onChange={(e) => {
+                                setSearchText(e.target.value);
+                                resetToFirstPage();
+                            }}
                             onSearch={handleFilterSearch}
                         />
                     </Col>

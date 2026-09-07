@@ -7,15 +7,17 @@ import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Tooltip from 'antd/es/tooltip';
 import Rate from 'antd/es/rate';
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, CheckOutlined, CloseOutlined, HeartOutlined, HeartFilled, EyeInvisibleOutlined, FileSearchOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
 import type { Service } from '@/types/dashboard';
 import { useMoney } from '@/lib/currency/CurrencyProvider';
 import type { ColumnsType } from 'antd/es/table';
+import type { TablePaginationConfig } from 'antd/es/table';
 import { getServiceCategoryLabel, getServiceProviderLabel, serviceNeedsReview, serviceNeedsActivation } from '@/lib/services-utils';
 
 interface ServicesTableProps {
     services: Service[];
     loading?: boolean;
+    pagination?: TablePaginationConfig | false;
     /** Admin: show verification state in the status column when pending/rejected */
     adminStatusColumn?: boolean;
     onView?: (service: Service) => void;
@@ -28,6 +30,7 @@ interface ServicesTableProps {
     onRepublish?: (service: Service) => void;
     onActivate?: (service: Service) => void;
     onSaveToggle?: (serviceId: string) => void;
+    onToggleFeatured?: (service: Service) => void;
     savedIds?: string[];
     approvingId?: string | null;
 }
@@ -45,7 +48,9 @@ export function ServicesTable({
     onUnpublish,
     onRepublish,
     onActivate,
+    pagination,
     onSaveToggle,
+    onToggleFeatured,
     savedIds = [],
     approvingId,
 }: ServicesTableProps) {
@@ -82,7 +87,14 @@ export function ServicesTable({
             key: 'title',
             render: (title, record) => (
                 <div>
-                    <div className="font-medium text-gray-900">{title}</div>
+                    <div className="font-medium text-gray-900">
+                        {title}
+                        {record.isPremium && (
+                            <Tag color="gold" style={{ marginLeft: 6, fontSize: 10 }}>
+                                Featured
+                            </Tag>
+                        )}
+                    </div>
                     <div className="text-sm text-gray-500">{getServiceCategoryLabel(record) || record.category || '—'}</div>
                 </div>
             ),
@@ -161,6 +173,16 @@ export function ServicesTable({
                                 icon={savedIds.includes(record._id) ? <HeartFilled /> : <HeartOutlined />}
                                 onClick={() => onSaveToggle(record._id)}
                                 style={{ color: savedIds.includes(record._id) ? '#ff4d4f' : undefined }}
+                            />
+                        </Tooltip>
+                    )}
+                    {onToggleFeatured && (
+                        <Tooltip title={record.isPremium ? 'Remove Featured' : 'Mark as Featured'}>
+                            <Button
+                                type="text"
+                                icon={record.isPremium ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+                                loading={approvingId === record._id}
+                                onClick={() => onToggleFeatured(record)}
                             />
                         </Tooltip>
                     )}
@@ -285,11 +307,16 @@ export function ServicesTable({
             dataSource={services}
             loading={loading}
             rowKey="_id"
-            pagination={{
-                pageSize: 10,
-                showTotal: (total) => `Total ${total} services`,
-                showSizeChanger: true,
-            }}
+            pagination={
+                pagination !== undefined
+                    ? pagination
+                    : {
+                          pageSize: 10,
+                          showSizeChanger: false,
+                          hideOnSinglePage: true,
+                          showTotal: (total) => `Total ${total} services`,
+                      }
+            }
             className="custom-table"
         />
     );

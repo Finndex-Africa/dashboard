@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FindAfriq Dashboard",
-    "description": "Manage your FindAfriq properties and services"
+    "title": "Findafriq Dashboard",
+    "description": "Manage your Findafriq properties and services"
   },
   "languageSwitcher": {
     "label": "Language",
@@ -28,7 +28,7 @@
     "profile": "Profile",
     "settings": "Settings",
     "logOut": "Log out",
-    "logoAlt": "FindAfriq",
+    "logoAlt": "Findafriq",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "defaultUserName": "User",

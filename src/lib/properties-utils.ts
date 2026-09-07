@@ -16,7 +16,7 @@ export function getPropertyBedroomCount(property: {
     return property.bedrooms ?? property.rooms;
 }
 
-/** Map form values to API payload (bedrooms → rooms, same as main FindAfriq app). */
+/** Map form values to API payload (bedrooms → rooms, same as main Findafriq app). */
 export function mapPropertyFormToApi(
     values: Record<string, unknown>,
     options?: { includeAgentFee?: boolean },

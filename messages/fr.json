@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Tableau de bord FindAfriq",
-    "description": "Gérez vos biens et services FindAfriq"
+    "title": "Tableau de bord Findafriq",
+    "description": "Gérez vos biens et services Findafriq"
   },
   "languageSwitcher": {
     "label": "Langue",
@@ -28,7 +28,7 @@
     "profile": "Profil",
     "settings": "Paramètres",
     "logOut": "Se déconnecter",
-    "logoAlt": "FindAfriq",
+    "logoAlt": "Findafriq",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
     "defaultUserName": "Utilisateur",

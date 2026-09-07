@@ -45,6 +45,13 @@ import {
     type PropertyView,
     type PropertyTab,
 } from '@/lib/properties-utils';
+import {
+    LIST_PAGE_SIZE,
+    EMPTY_LIST_PAGINATION,
+    extractListItems,
+    extractListPagination,
+    tablePaginationConfig,
+} from '@/lib/list-pagination';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -78,6 +85,9 @@ function PropertiesPageContent() {
     const [savedIds, setSavedIds] = useState<string[]>([]);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [propertyForReview, setPropertyForReview] = useState<Property | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState(EMPTY_LIST_PAGINATION);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Determine current view/tab based on role and query params
     const isHS = user?.role && isHomeSeeker(user.role);
@@ -88,7 +98,16 @@ function PropertiesPageContent() {
     const currentTab = isHS ? (tabParam || getDefaultPropertyTab()) : 'active';
     const currentView = !isHS ? (viewParam || getDefaultPropertyView(user?.role || 'home_seeker')) : 'all';
 
-    // Fetch properties on mount and when view/tab changes
+    const useServerPagination = Boolean(
+        isAdmin || (isHS && currentTab === 'active') || (isPC && currentView === 'all'),
+    );
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
+        return () => clearTimeout(timer);
+    }, [searchText]);
+
+    // Fetch properties on mount and when view/tab/page/filters change
     useEffect(() => {
         if (!user?.role) {
             return;
@@ -105,8 +124,9 @@ function PropertiesPageContent() {
             return;
         }
 
-        fetchProperties();
-    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS]);
+        fetchProperties(currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, currentView, currentTab, tabParam, viewParam, isHS, currentPage, debouncedSearch, statusFilter, typeFilter]);
 
     // Load saved properties for home_seekers
     useEffect(() => {
@@ -115,7 +135,7 @@ function PropertiesPageContent() {
         }
     }, [isHS]);
 
-    const fetchProperties = async () => {
+    const fetchProperties = async (page = currentPage) => {
         if (!user?.role) {
             return;
         }
@@ -123,65 +143,93 @@ function PropertiesPageContent() {
         try {
             setLoading(true);
             let fetchedProperties: Property[] = [];
+            let response: unknown = null;
+            const serverFilters = {
+                page,
+                limit: LIST_PAGE_SIZE,
+                status: statusFilter !== 'all' ? statusFilter : undefined,
+                search: debouncedSearch || undefined,
+                propertyType: typeFilter !== 'all' ? typeFilter : undefined,
+            };
 
             if (isHS) {
-                // Home seekers: fetch approved properties only (REDUCED to 10 for fastest loading)
-                const response = await propertiesApi.getAll({ page: 1, limit: 10 });
-                const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
+                response = await propertiesApi.getAll({
+                    page,
+                    limit: LIST_PAGE_SIZE,
+                    status: 'approved',
+                    propertyType: typeFilter !== 'all' ? typeFilter : undefined,
+                    location: debouncedSearch || undefined,
+                });
+                fetchedProperties = extractListItems<Property>(response).filter(
+                    (p) => p.status === 'approved',
+                );
             } else if (isAdmin) {
-                // Admin: fetch ALL properties with no restrictions using admin endpoint
-                if (currentView === 'all') {
-                    // Admin "all" view: use admin endpoint to see ALL properties regardless of status
-                    const response = await propertiesApi.getAllAdminProperties({ page: 1, limit: 10 });
-                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
-                    fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                } else if (currentView === 'pending') {
-                    // Admin viewing pending: use admin-specific endpoint
-                    const response = await propertiesApi.getPendingProperties(1, 10);
-                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
-                    fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                if (currentView === 'pending') {
+                    response = await propertiesApi.getPendingProperties(page, LIST_PAGE_SIZE);
                 } else {
-                    // Admin viewing "mine" - still use admin endpoint but could filter by user if needed
-                    const response = await propertiesApi.getAllAdminProperties({ page: 1, limit: 10 });
-                    // Use same pattern as regular getAll: try both response.data (if array) and response.data.data (if nested)
-                    fetchedProperties = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                    response = await propertiesApi.getAllAdminProperties(serverFilters);
                 }
+                fetchedProperties = extractListItems<Property>(response);
             } else if (isPC) {
-                // Agents/Landlords: fetch based on view
                 if (currentView === 'mine') {
-                    const response = await propertiesApi.getMyProperties();
-                    fetchedProperties = Array.isArray(response.data) ? response.data : [];
+                    response = await propertiesApi.getMyProperties();
+                    fetchedProperties = extractListItems<Property>(response);
+                    if (!fetchedProperties.length && Array.isArray((response as any)?.data)) {
+                        fetchedProperties = (response as any).data;
+                    }
                 } else if (currentView === 'all') {
-                    // Browse all approved properties (REDUCED to 10 for fastest loading)
-                    const response = await propertiesApi.getAll({ page: 1, limit: 10 });
-                    const allProps = Array.isArray(response.data) ? response.data : response.data?.data || [];
-                    fetchedProperties = allProps.filter((p: Property) => p.status === 'approved');
+                    response = await propertiesApi.getAll({
+                        page,
+                        limit: LIST_PAGE_SIZE,
+                        status: 'approved',
+                        propertyType: typeFilter !== 'all' ? typeFilter : undefined,
+                        location: debouncedSearch || undefined,
+                    });
+                    fetchedProperties = extractListItems<Property>(response).filter(
+                        (p) => p.status === 'approved',
+                    );
                 } else if (currentView === 'pending') {
-                    const response = await propertiesApi.getMyProperties();
-                    const myProps = Array.isArray(response.data) ? response.data : [];
-                    fetchedProperties = myProps.filter((p: Property) => p.status === 'pending');
+                    response = await propertiesApi.getMyProperties();
+                    const myProps = extractListItems<Property>(response);
+                    fetchedProperties = (myProps.length ? myProps : Array.isArray((response as any)?.data) ? (response as any).data : [])
+                        .filter((p: Property) => p.status === 'pending');
                 }
             }
 
             setProperties(fetchedProperties);
+            if (useServerPagination) {
+                setPagination(extractListPagination(response, fetchedProperties.length, page, LIST_PAGE_SIZE));
+            } else {
+                setPagination({
+                    ...EMPTY_LIST_PAGINATION,
+                    totalItems: fetchedProperties.length,
+                    itemsPerPage: LIST_PAGE_SIZE,
+                    totalPages: Math.max(1, Math.ceil(fetchedProperties.length / LIST_PAGE_SIZE)),
+                });
+            }
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load properties';
             showToast.error(errorMsg);
             setProperties([]);
+            setPagination(EMPTY_LIST_PAGINATION);
         } finally {
             setLoading(false);
         }
     };
 
-    // Filter properties for display
+    // Filter properties for display. Admin / server-paged views already apply search & status.
     const filteredProperties = properties.filter(property => {
-        // Home seeker: filter by tab (active vs saved)
         if (isHS && currentTab === 'saved') {
             if (!savedIds.includes(property._id)) return false;
         }
 
-        // Search filter
+        if (useServerPagination) {
+            if (typeFilter !== 'all' && property.type !== typeFilter && property.propertyType !== typeFilter) {
+                return false;
+            }
+            return true;
+        }
+
         if (searchText) {
             const search = searchText.toLowerCase();
             const matchesTitle = property.title?.toLowerCase().includes(search);
@@ -189,11 +237,11 @@ function PropertiesPageContent() {
             if (!matchesTitle && !matchesLocation) return false;
         }
 
-        // Status filter
         if (statusFilter !== 'all' && property.status !== statusFilter) return false;
 
-        // Type filter
-        if (typeFilter !== 'all' && property.type !== typeFilter) return false;
+        if (typeFilter !== 'all' && property.type !== typeFilter && property.propertyType !== typeFilter) {
+            return false;
+        }
 
         return true;
     });
@@ -347,7 +395,35 @@ function PropertiesPageContent() {
         showToast.success(isSaved ? 'Property saved' : 'Property unsaved');
     };
 
+    const handleToggleFeatured = async (property: Property) => {
+        const newValue = !property.isPremium;
+        try {
+            setActionLoading(property._id);
+            setProperties((prev) =>
+                prev.map((p) => (p._id === property._id ? { ...p, isPremium: newValue } : p)),
+            );
+            await propertiesApi.toggleFeatured(property._id, newValue);
+            showToast.success(newValue ? 'Property marked as featured' : 'Featured status removed');
+        } catch (error: any) {
+            setProperties((prev) =>
+                prev.map((p) => (p._id === property._id ? { ...p, isPremium: property.isPremium } : p)),
+            );
+            showToast.error(error.response?.data?.message || 'Failed to update featured status');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const resetToFirstPage = () => {
+        setCurrentPage(1);
+    };
+
     const handleTabChange = (key: string) => {
+        setCurrentPage(1);
         if (isHS) {
             router.push(`/properties?tab=${key}`);
         } else {
@@ -454,14 +530,20 @@ function PropertiesPageContent() {
                             size="large"
                             prefix={<SearchOutlined />}
                             value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
+                            onChange={(e) => {
+                                setSearchText(e.target.value);
+                                resetToFirstPage();
+                            }}
                         />
                     </Col>
                     <Col xs={12} md={6}>
                         <Select
                             size="large"
                             value={statusFilter}
-                            onChange={setStatusFilter}
+                            onChange={(v) => {
+                                setStatusFilter(v);
+                                resetToFirstPage();
+                            }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Status</Select.Option>
@@ -476,7 +558,10 @@ function PropertiesPageContent() {
                         <Select
                             size="large"
                             value={typeFilter}
-                            onChange={setTypeFilter}
+                            onChange={(v) => {
+                                setTypeFilter(v);
+                                resetToFirstPage();
+                            }}
                             style={{ width: '100%' }}
                         >
                             <Select.Option value="all">All Types</Select.Option>
@@ -492,6 +577,16 @@ function PropertiesPageContent() {
                 <PropertiesTable
                     properties={filteredProperties}
                     loading={loading}
+                    pagination={
+                        useServerPagination
+                            ? tablePaginationConfig(pagination, handlePageChange, 'properties')
+                            : {
+                                  pageSize: LIST_PAGE_SIZE,
+                                  showSizeChanger: false,
+                                  hideOnSinglePage: true,
+                                  showTotal: (total) => `Total ${total} properties`,
+                              }
+                    }
                     onEdit={(p) => router.push(`/properties/${p._id}`)}
                     onDelete={canCreateProperty(user.role) ? handleDelete : undefined}
                     onReview={canModerateProperties(user.role) ? handleReviewClick : undefined}
@@ -500,6 +595,7 @@ function PropertiesPageContent() {
                     onUnpublish={canCreateProperty(user.role) ? handleUnpublish : undefined}
                     onRepublish={canCreateProperty(user.role) ? handleRepublish : undefined}
                     onSaveToggle={isHS ? handleSaveToggle : undefined}
+                    onToggleFeatured={isAdmin ? handleToggleFeatured : undefined}
                     savedIds={isHS ? savedIds : undefined}
                     approvingId={actionLoading}
                 />
