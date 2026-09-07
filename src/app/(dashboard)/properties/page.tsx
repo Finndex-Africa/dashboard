@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -27,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { PropertiesTable } from '@/components/dashboard/PropertiesTable';
 import type { Property } from '@/types/dashboard';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { propertiesApi } from '@/services/api/properties.api';
 import { showToast } from '@/lib/toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -56,6 +58,12 @@ const { Search } = Input;
 const { TextArea } = Input;
 
 function PropertiesPageContent() {
+    const money = useMoney();
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_listing = useTranslations("listing");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -244,7 +252,12 @@ function PropertiesPageContent() {
         approved: properties.filter(p => p.status === 'approved').length,
         pending: properties.filter(p => p.status === 'pending').length,
         rejected: properties.filter(p => p.status === 'rejected').length,
-        totalValue: properties.reduce((sum, p) => sum + (p.price || 0), 0),
+        // Summed from normalized USD — adding a USD price to an RWF one as
+        // bare numbers yields a total that means nothing.
+        totalValueUsd: properties.reduce(
+            (sum, p) => sum + (p.priceUsd ?? p.price ?? 0),
+            0,
+        ),
     };
 
     // Handlers
@@ -257,10 +270,10 @@ function PropertiesPageContent() {
             onOk: async () => {
                 try {
                     await propertiesApi.delete(property._id);
-                    showToast.success('Property deleted successfully');
+                    showToast.success(t_toasts("propertyDeleted"));
                     fetchProperties();
                 } catch (error) {
-                    showToast.error('Failed to delete property');
+                    showToast.error(t_errors2("deleteProperty"));
                 }
             },
         });
@@ -270,10 +283,10 @@ function PropertiesPageContent() {
         try {
             setActionLoading(property._id);
             await propertiesApi.approve(property._id);
-            showToast.success('Property approved successfully');
+            showToast.success(t_toasts("propertyApproved"));
             fetchProperties();
         } catch (error) {
-            showToast.error('Failed to approve property');
+            showToast.error(t_errors2("approveProperty"));
         } finally {
             setActionLoading(null);
         }
@@ -293,20 +306,20 @@ function PropertiesPageContent() {
 
     const handleRejectSubmit = async () => {
         if (!selectedProperty || !rejectionReason.trim()) {
-            showToast.error('Please provide a rejection reason');
+            showToast.error(t_errors2("rejectionReasonRequired"));
             return;
         }
 
         try {
             setActionLoading(selectedProperty._id);
             await propertiesApi.reject(selectedProperty._id, rejectionReason);
-            showToast.success('Property rejected');
+            showToast.success(t_toasts("propertyRejected"));
             setIsRejectModalOpen(false);
             setSelectedProperty(null);
             setRejectionReason('');
             fetchProperties();
         } catch (error) {
-            showToast.error('Failed to reject property');
+            showToast.error(t_errors2("rejectProperty"));
         } finally {
             setActionLoading(null);
         }
@@ -325,7 +338,7 @@ function PropertiesPageContent() {
             );
             
             await propertiesApi.unpublish(property._id);
-            showToast.success('Property unpublished successfully');
+            showToast.success(t_toasts("propertyUnpublished"));
             
             // Refresh to ensure consistency with backend
             await fetchProperties();
@@ -357,7 +370,7 @@ function PropertiesPageContent() {
             );
             
             await propertiesApi.republish(property._id);
-            showToast.success('Property republished successfully');
+            showToast.success(t_toasts("propertyRepublished"));
             
             // Refresh to ensure consistency with backend
             await fetchProperties();
@@ -444,7 +457,7 @@ function PropertiesPageContent() {
                         onClick={() => router.push('/properties/create')}
                         size="large"
                     >
-                        Create Property
+                        {t_listing("createProperty")}
                     </Button>
                 )}
             </div>
@@ -469,7 +482,7 @@ function PropertiesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Total Listings"
+                                title={t_listing("totalListings")}
                                 value={stats.total}
                                 prefix={<HomeOutlined />}
                             />
@@ -478,7 +491,7 @@ function PropertiesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Approved"
+                                title={t_common("approved")}
                                 value={stats.approved}
                                 valueStyle={{ color: '#52c41a' }}
                                 prefix={<CheckCircleOutlined />}
@@ -488,7 +501,7 @@ function PropertiesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Pending"
+                                title={t_common("pending")}
                                 value={stats.pending}
                                 valueStyle={{ color: '#faad14' }}
                                 prefix={<ClockCircleOutlined />}
@@ -498,9 +511,9 @@ function PropertiesPageContent() {
                     <Col xs={12} sm={8} lg={6}>
                         <Card>
                             <Statistic
-                                title="Total Value"
-                                value={stats.totalValue}
-                                prefix="$"
+                                title={t_listing("totalValue")}
+                                valueRender={() => money.fromUsd(stats.totalValueUsd)}
+                                value={stats.totalValueUsd}
                             />
                         </Card>
                     </Col>
@@ -512,7 +525,7 @@ function PropertiesPageContent() {
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Search
-                            placeholder="Search by title or location..."
+                            placeholder={t_listing("searchTitleLocation")}
                             allowClear
                             size="large"
                             prefix={<SearchOutlined />}
@@ -590,7 +603,7 @@ function PropertiesPageContent() {
 
             {/* Review Modal (Admin): view full details then Approve or Reject */}
             <Modal
-                title="Review Property"
+                title={t_listing("reviewProperty")}
                 open={reviewModalOpen}
                 onCancel={() => {
                     setReviewModalOpen(false);
@@ -602,26 +615,52 @@ function PropertiesPageContent() {
                 {propertyForReview && (
                     <>
                         <Descriptions bordered column={1} size="small" className="mb-4">
-                            <Descriptions.Item label="Title">{propertyForReview.title}</Descriptions.Item>
-                            <Descriptions.Item label="Location">{propertyForReview.location}</Descriptions.Item>
-                            <Descriptions.Item label="Type">{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
-                            <Descriptions.Item label="Price">${propertyForReview.price?.toLocaleString()}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("title")}>{propertyForReview.title}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("location")}>{propertyForReview.location}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("type")}>{propertyForReview.propertyType || propertyForReview.type}</Descriptions.Item>
+                            <Descriptions.Item label={t_common("price")}>
+                                {(() => {
+                                    const p = money.forListing(propertyForReview.price, propertyForReview.currency);
+                                    return (
+                                        <>
+                                            <strong>{p.display}</strong>
+                                            {p.isConverted && (
+                                                <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                    Listed at {p.original}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Descriptions.Item>
                             {propertyForReview.agentFee != null && propertyForReview.agentFee > 0 && (
-                                <Descriptions.Item label="Agent Fee">
-                                    ${propertyForReview.agentFee.toLocaleString()}
+                                <Descriptions.Item label={t_form("agentFee")}>
+                                    {(() => {
+                                        const f = money.forListing(propertyForReview.agentFee, propertyForReview.currency);
+                                        return (
+                                            <>
+                                                <strong>{f.display}</strong>
+                                                {f.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {f.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </Descriptions.Item>
                             )}
-                            <Descriptions.Item label="Area">{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Bedrooms">
+                            <Descriptions.Item label={t_form("area")}>{propertyForReview.area != null ? `${propertyForReview.area} sq ft` : '—'}</Descriptions.Item>
+                            <Descriptions.Item label={t_form("bedrooms")}>
                                 {getPropertyBedroomCount(propertyForReview) ?? '—'}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Bathrooms">
+                            <Descriptions.Item label={t_form("bathrooms")}>
                                 {propertyForReview.bathrooms ?? '—'}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Listed By">
+                            <Descriptions.Item label={t_listing("listedBy")}>
                                 {getPropertyPosterDisplayName(propertyForReview)}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Description">
+                            <Descriptions.Item label={t_common("description")}>
                                 <div className="max-h-32 overflow-y-auto whitespace-pre-wrap">{propertyForReview.description || '—'}</div>
                             </Descriptions.Item>
                         </Descriptions>
@@ -668,7 +707,7 @@ function PropertiesPageContent() {
                                 }}
                                 style={{ background: '#43e97b', borderColor: '#43e97b' }}
                             >
-                                Approve
+                                {t_common("approve")}
                             </Button>
                         </div>
                     </>
@@ -677,7 +716,7 @@ function PropertiesPageContent() {
 
             {/* Rejection Modal (Admin Only) */}
             <Modal
-                title="Reject Property"
+                title={t_listing("rejectProperty")}
                 open={isRejectModalOpen}
                 onOk={handleRejectSubmit}
                 onCancel={() => {
@@ -692,7 +731,7 @@ function PropertiesPageContent() {
                 </div>
                 <TextArea
                     rows={4}
-                    placeholder="Enter rejection reason (will be sent to the owner via email)..."
+                    placeholder={t_listing("rejectionOwner")}
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                 />

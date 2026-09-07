@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -19,6 +20,12 @@ import type { Service } from '@/types/dashboard';
 const { Title, Text } = Typography;
 
 export default function EditServicePage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_nav2 = useTranslations("nav2");
+    const t_placeholder = useTranslations("placeholder");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams();
@@ -49,7 +56,7 @@ export default function EditServicePage() {
                     (typeof fetchedService.provider === 'object' && fetchedService.provider?._id === user?.id);
 
                 if (!isOwner) {
-                    showToast.error('You can only edit your own services');
+                    showToast.error(t_errors2("editOwnServices"));
                     router.push('/services');
                     return;
                 }
@@ -58,7 +65,7 @@ export default function EditServicePage() {
             setService(fetchedService);
         } catch (error: any) {
             console.error('Failed to fetch service:', error);
-            showToast.error('Failed to load service');
+            showToast.error(t_errors2("loadService"));
             router.push('/services');
         } finally {
             setLoading(false);
@@ -103,7 +110,7 @@ export default function EditServicePage() {
                         console.log('✅ Uploaded:', imageUrl);
                     } catch (error) {
                         console.error('❌ Failed to upload image:', error);
-                        showToast.error('Failed to upload some images');
+                        showToast.error(t_errors2("uploadSomeImages"));
                     }
                 }
             }
@@ -121,9 +128,9 @@ export default function EditServicePage() {
             }
 
             if (user?.role !== 'admin' && service.verificationStatus === 'rejected') {
-                showToast.success('Service updated and resubmitted for verification');
+                showToast.success(t_toasts("serviceResubmitted"));
             } else {
-                showToast.success('Service updated successfully');
+                showToast.success(t_toasts("serviceUpdated"));
             }
 
             // Redirect back to services
@@ -141,11 +148,11 @@ export default function EditServicePage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to edit services."
                 extra={
                     <Button type="primary" onClick={() => router.push('/services')}>
-                        Go to Services
+                        {t_nav2("goToServices")}
                     </Button>
                 }
             />
@@ -164,11 +171,11 @@ export default function EditServicePage() {
         return (
             <Result
                 status="404"
-                title="Service Not Found"
+                title={t_listing("serviceNotFound")}
                 subTitle="The service you're looking for doesn't exist."
                 extra={
                     <Button type="primary" onClick={handleCancel}>
-                        Go to Services
+                        {t_nav2("goToServices")}
                     </Button>
                 }
             />
@@ -183,14 +190,14 @@ export default function EditServicePage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Services
+                    {t_nav2("backToServices")}
                 </Button>
                 <Title level={2}>Edit Service</Title>
                 <Text type="secondary">Update service details</Text>
                 {user?.role !== 'admin' && service.verificationStatus === 'rejected' && (
                     <div style={{ marginTop: 8 }}>
                         <Text type="danger">
-                            This service was rejected. Updating it will resubmit for verification.
+                            {t_placeholder("rejectedService")}
                         </Text>
                     </div>
                 )}

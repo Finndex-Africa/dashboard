@@ -1,3 +1,5 @@
+import type { Currency } from '@/lib/currency/config';
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type BuySellCategory = 'land' | 'house' | 'household_item';
@@ -37,6 +39,10 @@ export interface BuySellListing {
     description: string;
     category: BuySellCategory;
     price: number;
+    /** Currency the owner priced in; absent on pre-multi-currency rows (all USD). */
+    currency?: Currency;
+    /** Backend-normalized USD price. Use this, never raw `price`, for any total. */
+    priceUsd?: number;
     location: string;
     images: string[];
     status: BuySellStatus;
@@ -83,6 +89,8 @@ export interface CreateBuySellDto {
     description: string;
     category: BuySellCategory;
     price: number;
+    /** Currency the seller is pricing in; the backend normalizes to USD. */
+    currency?: Currency;
     location: string;
     images?: string[];
     agentFee?: number;
@@ -109,6 +117,8 @@ export interface UpdateBuySellDto {
     title?: string;
     description?: string;
     price?: number;
+    /** Currency the seller is pricing in; the backend normalizes to USD. */
+    currency?: Currency;
     location?: string;
     images?: string[];
     isPremium?: boolean;

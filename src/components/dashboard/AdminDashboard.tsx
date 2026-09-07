@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+import { useMoney } from "@/lib/currency/CurrencyProvider";
 import { useState, useEffect } from "react";
 import Card from "antd/es/card";
 import Row from "antd/es/row";
@@ -47,25 +49,31 @@ import { extractListItems, extractListPagination } from "@/lib/list-pagination";
 const { Title, Text } = Typography;
 
 /* ─── helpers ─── */
-function greet(): string {
+function greetKey(): "goodMorning" | "goodAfternoon" | "goodEvening" {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "goodMorning";
+  if (h < 18) return "goodAfternoon";
+  return "goodEvening";
 }
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(
+  dateString: string,
+  locale: string,
+  justNow: string,
+): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffMins < 1) return justNow;
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (diffMins < 60) return rtf.format(-diffMins, "minute");
+  if (diffHours < 24) return rtf.format(-diffHours, "hour");
+  if (diffDays < 7) return rtf.format(-diffDays, "day");
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 function fmt(value: number, prefix = ""): string {
@@ -117,6 +125,10 @@ function parseAdminDashboardStats(
 
 /* ─── main ─── */
 export default function AdminDashboard() {
+    const t_home = useTranslations("home");
+    const locale = useLocale();
+    const money = useMoney();
+    const t = useTranslations("dashboardHome");
   const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
   const [services, setServices] = useState<any[]>([]);
@@ -231,7 +243,16 @@ export default function AdminDashboard() {
   const activeServices = adminStats?.services?.active ?? svcTotal;
   const usrTotal =
     adminStats?.users?.total ?? extractTotal(rawResponses?.uRes, users.length);
-  const portfolioValue = properties.reduce((s, p) => s + (p.price || 0), 0);
+  /*
+    Summed from `priceUsd`, not `price`. Adding a 900 USD listing to a
+    1,300,000 RWF one as bare numbers produces a total that means nothing.
+    Rows written before multi-currency have no `priceUsd` but were all USD,
+    so falling back to `price` is safe for those.
+  */
+  const portfolioValueUsd = properties.reduce(
+    (sum, p) => sum + (p.priceUsd ?? p.price ?? 0),
+    0,
+  );
 
   const pendingUserReports = adminStats?.userReports?.pending ?? 0;
   const usersBreakdown = adminStats?.users as
@@ -291,8 +312,9 @@ export default function AdminDashboard() {
     },
     {
       title: "Portfolio Value",
-      value: portfolioValue,
-      prefix: "$",
+      value: portfolioValueUsd,
+      /** Renders via the currency formatter rather than the plain number one. */
+      isMoney: true,
       change: 8.2,
       icon: <DollarOutlined />,
       color: "#0000CC",
@@ -377,7 +399,7 @@ export default function AdminDashboard() {
   const activity = notifications.slice(0, 8).map((n) => ({
     action: n.title || "Activity",
     detail: n.message || "",
-    time: formatTimeAgo(n.createdAt),
+    time: formatTimeAgo(n.createdAt, locale, t("justNow")),
     status: badgeStatus(n.type),
   }));
 
@@ -518,7 +540,7 @@ export default function AdminDashboard() {
             }}
           >
             <ClockCircleOutlined style={{ marginRight: 6 }} />
-            {new Date().toLocaleDateString("en-US", {
+            {new Date().toLocaleDateString(locale, {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -534,7 +556,7 @@ export default function AdminDashboard() {
               fontWeight: 700,
             }}
           >
-            {greet()}, {userName}
+            {t(greetKey())}, {userName}
           </Title>
           <Text
             style={{
@@ -544,7 +566,7 @@ export default function AdminDashboard() {
               marginTop: 6,
             }}
           >
-            Here&apos;s what&apos;s happening across your platform today.
+            {t_home("todayIntro")}
           </Text>
 
           {/* Quick action pills */}
@@ -653,7 +675,7 @@ export default function AdminDashboard() {
                       color: "#111",
                     }}
                   >
-                    {fmt(s.value, s.prefix)}
+                    {s.isMoney ? money.compactFromUsd(s.value) : fmt(s.value)}
                   </div>
                 </div>
                 <div
@@ -748,10 +770,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Growth Overview
+                  {t_home("growthOverview")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  Monthly registration trends
+                  {t_home("monthlyTrends")}
                 </Text>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -872,10 +894,10 @@ export default function AdminDashboard() {
                 strong
                 style={{ fontSize: "clamp(16px, 3vw, 20px)", display: "block" }}
               >
-                Property Types
+                {t_home("propertyTypes")}
               </Text>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Distribution breakdown
+                {t_home("distributionBreakdown")}
               </Text>
             </div>
 
@@ -987,10 +1009,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Top Properties
+                  {t_home("topProperties")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  By engagement score
+                  {t_home("byEngagement")}
                 </Text>
               </div>
               <TrophyOutlined style={{ fontSize: 20, color: "#faad14" }} />
@@ -1070,7 +1092,7 @@ export default function AdminDashboard() {
                       {/* Price + bar */}
                       <div style={{ textAlign: "right", minWidth: 90 }}>
                         <Text strong style={{ fontSize: 14 }}>
-                          ${(prop.price || 0).toLocaleString()}
+                          {money.forListing(prop.price || 0, prop.currency).display}
                         </Text>
                         <Progress
                           percent={pct}
@@ -1091,7 +1113,7 @@ export default function AdminDashboard() {
                     type="secondary"
                     style={{ marginTop: 8, display: "inline-block" }}
                   >
-                    No properties yet
+                    {t_home("noPropertiesYet")}
                   </Text>
                 </div>
               )}
@@ -1126,10 +1148,10 @@ export default function AdminDashboard() {
                     display: "block",
                   }}
                 >
-                  Recent Activity
+                  {t_home("recentActivity")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  Latest platform events
+                  {t_home("latestEvents")}
                 </Text>
               </div>
               <ThunderboltOutlined style={{ fontSize: 20, color: "#0000FF" }} />
@@ -1196,7 +1218,7 @@ export default function AdminDashboard() {
                     type="secondary"
                     style={{ marginTop: 8, display: "inline-block" }}
                   >
-                    No recent activity
+                    {t_home("noRecentActivity")}
                   </Text>
                 </div>
               )}

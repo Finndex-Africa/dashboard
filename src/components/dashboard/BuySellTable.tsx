@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale, useTranslations } from "next-intl";
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -17,13 +18,13 @@ import {
     StarFilled,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import type { BuySellListing } from '@/types/buy-sell';
 import {
     getBuySellSellerEmail,
     getBuySellCategoryLabel,
     getStatusColor,
     getStatusLabel,
-    formatBuySellPrice,
 } from '@/lib/buy-sell-utils';
 import { getSubcategoryLabel } from '@/lib/buy-sell-categories';
 
@@ -61,6 +62,10 @@ export function BuySellTable({
     onRepublish,
     onToggleFeatured,
 }: BuySellTableProps) {
+    const t_common = useTranslations("common");
+    const t_listing = useTranslations("listing");
+    const locale = useLocale();
+    const money = useMoney();
     const columns: ColumnsType<BuySellListing> = [
         {
             title: 'Listing',
@@ -98,7 +103,7 @@ export function BuySellTable({
                                 fontSize: 12,
                             }}
                         >
-                            No img
+                            {t_common("noImg")}
                         </div>
                     )}
                     <div>
@@ -106,7 +111,7 @@ export function BuySellTable({
                             {record.title}
                             {record.isPremium && (
                                 <Tag color="gold" style={{ marginLeft: 6, fontSize: 10 }}>
-                                    Featured
+                                    {t_common("featured")}
                                 </Tag>
                             )}
                         </div>
@@ -136,14 +141,17 @@ export function BuySellTable({
             dataIndex: 'price',
             key: 'price',
             sorter: (a, b) => a.price - b.price,
-            render: (price: number) => formatBuySellPrice(price),
+            render: (price: number, record) =>
+                money.forListing(price, record.currency).display,
         },
         {
             title: 'Agent Fee',
             key: 'agentFee',
             render: (_, record) =>
                 record.agentFee != null ? (
-                    <span className="text-gray-700 text-sm">{formatBuySellPrice(record.agentFee)}</span>
+                    <span className="text-gray-700 text-sm">
+                        {money.forListing(record.agentFee, record.currency).display}
+                    </span>
                 ) : (
                     <span className="text-gray-400 text-xs">—</span>
                 ),
@@ -185,7 +193,7 @@ export function BuySellTable({
             key: 'createdAt',
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             render: (date: string) =>
-                new Date(date).toLocaleDateString('en-US', {
+                new Date(date).toLocaleDateString(locale, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
@@ -198,21 +206,21 @@ export function BuySellTable({
                 <Space size="small" wrap>
                     {/* Pending: show Review button first */}
                     {record.status === 'pending' && onReview && (
-                        <Tooltip title="Review before approving or rejecting">
+                        <Tooltip title={t_listing("reviewBeforeApproving")}>
                             <Button
                                 type="primary"
                                 size="small"
                                 icon={<FileSearchOutlined />}
                                 onClick={() => onReview(record)}
                             >
-                                Review
+                                {t_common("review")}
                             </Button>
                         </Tooltip>
                     )}
 
                     {/* Quick inline approve/reject when no review handler */}
                     {record.status === 'pending' && !onReview && onApprove && (
-                        <Tooltip title="Approve">
+                        <Tooltip title={t_common("approve")}>
                             <Button
                                 type="primary"
                                 size="small"
@@ -224,7 +232,7 @@ export function BuySellTable({
                         </Tooltip>
                     )}
                     {record.status === 'pending' && !onReview && onReject && (
-                        <Tooltip title="Reject">
+                        <Tooltip title={t_common("reject")}>
                             <Button
                                 danger
                                 size="small"
@@ -236,7 +244,7 @@ export function BuySellTable({
 
                     {/* Edit */}
                     {onEdit && (
-                        <Tooltip title="Edit">
+                        <Tooltip title={t_common("edit")}>
                             <Button
                                 type="text"
                                 icon={<EditOutlined />}
@@ -259,7 +267,7 @@ export function BuySellTable({
 
                     {/* Suspend */}
                     {record.status === 'approved' && onUnpublish && (
-                        <Tooltip title="Suspend">
+                        <Tooltip title={t_common("suspend")}>
                             <Button
                                 type="text"
                                 icon={<EyeInvisibleOutlined />}
@@ -271,7 +279,7 @@ export function BuySellTable({
 
                     {/* Reactivate */}
                     {record.status === 'suspended' && onRepublish && (
-                        <Tooltip title="Reactivate">
+                        <Tooltip title={t_common("reactivate")}>
                             <Button
                                 type="text"
                                 icon={<EyeOutlined />}
@@ -283,7 +291,7 @@ export function BuySellTable({
 
                     {/* Delete */}
                     {onDelete && (
-                        <Tooltip title="Delete">
+                        <Tooltip title={t_common("delete")}>
                             <Button
                                 type="text"
                                 danger

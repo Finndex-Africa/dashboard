@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 import { DM_Sans } from 'next/font/google'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getTranslations } from 'next-intl/server'
 import './globals.css'
 import { LayoutClientWrapper } from '@/components/LayoutClientWrapper'
+import { CurrencyProvider } from '@/lib/currency/CurrencyProvider'
+import { getRates } from '@/lib/currency/server'
 
 // DM Sans as a stand-in for Whitney (geometric sans-serif).
 // Bold for headings, Medium for body – same variable names so all
@@ -19,27 +23,43 @@ const whitneyMedium = DM_Sans({
     display: 'swap',
 })
 
-export const metadata: Metadata = {
-    title: 'Findafriq Dashboard',
-    description: 'Manage your Findafriq properties and services',
-    icons: {
-        icon: '/favicon.ico',
-        apple: '/favicon.ico',
-        shortcut: '/favicon.ico',
-    },
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+
+    return {
+        title: t('title'),
+        description: t('description'),
+        icons: {
+            icon: '/favicon.ico',
+            apple: '/favicon.ico',
+            shortcut: '/favicon.ico',
+        },
+    }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    // Locale comes from the NEXT_LOCALE cookie (see src/i18n/request.ts);
+    // dashboard URLs stay locale-free.
+    const locale = await getLocale()
+    // Rates are fetched here (revalidated hourly) so every page can format
+    // money without each one refetching. The chosen currency itself is read
+    // client-side from the cookie, which keeps pages statically renderable.
+    const rates = await getRates()
+
     return (
-        <html lang="en">
+        <html lang={locale}>
             <body className={`${whitneyBold.variable} ${whitneyMedium.variable} font-body antialiased`}>
-                <LayoutClientWrapper>
-                    {children}
-                </LayoutClientWrapper>
+                <NextIntlClientProvider>
+                    <CurrencyProvider rates={rates}>
+                        <LayoutClientWrapper>
+                            {children}
+                        </LayoutClientWrapper>
+                    </CurrencyProvider>
+                </NextIntlClientProvider>
             </body>
         </html>
     )

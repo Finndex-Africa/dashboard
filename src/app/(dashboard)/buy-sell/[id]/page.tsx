@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -20,6 +21,11 @@ import type { BuySellListing } from '@/types/buy-sell';
 const { Title, Text } = Typography;
 
 export default function EditBuySellPage() {
+    const t_nav2 = useTranslations("nav2");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_listing = useTranslations("listing");
+    const t_toasts = useTranslations("toasts");
     const { user }      = useAuth();
     const router        = useRouter();
     const params        = useParams();
@@ -46,14 +52,14 @@ export default function EditBuySellPage() {
             const fetched: BuySellListing = Array.isArray(raw) ? raw[0] : raw;
 
             if (!fetched) {
-                showToast.error('Listing not found');
+                showToast.error(t_errors2("listingNotFound"));
                 router.push('/buy-sell');
                 return;
             }
 
             setListing(fetched);
         } catch (error: any) {
-            showToast.error('Failed to load listing');
+            showToast.error(t_errors2("loadListing"));
             router.push('/buy-sell');
         } finally {
             setLoading(false);
@@ -78,7 +84,7 @@ export default function EditBuySellPage() {
                     const url = await mediaApi.upload(file, 'properties', listingId);
                     uploadedUrls.push(url);
                 } catch {
-                    showToast.error('Failed to upload one or more images');
+                    showToast.error(t_errors2("uploadOneOrMore"));
                 }
             }
 
@@ -93,7 +99,7 @@ export default function EditBuySellPage() {
                 await buySellApi.update(listing._id, { images: finalImages });
             }
 
-            showToast.success('Listing updated successfully');
+            showToast.success(t_toasts("listingUpdated"));
             router.push('/buy-sell');
         } catch (error: any) {
             showToast.error(error.response?.data?.message || 'Failed to update listing');
@@ -107,11 +113,11 @@ export default function EditBuySellPage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to edit Buy & Sell listings."
                 extra={
                     <Button type="primary" onClick={() => router.push('/buy-sell')}>
-                        Go to Buy &amp; Sell
+                        {t_nav2("goToBuySell")}
                     </Button>
                 }
             />
@@ -130,11 +136,11 @@ export default function EditBuySellPage() {
         return (
             <Result
                 status="404"
-                title="Listing Not Found"
+                title={t_listing("listingNotFound")}
                 subTitle="The listing you're looking for doesn't exist."
                 extra={
                     <Button type="primary" onClick={handleCancel}>
-                        Go to Buy &amp; Sell
+                        {t_nav2("goToBuySell")}
                     </Button>
                 }
             />
@@ -149,7 +155,7 @@ export default function EditBuySellPage() {
                     onClick={handleCancel}
                     style={{ marginBottom: 16 }}
                 >
-                    Back to Buy &amp; Sell
+                    {t_nav2("backToBuySell")}
                 </Button>
                 <Title level={2}>Edit Listing</Title>
                 <Text type="secondary">Update listing details</Text>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from 'react';
 import Card from 'antd/es/card';
 import Table from 'antd/es/table';
@@ -55,6 +56,12 @@ function canReviewReports(role: string | undefined): boolean {
 }
 
 export default function UserReportsPage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_misc = useTranslations("misc");
+    const t_placeholder = useTranslations("placeholder");
+    const t_reviews2 = useTranslations("reviews2");
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -111,7 +118,7 @@ export default function UserReportsPage() {
                     }));
                 }
             } catch {
-                message.error('Failed to load user reports');
+                message.error(t_errors2("loadUserReports"));
             } finally {
                 setLoading(false);
             }
@@ -136,7 +143,7 @@ export default function UserReportsPage() {
             setSelected(detail);
             setAdminNotes(detail.adminNotes ?? '');
         } catch {
-            message.error('Failed to load report details');
+            message.error(t_errors2("loadReportDetails"));
         } finally {
             setDetailLoading(false);
         }
@@ -215,7 +222,7 @@ export default function UserReportsPage() {
             key: 'actions',
             render: (_: unknown, record: UserReport) => (
                 <Button type="link" icon={<EyeOutlined />} onClick={() => openReview(record)}>
-                    Review
+                    {t_common("review")}
                 </Button>
             ),
         },
@@ -241,10 +248,10 @@ export default function UserReportsPage() {
                         WebkitTextFillColor: 'transparent',
                     }}
                 >
-                    User Reports
+                    {t_misc("userReports")}
                 </Title>
                 <Text type="secondary">
-                    Review client feedback and reports submitted by platform users
+                    {t_misc("reportsIntro")}
                 </Text>
             </div>
 
@@ -331,14 +338,14 @@ export default function UserReportsPage() {
                         : selected?.status === 'pending'
                           ? [
                                 <Button key="cancel" onClick={() => setViewOpen(false)}>
-                                    Cancel
+                                    {t_common("cancel")}
                                 </Button>,
                                 <Button
                                     key="reviewed"
                                     loading={actionLoading}
                                     onClick={() => handleReview('reviewed')}
                                 >
-                                    Mark Reviewed
+                                    {t_misc("markReviewed")}
                                 </Button>,
                                 <Button
                                     key="resolved"
@@ -347,12 +354,12 @@ export default function UserReportsPage() {
                                     onClick={() => handleReview('resolved')}
                                     style={{ background: '#52c41a', borderColor: '#52c41a' }}
                                 >
-                                    Mark Resolved
+                                    {t_misc("markResolved")}
                                 </Button>,
                             ]
                           : [
                                 <Button key="cancel" onClick={() => setViewOpen(false)}>
-                                    Cancel
+                                    {t_common("cancel")}
                                 </Button>,
                                 <Button
                                     key="resolved"
@@ -361,7 +368,7 @@ export default function UserReportsPage() {
                                     onClick={() => handleReview('resolved')}
                                     style={{ background: '#52c41a', borderColor: '#52c41a' }}
                                 >
-                                    Mark Resolved
+                                    {t_misc("markResolved")}
                                 </Button>,
                             ]
                 }
@@ -373,22 +380,22 @@ export default function UserReportsPage() {
                 ) : selected ? (
                     <div className="space-y-4">
                         <Descriptions bordered column={1} size="small">
-                            <Descriptions.Item label="Full Name">{selected.fullName}</Descriptions.Item>
-                            <Descriptions.Item label="Email Address">{selected.email}</Descriptions.Item>
-                            <Descriptions.Item label="Phone Number">{selected.phone}</Descriptions.Item>
-                            <Descriptions.Item label="Report Category">
+                            <Descriptions.Item label={t_form("fullName")}>{selected.fullName}</Descriptions.Item>
+                            <Descriptions.Item label={t_form("emailAddress")}>{selected.email}</Descriptions.Item>
+                            <Descriptions.Item label={t_form("phoneNumber")}>{selected.phone}</Descriptions.Item>
+                            <Descriptions.Item label={t_reviews2("reportCategory")}>
                                 {formatReportCategory(selected.reportCategory)}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Who Are You Reporting?">
+                            <Descriptions.Item label={t_reviews2("whoReporting")}>
                                 {selected.reportedTarget}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Status">
+                            <Descriptions.Item label={t_common("status")}>
                                 <Tag color={STATUS_COLORS[selected.status]}>
                                     {formatReportStatus(selected.status)?.toUpperCase()}
                                 </Tag>
                             </Descriptions.Item>
                             {typeof selected.userId === 'object' && selected.userId && (
-                                <Descriptions.Item label="Submitted By (Account)">
+                                <Descriptions.Item label={t_form("submittedByAccount")}>
                                     <div>{getPersonName(selected.userId)}</div>
                                     {selected.userId.email && (
                                         <div className="text-xs text-gray-500">{selected.userId.email}</div>
@@ -400,21 +407,21 @@ export default function UserReportsPage() {
                                     )}
                                 </Descriptions.Item>
                             )}
-                            <Descriptions.Item label="Submitted">
+                            <Descriptions.Item label={t_common("submitted")}>
                                 {new Date(selected.createdAt).toLocaleString()}
                             </Descriptions.Item>
                             {selected.reviewedAt && (
-                                <Descriptions.Item label="Reviewed">
+                                <Descriptions.Item label={t_common("reviewed")}>
                                     {new Date(selected.reviewedAt).toLocaleString()}
                                 </Descriptions.Item>
                             )}
                             {typeof selected.reviewedBy === 'object' && selected.reviewedBy && (
-                                <Descriptions.Item label="Reviewed By">
+                                <Descriptions.Item label={t_form("reviewedBy")}>
                                     {getPersonName(selected.reviewedBy)}
                                 </Descriptions.Item>
                             )}
                             {selected.adminNotes && selected.status === 'resolved' && (
-                                <Descriptions.Item label="Admin Notes">{selected.adminNotes}</Descriptions.Item>
+                                <Descriptions.Item label={t_form("adminNotes")}>{selected.adminNotes}</Descriptions.Item>
                             )}
                         </Descriptions>
 
@@ -424,7 +431,7 @@ export default function UserReportsPage() {
                                 <TextArea
                                     value={adminNotes}
                                     onChange={(e) => setAdminNotes(e.target.value)}
-                                    placeholder="Notes about your investigation or resolution..."
+                                    placeholder={t_placeholder("investigationNotes")}
                                     rows={3}
                                     className="mt-1"
                                 />

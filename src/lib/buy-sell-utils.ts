@@ -63,8 +63,8 @@ export function getStatusLabel(status: BuySellStatus): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-// ─── Price formatting ─────────────────────────────────────────────────────────
-
-export function formatBuySellPrice(price: number): string {
-    return `$${price.toLocaleString()}`;
-}
+/*
+  Price formatting deliberately lives in the `useMoney` hook, not here: it needs
+  the viewer's chosen currency and the live rate table, neither of which a plain
+  module function can reach. Call `money.forListing(price, listing.currency)`.
+*/

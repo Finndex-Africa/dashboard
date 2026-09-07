@@ -1,4 +1,5 @@
 import { apiClient, PaginatedResponse } from '@/lib/api-client';
+import type { Currency } from '@/lib/currency/config';
 import { Property } from '@/types/dashboard';
 
 export interface PropertyFilters {
@@ -13,6 +14,8 @@ export interface PropertyFilters {
 }
 
 export interface CreatePropertyDto {
+    /** Currency the price is quoted in; the backend normalizes to USD. */
+    currency?: Currency;
     title: string;
     description: string;
     location: string;

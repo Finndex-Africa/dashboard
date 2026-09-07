@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useState } from 'react';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
@@ -24,6 +25,13 @@ interface ReviewFormProps {
 }
 
 export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: ReviewFormProps) {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_misc = useTranslations("misc");
+    const t_placeholder = useTranslations("placeholder");
+    const t_reviews2 = useTranslations("reviews2");
+    const t_toasts = useTranslations("toasts");
     const { user, isAuthenticated } = useAuth();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
@@ -32,7 +40,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
 
     const handleSubmit = async (values: any) => {
         if (!isAuthenticated || !user) {
-            message.warning('Please log in to leave a review');
+            message.warning(t_reviews2("loginToReview"));
             return;
         }
 
@@ -47,7 +55,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
             };
 
             await reviewsApi.create(reviewData);
-            message.success('Review submitted successfully!');
+            message.success(t_toasts("reviewSubmitted"));
             form.resetFields();
             setUploadedPhotos([]);
             setIsModalVisible(false);
@@ -67,14 +75,14 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
         // TODO: Implement actual photo upload to your storage service
         // For now, just creating a placeholder URL
         try {
-            message.info('Photo upload functionality to be implemented');
+            message.info(t_misc("photoUploadTodo"));
             // const formData = new FormData();
             // formData.append('file', file);
             // const response = await uploadApi.uploadFile(formData);
             // setUploadedPhotos([...uploadedPhotos, response.url]);
             return false;
         } catch (error) {
-            message.error('Failed to upload photo');
+            message.error(t_errors2("uploadPhoto"));
             return false;
         }
     };
@@ -96,7 +104,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                 onClick={() => setIsModalVisible(true)}
                 style={{ width: '100%' }}
             >
-                Write a Review
+                {t_reviews2("writeAReview")}
             </Button>
 
             <Modal
@@ -117,7 +125,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                     style={{ marginTop: '24px' }}
                 >
                     <Form.Item
-                        label="Rating"
+                        label={t_common("rating")}
                         name="rating"
                         rules={[{ required: true, message: 'Please select a rating' }]}
                     >
@@ -128,7 +136,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                     </Form.Item>
 
                     <Form.Item
-                        label="Your Review"
+                        label={t_reviews2("yourReview")}
                         name="text"
                         rules={[
                             { required: true, message: 'Please write your review' },
@@ -137,13 +145,13 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                     >
                         <TextArea
                             rows={6}
-                            placeholder="Share your experience with this property/service..."
+                            placeholder={t_reviews2("reviewPlaceholder")}
                             maxLength={1000}
                             showCount
                         />
                     </Form.Item>
 
-                    <Form.Item label="Photos (Optional)">
+                    <Form.Item label={t_form("photosOptional")}>
                         <Upload
                             listType="picture-card"
                             beforeUpload={handlePhotoUpload}
@@ -156,7 +164,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                             </div>
                         </Upload>
                         <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Maximum 5 photos
+                            {t_placeholder("maxPhotos")}
                         </Text>
                     </Form.Item>
 
@@ -169,7 +177,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                                 }}
                                 size="large"
                             >
-                                Cancel
+                                {t_common("cancel")}
                             </Button>
                             <Button
                                 type="primary"
@@ -178,7 +186,7 @@ export default function ReviewForm({ itemType, itemId, itemTitle, onSuccess }: R
                                 loading={loading}
                                 icon={<StarOutlined />}
                             >
-                                Submit Review
+                                {t_reviews2("submitReview")}
                             </Button>
                         </div>
                     </Form.Item>

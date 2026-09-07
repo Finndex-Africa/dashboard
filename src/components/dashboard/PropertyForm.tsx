@@ -1,7 +1,9 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import Form from 'antd/es/form';
+import { CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY, type Currency } from '@/lib/currency/config';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
 import Select from 'antd/es/select';
@@ -52,7 +54,19 @@ export function PropertyForm({
     onCancel,
     loading,
 }: PropertyFormProps) {
+    const t_hints = useTranslations("hints");
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_currency = useTranslations("currencySwitcher");
+    const t_listing = useTranslations("listing");
+    const t_placeholder = useTranslations("placeholder");
     const [form] = Form.useForm();
+    /* Price label, prefix and precision all follow the chosen currency. */
+    const selectedCurrency: Currency =
+        (Form.useWatch('currency', form) as Currency) ?? DEFAULT_CURRENCY;
+    const currencyMeta = CURRENCY_META[selectedCurrency] ?? CURRENCY_META[DEFAULT_CURRENCY];
+
     const [fileList, setFileList] = useState<UploadFile[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
@@ -119,12 +133,12 @@ export function PropertyForm({
     const beforeUpload = (file: File) => {
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
-            showToast.error('You can only upload image files!');
+            showToast.error(t_errors2("imageOnly"));
             return Upload.LIST_IGNORE;
         }
         const isLt10M = file.size / 1024 / 1024 < 10;
         if (!isLt10M) {
-            showToast.error('Image must be smaller than 10MB!');
+            showToast.error(t_errors2("imageMax10"));
             return Upload.LIST_IGNORE;
         }
         return false; // Prevent auto upload, we'll handle it manually
@@ -141,18 +155,18 @@ export function PropertyForm({
             {/* Basic Information – same order as user form */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Basic Information
+                    {t_form("basicInformation")}
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24}>
                         <Form.Item
                             name="title"
-                            label="Property Title"
+                            label={t_form("propertyTitle")}
                             rules={[{ required: true, message: 'Please enter property title' }]}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., Luxury 3BR Apartment in Westlands"
+                                placeholder={t_hints("e_g_luxury_3br_apartment_in_westlands")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -160,12 +174,12 @@ export function PropertyForm({
                     <Col xs={24}>
                         <Form.Item
                             name="description"
-                            label="Description"
+                            label={t_common("description")}
                             rules={[{ required: true, message: 'Please enter description' }]}
                         >
                             <TextArea
                                 rows={4}
-                                placeholder="Describe your property..."
+                                placeholder={t_placeholder("describeProperty")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -173,12 +187,12 @@ export function PropertyForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="propertyType"
-                            label="Property Type"
+                            label={t_form("propertyType")}
                             rules={[{ required: true, message: 'Please select property type' }]}
                         >
                             <Select
                                 size="large"
-                                placeholder="Select type"
+                                placeholder={t_placeholder("selectType")}
                                 style={{ borderRadius: '8px' }}
                             >
                                 <Select.Option value="Apartment">Apartment</Select.Option>
@@ -189,13 +203,13 @@ export function PropertyForm({
                     <Col xs={24} sm={12}>
                         <Form.Item
                             name="furnished"
-                            label="Furnished"
+                            label={t_form("furnished")}
                             rules={[{ required: true, message: 'Please select furnished status' }]}
                             initialValue={false}
                         >
                             <Select
                                 size="large"
-                                placeholder="Select furnished status"
+                                placeholder={t_placeholder("selectFurnished")}
                                 style={{ borderRadius: '8px' }}
                             >
                                 <Select.Option value={true}>Yes - Furnished</Select.Option>
@@ -211,18 +225,18 @@ export function PropertyForm({
             {/* Location – same as user form */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Location
+                    {t_common("location")}
                 </Text>
                 <Row gutter={16}>
                     <Col xs={24}>
                         <Form.Item
                             name="location"
-                            label="Location"
+                            label={t_common("location")}
                             rules={[{ required: true, message: 'Please enter location' }]}
                         >
                             <Input
                                 size="large"
-                                placeholder="e.g., Westlands, Nairobi"
+                                placeholder={t_hints("e_g_westlands_nairobi")}
                                 style={{ borderRadius: '8px' }}
                             />
                         </Form.Item>
@@ -235,13 +249,13 @@ export function PropertyForm({
             {/* Property Details – same as user form */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Property Details
+                    {t_listing("propertyDetails")}
                 </Text>
                 <Row gutter={16}>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24} sm={8}>
                         <Form.Item
                             name="price"
-                            label="Price (USD)"
+                            label={`${t_common("price")} (${currencyMeta.label})`}
                             rules={[{ required: true, message: 'Please enter price' }]}
                         >
                             <InputNumber
@@ -249,13 +263,30 @@ export function PropertyForm({
                                 style={{ width: '100%', borderRadius: '8px' }}
                                 placeholder="0"
                                 min={0}
-                                formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
+                                // RWF has no minor unit — offering cents there is wrong.
+                                precision={currencyMeta.decimals}
+                                formatter={(value) => `${currencyMeta.symbol} ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                parser={(value) => String(value ?? '').replace(/[^0-9.]/g, '') as any}
                             />
                         </Form.Item>
                     </Col>
-                    <Col xs={24} sm={12}>
-                        <Form.Item name="area" label="Area (sq ft)">
+                    <Col xs={24} sm={8}>
+                        <Form.Item
+                            name="currency"
+                            label={t_currency("label")}
+                            initialValue={DEFAULT_CURRENCY}
+                        >
+                            <Select size="large" style={{ borderRadius: '8px' }}>
+                                {CURRENCIES.map((c) => (
+                                    <Select.Option key={c} value={c}>
+                                        {CURRENCY_META[c].label}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                        <Form.Item name="area" label={t_form("areaSqFt")}>
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
@@ -269,7 +300,7 @@ export function PropertyForm({
                     <Col xs={24} sm={8}>
                         <Form.Item
                             name="bedrooms"
-                            label="Bedrooms"
+                            label={t_form("bedrooms")}
                             rules={[{ required: true, message: 'Please enter number of bedrooms' }]}
                         >
                             <InputNumber
@@ -283,7 +314,7 @@ export function PropertyForm({
                     <Col xs={24} sm={8}>
                         <Form.Item
                             name="bathrooms"
-                            label="Bathrooms"
+                            label={t_form("bathrooms")}
                             rules={[{ required: true, message: 'Please enter number of bathrooms' }]}
                         >
                             <InputNumber
@@ -296,7 +327,7 @@ export function PropertyForm({
                         </Form.Item>
                     </Col>
                     <Col xs={24} sm={8}>
-                        <Form.Item name="maxGuests" label="Max Guests">
+                        <Form.Item name="maxGuests" label={t_form("maxGuests")}>
                             <InputNumber
                                 size="large"
                                 style={{ width: '100%', borderRadius: '8px' }}
@@ -313,10 +344,10 @@ export function PropertyForm({
             <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4" style={{ marginBottom: '24px' }}>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Agent Fee</h3>
                 <p className="text-xs text-gray-600 mb-3">
-                    Set the fee you charge for this listing. It will be shown to seekers on the property page.
+                    {t_form("agentFeeHelp")}
                 </p>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Agent Fee (USD)
+                    {t_form("yourAgentFee")}
                 </label>
                 <Form.Item
                     name="agentFee"
@@ -331,7 +362,7 @@ export function PropertyForm({
                         min="0"
                         step="0.01"
                         className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="e.g., 150"
+                        placeholder={t_hints("e_g_150")}
                     />
                 </Form.Item>
             </div>
@@ -341,10 +372,10 @@ export function PropertyForm({
             {/* Amenities – chip grid matching design */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '8px' }}>
-                    Amenities
+                    {t_listing("amenities")}
                 </Text>
                 <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '16px' }}>
-                    Select the amenities available in this property
+                    {t_placeholder("selectAmenities")}
                 </Text>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
                     {AMENITY_OPTIONS.map((amenity) => {
@@ -382,7 +413,7 @@ export function PropertyForm({
             {/* Images Section */}
             <div style={{ marginBottom: '24px' }}>
                 <Text strong style={{ fontSize: '15px', color: '#667eea', display: 'block', marginBottom: '16px' }}>
-                    Property Images
+                    {t_form("propertyImages")}
                 </Text>
                 <Upload
                     listType="picture-card"
@@ -406,7 +437,7 @@ export function PropertyForm({
                     )}
                 </Upload>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                    Upload up to 10 images. Max size: 10MB per image. Images will be uploaded to digital ocean.
+                    {t_placeholder("uploadHelp")}
                 </Text>
             </div>
 
@@ -424,7 +455,7 @@ export function PropertyForm({
                     onClick={onCancel}
                     style={{ borderRadius: '8px', minWidth: '100px' }}
                 >
-                    Cancel
+                    {t_common("cancel")}
                 </Button>
                 <Button
                     type="primary"

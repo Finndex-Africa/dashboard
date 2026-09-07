@@ -1,0 +1,14 @@
+allowBuilds:
+  # Native file-watcher addon (pulled in via next-intl's toolchain).
+  '@parcel/watcher': true
+  # Native SWC bindings.
+  '@swc/core': true
+  # napi bindings used by the eslint import resolver.
+  unrs-resolver: true
+
+# Moved from package.json "pnpm.overrides" — pnpm 11 no longer reads that field.
+# Neither package is currently in the dependency tree; these pins only take
+# effect if something (e.g. Sentry/OpenTelemetry) pulls them back in.
+overrides:
+  import-in-the-middle: 1.15.0
+  require-in-the-middle: 7.5.2

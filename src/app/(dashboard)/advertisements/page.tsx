@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import {
     Card,
@@ -29,12 +30,22 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { advertisementsApi, type Advertisement } from '@/services/api/advertisements.api';
 import AdvertisementForm from '@/components/dashboard/AdvertisementForm';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
 export default function AdvertisementsPage() {
+    const money = useMoney();
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_filters = useTranslations("filters");
+    const t_form = useTranslations("form");
+    const t_listing = useTranslations("listing");
+    const t_misc = useTranslations("misc");
+    const t_nav2 = useTranslations("nav2");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
     const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
@@ -85,10 +96,10 @@ export default function AdvertisementsPage() {
     const handleDelete = async (id: string) => {
         try {
             await advertisementsApi.delete(id);
-            message.success('Advertisement deleted successfully');
+            message.success(t_toasts("adDeleted"));
             fetchAdvertisements();
         } catch (error) {
-            message.error('Failed to delete advertisement');
+            message.error(t_errors2("deleteAd"));
         }
     };
 
@@ -99,7 +110,7 @@ export default function AdvertisementsPage() {
             message.success(`Advertisement ${newStatus === 'active' ? 'activated' : 'paused'} successfully`);
             fetchAdvertisements();
         } catch (error) {
-            message.error('Failed to update advertisement status');
+            message.error(t_errors2("updateAdStatus"));
         }
     };
 
@@ -191,7 +202,12 @@ export default function AdvertisementsPage() {
             title: 'Budget',
             dataIndex: 'budget',
             key: 'budget',
-            render: (budget) => budget ? `$${budget.toLocaleString()}` : '-',
+            /*
+              Ad budgets have no currency field on the backend — they are stored
+              as plain USD. Converting the stored USD figure for display is
+              correct; the entry field below stays USD and says so.
+            */
+            render: (budget) => budget ? money.fromUsd(budget) : '-',
         },
         {
             title: 'Actions',
@@ -210,7 +226,7 @@ export default function AdvertisementsPage() {
                         onClick={() => handleEdit(record)}
                     />
                     <Popconfirm
-                        title="Are you sure you want to delete this advertisement?"
+                        title={t_misc("deleteAdConfirm")}
                         onConfirm={() => handleDelete(record._id)}
                         okText="Yes"
                         cancelText="No"
@@ -232,11 +248,11 @@ export default function AdvertisementsPage() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="Only administrators can access the advertisements management page."
                 extra={
                     <Button type="primary" onClick={() => router.push('/dashboard')}>
-                        Go to Admin Dashboard
+                        {t_nav2("goToAdminDashboard")}
                     </Button>
                 }
             />
@@ -249,7 +265,7 @@ export default function AdvertisementsPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <Title level={2} className="mb-0">
-                        Advertisements
+                        {t_misc("advertisements")}
                     </Title>
                     <Text type="secondary">Manage your advertising campaigns</Text>
                 </div>
@@ -259,7 +275,7 @@ export default function AdvertisementsPage() {
                     onClick={handleCreate}
                     size="large"
                 >
-                    Create Advertisement
+                    {t_listing("createAdvertisement")}
                 </Button>
             </div>
 
@@ -268,7 +284,7 @@ export default function AdvertisementsPage() {
                 <Col xs={12} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="Active Campaigns"
+                            title={t_filters("activeCampaigns")}
                             value={activeAds}
                             prefix={<PlayCircleOutlined />}
                             valueStyle={{ color: '#3f8600' }}
@@ -278,7 +294,7 @@ export default function AdvertisementsPage() {
                 <Col xs={12} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="Total Impressions"
+                            title={t_filters("totalImpressions")}
                             value={totalImpressions}
                             prefix={<EyeOutlined />}
                             valueStyle={{ color: '#0000FF' }}
@@ -288,7 +304,7 @@ export default function AdvertisementsPage() {
                 <Col xs={12} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="Total Clicks"
+                            title={t_filters("totalClicks")}
                             value={totalClicks}
                             prefix={<BarChartOutlined />}
                             valueStyle={{ color: '#0000FF' }}
@@ -298,10 +314,10 @@ export default function AdvertisementsPage() {
                 <Col xs={12} sm={12} lg={6}>
                     <Card>
                         <Statistic
-                            title="Total Budget"
+                            title={t_form("totalBudget")}
                             value={totalBudget}
-                            prefix="$"
-                            precision={2}
+                            /* Budgets are stored as plain USD (no currency field). */
+                            valueRender={() => money.fromUsd(totalBudget)}
                             valueStyle={{ color: '#cf1322' }}
                         />
                     </Card>
@@ -312,7 +328,7 @@ export default function AdvertisementsPage() {
             <Card>
                 <div className="mb-4 flex gap-4">
                     <Select
-                        placeholder="Filter by Status"
+                        placeholder={t_filters("filterByStatus")}
                         style={{ width: 200 }}
                         allowClear
                         onChange={setFilterStatus}
@@ -323,7 +339,7 @@ export default function AdvertisementsPage() {
                         <Select.Option value="ended">Ended</Select.Option>
                     </Select>
                     <Select
-                        placeholder="Filter by Placement"
+                        placeholder={t_filters("filterByPlacement")}
                         style={{ width: 200 }}
                         allowClear
                         onChange={setFilterPlacement}

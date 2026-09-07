@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Typography from 'antd/es/typography';
@@ -27,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { BuySellTable } from '@/components/dashboard/BuySellTable';
 import type { BuySellListing, BuySellSeller } from '@/types/buy-sell';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { buySellApi } from '@/services/api/buy-sell.api';
 import type { BuySellPagination } from '@/services/api/buy-sell.api';
 import { extractListItems, extractListPagination } from '@/lib/list-pagination';
@@ -39,7 +41,6 @@ import {
     getBuySellCategoryLabel,
     getStatusColor,
     getStatusLabel,
-    formatBuySellPrice,
 } from '@/lib/buy-sell-utils';
 import {
     getSubcategoryLabel,
@@ -59,8 +60,16 @@ const PAGE_SIZE = 10;
 // ─── Inner content (uses useSearchParams to force client-side rendering) ───────
 
 function BuySellPageContent() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_home = useTranslations("home");
+    const t_listing = useTranslations("listing");
+    const t_nav2 = useTranslations("nav2");
+    const t_toasts = useTranslations("toasts");
     const { user } = useAuth();
     const router = useRouter();
+    const money = useMoney();
     useSearchParams(); // Forces CSR boundary — prevents FOUC
 
     // ── State ──────────────────────────────────────────────────────────────────
@@ -173,7 +182,7 @@ function BuySellPageContent() {
         try {
             setActionLoadingId(listing._id);
             await buySellApi.approve(listing._id);
-            showToast.success('Listing approved');
+            showToast.success(t_toasts("listingApproved"));
             setReviewModalOpen(false);
             setReviewListing(null);
             fetchListings();
@@ -186,13 +195,13 @@ function BuySellPageContent() {
 
     const handleRejectSubmit = async () => {
         if (!rejectTarget || !rejectionReason.trim()) {
-            showToast.error('Please provide a rejection reason');
+            showToast.error(t_errors2("rejectionReasonRequired"));
             return;
         }
         try {
             setActionLoadingId(rejectTarget._id);
             await buySellApi.reject(rejectTarget._id, rejectionReason);
-            showToast.success('Listing rejected');
+            showToast.success(t_toasts("listingRejected"));
             setRejectModalOpen(false);
             setRejectTarget(null);
             setRejectionReason('');
@@ -211,7 +220,7 @@ function BuySellPageContent() {
                 prev.map((l) => l._id === listing._id ? { ...l, status: 'suspended' as const } : l),
             );
             await buySellApi.unpublish(listing._id);
-            showToast.success('Listing suspended');
+            showToast.success(t_toasts("listingSuspended"));
             fetchListings();
         } catch (error: any) {
             setListings((prev) =>
@@ -230,7 +239,7 @@ function BuySellPageContent() {
                 prev.map((l) => l._id === listing._id ? { ...l, status: 'approved' as const } : l),
             );
             await buySellApi.republish(listing._id);
-            showToast.success('Listing reactivated');
+            showToast.success(t_toasts("listingReactivated"));
             fetchListings();
         } catch (error: any) {
             setListings((prev) =>
@@ -251,7 +260,7 @@ function BuySellPageContent() {
             onOk: async () => {
                 try {
                     await buySellApi.delete(listing._id);
-                    showToast.success('Listing deleted');
+                    showToast.success(t_toasts("listingDeleted"));
                     fetchListings();
                 } catch (error: any) {
                     showToast.error(error.response?.data?.message || 'Failed to delete listing');
@@ -284,11 +293,11 @@ function BuySellPageContent() {
         return (
             <Result
                 status="403"
-                title="Access Denied"
+                title={t_common("accessDenied")}
                 subTitle="You don't have permission to manage Buy & Sell listings."
                 extra={
                     <Button type="primary" onClick={() => router.push('/dashboard')}>
-                        Go to Dashboard
+                        {t_nav2("goToDashboard")}
                     </Button>
                 }
             />
@@ -315,7 +324,7 @@ function BuySellPageContent() {
                             borderRadius: 8,
                         }}
                     >
-                        Post Buy &amp; Sell
+                        {t_listing("postBuySell")}
                     </Button>
                 )}
             </div>
@@ -325,7 +334,7 @@ function BuySellPageContent() {
                 <Col xs={12} sm={6}>
                     <Card>
                         <Statistic
-                            title="Total Listings"
+                            title={t_listing("totalListings")}
                             value={stats.total}
                             prefix={<AppstoreOutlined />}
                         />
@@ -334,7 +343,7 @@ function BuySellPageContent() {
                 <Col xs={12} sm={6}>
                     <Card>
                         <Statistic
-                            title="Pending Review"
+                            title={t_listing("pendingReview")}
                             value={stats.pending}
                             valueStyle={{ color: '#faad14' }}
                             prefix={<ClockCircleOutlined />}
@@ -344,7 +353,7 @@ function BuySellPageContent() {
                 <Col xs={12} sm={6}>
                     <Card>
                         <Statistic
-                            title="Approved"
+                            title={t_common("approved")}
                             value={stats.approved}
                             valueStyle={{ color: '#52c41a' }}
                             prefix={<CheckCircleOutlined />}
@@ -354,7 +363,7 @@ function BuySellPageContent() {
                 <Col xs={12} sm={6}>
                     <Card>
                         <Statistic
-                            title="Suspended"
+                            title={t_common("suspended")}
                             value={stats.suspended}
                             valueStyle={{ color: '#8c8c8c' }}
                             prefix={<PauseCircleOutlined />}
@@ -368,7 +377,7 @@ function BuySellPageContent() {
                 <Row gutter={[16, 16]}>
                     <Col xs={24} md={10}>
                         <Search
-                            placeholder="Search by title or location…"
+                            placeholder={t_listing("searchTitleLocationAlt")}
                             allowClear
                             size="large"
                             prefix={<SearchOutlined />}
@@ -498,22 +507,46 @@ function BuySellPageContent() {
 
                             {/* ── Core details ── */}
                             <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small" style={{ marginBottom: 16 }}>
-                                <Descriptions.Item label="Title" span={2}>{reviewListing.title}</Descriptions.Item>
-                                <Descriptions.Item label="Price">
-                                    <strong>{formatBuySellPrice(reviewListing.price)}</strong>
+                                <Descriptions.Item label={t_common("title")} span={2}>{reviewListing.title}</Descriptions.Item>
+                                <Descriptions.Item label={t_common("price")}>
+                                    {(() => {
+                                        const p = money.forListing(reviewListing.price, reviewListing.currency);
+                                        return (
+                                            <>
+                                                <strong>{p.display}</strong>
+                                                {p.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {p.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Location">{reviewListing.location}</Descriptions.Item>
-                                <Descriptions.Item label="Category">
+                                <Descriptions.Item label={t_common("location")}>{reviewListing.location}</Descriptions.Item>
+                                <Descriptions.Item label={t_common("category")}>
                                     <Tag color="blue" style={{ margin: 0 }}>{getBuySellCategoryLabel(reviewListing.category)}</Tag>
                                     {' '}
                                     <span style={{ color: '#8c8c8c', fontSize: 12 }}>{getSubcategoryLabel(reviewListing)}</span>
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Views / Saves">
+                                <Descriptions.Item label={t_home("viewsSaves")}>
                                     {reviewListing.views ?? 0} / {reviewListing.saves ?? 0}
                                 </Descriptions.Item>
                                 {reviewListing.agentFee != null && (
-                                    <Descriptions.Item label="Agent Fee">
-                                        {formatBuySellPrice(reviewListing.agentFee)}
+                                    <Descriptions.Item label={t_form("agentFee")}>
+                                        {(() => {
+                                        const p = money.forListing(reviewListing.agentFee, reviewListing.currency);
+                                        return (
+                                            <>
+                                                <strong>{p.display}</strong>
+                                                {p.isConverted && (
+                                                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                                                        Listed at {p.original}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                     </Descriptions.Item>
                                 )}
 
@@ -521,19 +554,19 @@ function BuySellPageContent() {
                                 {reviewListing.category === 'land' && (
                                     <>
                                         {reviewListing.landSize != null && (
-                                            <Descriptions.Item label="Land Size">
+                                            <Descriptions.Item label={t_form("landSize")}>
                                                 {reviewListing.landSize}{' '}
                                                 {reviewListing.unit ? LAND_UNIT_LABELS[reviewListing.unit] ?? reviewListing.unit : ''}
                                             </Descriptions.Item>
                                         )}
                                         {reviewListing.ownershipStatus && (
-                                            <Descriptions.Item label="Ownership">{reviewListing.ownershipStatus}</Descriptions.Item>
+                                            <Descriptions.Item label={t_form("ownership")}>{reviewListing.ownershipStatus}</Descriptions.Item>
                                         )}
                                         {reviewListing.sellerPhone && (
-                                            <Descriptions.Item label="Seller Phone">{reviewListing.sellerPhone}</Descriptions.Item>
+                                            <Descriptions.Item label={t_form("sellerPhone")}>{reviewListing.sellerPhone}</Descriptions.Item>
                                         )}
                                         {reviewListing.whatsappNumber && (
-                                            <Descriptions.Item label="WhatsApp">{reviewListing.whatsappNumber}</Descriptions.Item>
+                                            <Descriptions.Item label={t_common("whatsapp")}>{reviewListing.whatsappNumber}</Descriptions.Item>
                                         )}
                                     </>
                                 )}
@@ -542,13 +575,13 @@ function BuySellPageContent() {
                                 {reviewListing.category === 'house' && (
                                     <>
                                         {reviewListing.bedrooms != null && (
-                                            <Descriptions.Item label="Bedrooms">{reviewListing.bedrooms}</Descriptions.Item>
+                                            <Descriptions.Item label={t_form("bedrooms")}>{reviewListing.bedrooms}</Descriptions.Item>
                                         )}
                                         {reviewListing.bathrooms != null && (
-                                            <Descriptions.Item label="Bathrooms">{reviewListing.bathrooms}</Descriptions.Item>
+                                            <Descriptions.Item label={t_form("bathrooms")}>{reviewListing.bathrooms}</Descriptions.Item>
                                         )}
                                         {reviewListing.propertyType && (
-                                            <Descriptions.Item label="Property Type" span={2}>{reviewListing.propertyType}</Descriptions.Item>
+                                            <Descriptions.Item label={t_form("propertyType")} span={2}>{reviewListing.propertyType}</Descriptions.Item>
                                         )}
                                     </>
                                 )}
@@ -557,16 +590,16 @@ function BuySellPageContent() {
                                 {reviewListing.category === 'household_item' && (
                                     <>
                                         {reviewListing.condition && (
-                                            <Descriptions.Item label="Condition">
+                                            <Descriptions.Item label={t_form("condition")}>
                                                 {ITEM_CONDITION_LABELS[reviewListing.condition] ?? reviewListing.condition}
                                             </Descriptions.Item>
                                         )}
-                                        <Descriptions.Item label="Warranty">{reviewListing.warranty ? 'Yes' : 'No'}</Descriptions.Item>
-                                        <Descriptions.Item label="Delivery">{reviewListing.deliveryAvailable ? 'Yes' : 'No'}</Descriptions.Item>
+                                        <Descriptions.Item label={t_form("warranty")}>{reviewListing.warranty ? 'Yes' : 'No'}</Descriptions.Item>
+                                        <Descriptions.Item label={t_form("delivery")}>{reviewListing.deliveryAvailable ? 'Yes' : 'No'}</Descriptions.Item>
                                     </>
                                 )}
 
-                                <Descriptions.Item label="Description" span={2}>
+                                <Descriptions.Item label={t_common("description")} span={2}>
                                     <div style={{ maxHeight: 100, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
                                         {reviewListing.description || '—'}
                                     </div>
@@ -644,10 +677,10 @@ function BuySellPageContent() {
                             {/* ── Review actions ── */}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
                                 <Button onClick={() => { setReviewModalOpen(false); setReviewListing(null); }}>
-                                    Cancel
+                                    {t_common("cancel")}
                                 </Button>
                                 <Button danger onClick={() => handleRejectClick(reviewListing)}>
-                                    Reject
+                                    {t_common("reject")}
                                 </Button>
                                 <Button
                                     type="primary"
@@ -656,7 +689,7 @@ function BuySellPageContent() {
                                     onClick={() => handleApprove(reviewListing)}
                                     style={{ background: '#43e97b', borderColor: '#43e97b' }}
                                 >
-                                    Approve
+                                    {t_common("approve")}
                                 </Button>
                             </div>
                         </>
@@ -666,7 +699,7 @@ function BuySellPageContent() {
 
             {/* ── Reject Modal ───────────────────────────────────────────────── */}
             <Modal
-                title="Reject Listing"
+                title={t_listing("rejectListing")}
                 open={rejectModalOpen}
                 onOk={handleRejectSubmit}
                 onCancel={() => {
@@ -685,7 +718,7 @@ function BuySellPageContent() {
                 </div>
                 <TextArea
                     rows={4}
-                    placeholder="Enter rejection reason (will be sent to the seller via notification)…"
+                    placeholder={t_listing("rejectionSeller")}
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                 />

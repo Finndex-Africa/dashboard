@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale, useTranslations } from "next-intl";
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -46,6 +48,10 @@ export function PropertiesTable({
     savedIds = [],
     approvingId,
 }: PropertiesTableProps) {
+    const t_common = useTranslations("common");
+    const t_listing = useTranslations("listing");
+    const locale = useLocale();
+    const money = useMoney();
     const getStatusColor = (status: Property['status']) => {
         switch (status) {
             case 'approved':
@@ -100,8 +106,11 @@ export function PropertiesTable({
             title: 'Price',
             dataIndex: 'price',
             key: 'price',
-            sorter: (a, b) => a.price - b.price,
-            render: (price) => `$${price.toLocaleString()}`,
+            // Sort on the normalized USD figure — ordering raw amounts puts
+            // every RWF listing above every USD one regardless of real value.
+            sorter: (a, b) => (a.priceUsd ?? a.price) - (b.priceUsd ?? b.price),
+            render: (price, record) =>
+                money.forListing(price, record.currency).display,
         },
         {
             title: 'Bedrooms',
@@ -140,7 +149,7 @@ export function PropertiesTable({
             dataIndex: 'createdAt',
             key: 'createdAt',
             sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            render: (date) => new Date(date).toLocaleDateString('en-US', {
+            render: (date) => new Date(date).toLocaleDateString(locale, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -175,19 +184,19 @@ export function PropertiesTable({
 
                     {/* Admin: Review pending properties (then Approve/Reject from modal) */}
                     {record.status === 'pending' && onReview ? (
-                        <Tooltip title="Review before approving or rejecting">
+                        <Tooltip title={t_listing("reviewBeforeApproving")}>
                             <Button
                                 type="primary"
                                 size="small"
                                 icon={<FileSearchOutlined />}
                                 onClick={() => onReview(record)}
                             >
-                                Review
+                                {t_common("review")}
                             </Button>
                         </Tooltip>
                     ) : record.status === 'pending' && onApprove && onReject ? (
                         <>
-                            <Tooltip title="Approve">
+                            <Tooltip title={t_common("approve")}>
                                 <Button
                                     type="primary"
                                     size="small"
@@ -199,24 +208,24 @@ export function PropertiesTable({
                                         borderColor: '#43e97b',
                                     }}
                                 >
-                                    Approve
+                                    {t_common("approve")}
                                 </Button>
                             </Tooltip>
-                            <Tooltip title="Reject">
+                            <Tooltip title={t_common("reject")}>
                                 <Button
                                     danger
                                     size="small"
                                     icon={<CloseOutlined />}
                                     onClick={() => onReject(record)}
                                 >
-                                    Reject
+                                    {t_common("reject")}
                                 </Button>
                             </Tooltip>
                         </>
                     ) : (
                         <>
                             {onView && (
-                                <Tooltip title="View">
+                                <Tooltip title={t_common("view")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -234,7 +243,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'approved' && onUnpublish && (
-                                <Tooltip title="Unpublish">
+                                <Tooltip title={t_common("unpublish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeInvisibleOutlined />}
@@ -244,7 +253,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {record.status === 'suspended' && onRepublish && (
-                                <Tooltip title="Republish">
+                                <Tooltip title={t_common("republish")}>
                                     <Button
                                         type="text"
                                         icon={<EyeOutlined />}
@@ -254,7 +263,7 @@ export function PropertiesTable({
                                 </Tooltip>
                             )}
                             {onDelete && (
-                                <Tooltip title="Delete">
+                                <Tooltip title={t_common("delete")}>
                                     <Button
                                         type="text"
                                         danger

@@ -1,4 +1,5 @@
 import { apiClient, PaginatedResponse } from '@/lib/api-client';
+import type { Currency } from '@/lib/currency/config';
 import { Service } from '@/types/dashboard';
 
 export interface ServiceFilters {
@@ -14,6 +15,8 @@ export interface ServiceFilters {
 }
 
 export interface CreateServiceDto {
+    /** Currency the price is quoted in; the backend normalizes to USD. */
+    currency?: Currency;
     title: string;
     category: string;
     description: string;

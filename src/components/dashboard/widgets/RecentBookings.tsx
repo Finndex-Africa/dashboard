@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useMoney } from '@/lib/currency/CurrencyProvider';
 import { Card, Table, Tag, Empty, Spin } from 'antd';
 import { bookingsApi } from '@/services/api/bookings.api';
 import type { ColumnsType } from 'antd/es/table';
@@ -20,6 +21,7 @@ interface RecentBookingsProps {
 }
 
 export default function RecentBookings({ userId, userRole }: RecentBookingsProps) {
+    const money = useMoney();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -78,7 +80,10 @@ export default function RecentBookings({ userId, userRole }: RecentBookingsProps
             title: 'Amount',
             dataIndex: 'totalPrice',
             key: 'price',
-            render: (price: number) => `$${price?.toLocaleString() || 0}`,
+            // Bookings carry no currency of their own; totalPrice inherits the
+            // listing's, which the API returns on the populated listing.
+            render: (price: number, record: any) =>
+                money.forListing(price ?? 0, record?.serviceId?.currency).display,
         },
         {
             title: 'Status',

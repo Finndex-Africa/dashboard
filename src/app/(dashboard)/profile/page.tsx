@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import React, { useState, useEffect } from 'react';
 import Card from 'antd/es/card';
 import Form from 'antd/es/form';
@@ -19,6 +20,11 @@ import { getRoleLabel } from '@/lib/role-utils';
 const { Title, Text } = Typography;
 
 export default function ProfilePage() {
+    const t_common = useTranslations("common");
+    const t_errors2 = useTranslations("errors2");
+    const t_form = useTranslations("form");
+    const t_placeholder = useTranslations("placeholder");
+    const t_toasts = useTranslations("toasts");
     const { user, setUser } = useAuth();
     const [form] = Form.useForm();
     const [passwordForm] = Form.useForm();
@@ -74,10 +80,10 @@ export default function ProfilePage() {
                 localStorage.setItem('user', JSON.stringify(updatedUser));
             }
 
-            message.success('Profile picture updated successfully');
+            message.success(t_toasts("avatarUpdated"));
         } catch (error) {
             console.error('Avatar upload error:', error);
-            message.error('Failed to upload profile picture');
+            message.error(t_errors2("uploadAvatar"));
         } finally {
             setUploading(false);
         }
@@ -120,10 +126,10 @@ export default function ProfilePage() {
                 localStorage.setItem('user', JSON.stringify(updatedUser));
             }
 
-            message.success('Profile updated successfully');
+            message.success(t_toasts("profileUpdated"));
         } catch (error) {
             console.error('Profile update error:', error);
-            message.error('Failed to update profile');
+            message.error(t_errors2("updateProfile"));
         } finally {
             setLoading(false);
         }
@@ -150,7 +156,7 @@ export default function ProfilePage() {
                 throw new Error(errorData.message || 'Failed to change password');
             }
 
-            message.success('Password changed successfully');
+            message.success(t_toasts("passwordChanged"));
             setIsPasswordModalVisible(false);
             passwordForm.resetFields();
         } catch (error: any) {
@@ -172,7 +178,7 @@ export default function ProfilePage() {
     return (
         <div className="space-y-6 max-w-4xl">
             <Title level={2} style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
-                Profile
+                {t_common("profile")}
             </Title>
 
             <Card className="shadow-sm" style={{ borderRadius: '12px' }}>
@@ -234,7 +240,7 @@ export default function ProfilePage() {
                 {/* Profile Form */}
                 <div className="mt-6">
                     <Title level={4} style={{ marginBottom: '24px' }}>
-                        Personal Information
+                        {t_form("personalInformation")}
                     </Title>
 
                     <Form
@@ -245,48 +251,48 @@ export default function ProfilePage() {
                     >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Form.Item
-                                label="First Name"
+                                label={t_form("firstName")}
                                 name="firstName"
                                 rules={[{ required: true, message: 'Please enter your first name' }]}
                             >
                                 <Input
                                     prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                                    placeholder="Enter first name"
+                                    placeholder={t_placeholder("enterFirstName")}
                                     size="large"
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label="Last Name"
+                                label={t_form("lastName")}
                                 name="lastName"
                                 rules={[{ required: true, message: 'Please enter your last name' }]}
                             >
                                 <Input
                                     prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                                    placeholder="Enter last name"
+                                    placeholder={t_placeholder("enterLastName")}
                                     size="large"
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label="Email Address"
+                                label={t_form("emailAddress")}
                                 name="email"
                             >
                                 <Input
                                     prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
-                                    placeholder="Email address"
+                                    placeholder={t_form("emailAddressLower")}
                                     size="large"
                                     disabled
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label="Phone Number"
+                                label={t_form("phoneNumber")}
                                 name="phone"
                             >
                                 <Input
                                     prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />}
-                                    placeholder="Enter phone number"
+                                    placeholder={t_placeholder("enterPhone")}
                                     size="large"
                                 />
                             </Form.Item>
@@ -301,7 +307,7 @@ export default function ProfilePage() {
                                 loading={loading}
                                 style={{ minWidth: '150px' }}
                             >
-                                Save Changes
+                                {t_common("saveChanges")}
                             </Button>
                         </Form.Item>
                     </Form>
@@ -311,28 +317,28 @@ export default function ProfilePage() {
             {/* Account Security Card */}
             <Card className="shadow-sm" style={{ borderRadius: '12px' }}>
                 <Title level={4} style={{ marginBottom: '24px' }}>
-                    Account Security
+                    {t_form("accountSecurity")}
                 </Title>
 
                 <div className="space-y-4">
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                         <div>
                             <Text strong style={{ display: 'block', marginBottom: '4px' }}>
-                                Password
+                                {t_form("password")}
                             </Text>
                             <Text type="secondary" style={{ fontSize: '14px' }}>
                                 ••••••••
                             </Text>
                         </div>
                         <Button type="link" onClick={() => setIsPasswordModalVisible(true)}>
-                            Change Password
+                            {t_form("changePassword")}
                         </Button>
                     </div>
 
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                         <div>
                             <Text strong style={{ display: 'block', marginBottom: '4px' }}>
-                                Email Verification
+                                {t_form("emailVerification")}
                             </Text>
                             <Text type="secondary" style={{ fontSize: '14px' }}>
                                 {user.email}
@@ -347,7 +353,7 @@ export default function ProfilePage() {
 
             {/* Change Password Modal */}
             <Modal
-                title="Change Password"
+                title={t_form("changePassword")}
                 open={isPasswordModalVisible}
                 onCancel={() => {
                     setIsPasswordModalVisible(false);
@@ -364,7 +370,7 @@ export default function ProfilePage() {
                     style={{ marginTop: '24px' }}
                 >
                     <Form.Item
-                        label="Current Password"
+                        label={t_form("currentPassword")}
                         name="currentPassword"
                         rules={[
                             { required: true, message: 'Please enter your current password' },
@@ -372,13 +378,13 @@ export default function ProfilePage() {
                     >
                         <Input.Password
                             prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Enter current password"
+                            placeholder={t_placeholder("enterCurrentPassword")}
                             size="large"
                         />
                     </Form.Item>
 
                     <Form.Item
-                        label="New Password"
+                        label={t_form("newPassword")}
                         name="newPassword"
                         rules={[
                             { required: true, message: 'Please enter your new password' },
@@ -387,13 +393,13 @@ export default function ProfilePage() {
                     >
                         <Input.Password
                             prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Enter new password"
+                            placeholder={t_placeholder("enterNewPassword")}
                             size="large"
                         />
                     </Form.Item>
 
                     <Form.Item
-                        label="Confirm New Password"
+                        label={t_form("confirmNewPassword")}
                         name="confirmPassword"
                         dependencies={['newPassword']}
                         rules={[
@@ -410,7 +416,7 @@ export default function ProfilePage() {
                     >
                         <Input.Password
                             prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Confirm new password"
+                            placeholder={t_placeholder("confirmNewPassword")}
                             size="large"
                         />
                     </Form.Item>
@@ -424,7 +430,7 @@ export default function ProfilePage() {
                                 }}
                                 size="large"
                             >
-                                Cancel
+                                {t_common("cancel")}
                             </Button>
                             <Button
                                 type="primary"
@@ -433,7 +439,7 @@ export default function ProfilePage() {
                                 loading={passwordLoading}
                                 icon={<SaveOutlined />}
                             >
-                                Change Password
+                                {t_form("changePassword")}
                             </Button>
                         </div>
                     </Form.Item>
