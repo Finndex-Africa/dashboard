@@ -32,6 +32,8 @@ import { useAuth } from "@/providers/AuthProvider";
 import LanguageSwitcher from "@/components/global/LanguageSwitcher";
 import CurrencySwitcher from "@/components/global/CurrencySwitcher";
 import { getRoleRedirectPath } from "@/lib/role-redirects";
+import { ROUTE_ROLES } from "@/lib/route-access";
+import { clearAuthStorage } from "@/lib/auth-cookie";
 
 const { Content, Sider } = Layout;
 
@@ -56,120 +58,79 @@ export default function DashboardLayout({
       key: "/dashboard",
       icon: <HomeOutlined />,
       label: t("dashboard"),
-      roles: ["admin", "admin_property", "admin_services"],
+      roles: ROUTE_ROLES["/dashboard"],
     },
     {
       key: "/properties",
       icon: <AppstoreOutlined />,
       label: t("properties"),
-      roles: [
-        "home_seeker",
-        "landlord",
-        "agent",
-        "real_estate_agency",
-        "admin",
-        "admin_property",
-      ],
+      roles: ROUTE_ROLES["/properties"],
     },
     {
       key: "/services",
       icon: <ShopOutlined />,
       label: t("services"),
-      roles: ["home_seeker", "service_provider", "admin", "admin_services"],
+      roles: ROUTE_ROLES["/services"],
     },
     {
       key: "/buy-sell",
       icon: <ShoppingOutlined />,
       label: t("buyAndSell"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/buy-sell"],
     },
     {
       key: "/bookings",
       icon: <CalendarOutlined />,
       label: t("bookings"),
-      roles: [
-        "home_seeker",
-        "landlord",
-        "agent",
-        "real_estate_agency",
-        "service_provider",
-        "admin",
-      ],
+      roles: ROUTE_ROLES["/bookings"],
     },
     {
       key: "/advertisements",
       icon: <TrophyOutlined />,
       label: t("advertisements"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/advertisements"],
     },
     {
       key: "/users",
       icon: <TeamOutlined />,
       label: t("users"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/users"],
     },
     {
       key: "/verifications",
       icon: <SafetyCertificateOutlined />,
       label: t("verifications"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/verifications"],
     },
     {
       key: "/user-reports",
       icon: <FlagOutlined />,
       label: t("userReports"),
-      roles: ["admin", "admin_property", "admin_services"],
+      roles: ROUTE_ROLES["/user-reports"],
     },
     {
       key: "/service-requests",
       icon: <NotificationOutlined />,
       label: t("serviceRequests"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/service-requests"],
     },
     {
       key: "/notifications",
       icon: <BellOutlined />,
       label: t("notifications"),
-      roles: [
-        "home_seeker",
-        "landlord",
-        "agent",
-        "real_estate_agency",
-        "service_provider",
-        "admin",
-        "admin_property",
-        "admin_services",
-      ],
+      roles: ROUTE_ROLES["/notifications"],
     },
     {
       key: "/messages",
       icon: <MessageOutlined />,
       label: t("messages"),
-      roles: [
-        "home_seeker",
-        "landlord",
-        "agent",
-        "real_estate_agency",
-        "service_provider",
-        "admin",
-        "admin_property",
-        "admin_services",
-      ],
+      roles: ROUTE_ROLES["/messages"],
     },
     {
       key: "/profile",
       icon: <UserOutlined />,
       label: t("profile"),
-      roles: [
-        "home_seeker",
-        "landlord",
-        "agent",
-        "real_estate_agency",
-        "service_provider",
-        "admin",
-        "admin_property",
-        "admin_services",
-      ],
+      roles: ROUTE_ROLES["/profile"],
     },
     {
       // Holds the USD/RWF exchange-rate controls. Scoped to full admins because
@@ -178,24 +139,20 @@ export default function DashboardLayout({
       key: "/settings",
       icon: <SettingOutlined />,
       label: t("settings"),
-      roles: ["admin"],
+      roles: ROUTE_ROLES["/settings"],
     },
   ];
 
   // Filter menu items based on user role
   const menuItems = user?.role
     ? allMenuItems
-        .filter((item) => item.roles.includes(user.role))
+        .filter((item) => (item.roles as readonly string[]).includes(user.role))
         .map(({ roles, ...item }) => item)
     : [];
 
   const handleLogout = () => {
     // Clear dashboard auth data (only auth keys)
-    localStorage.removeItem("token");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("refreshToken");
-    document.cookie = "token=; path=/; max-age=0";
+    clearAuthStorage();
 
     // Redirect to frontend and trigger logout there as well
     const websiteUrl =

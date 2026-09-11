@@ -8,7 +8,7 @@ import { LOCALE_COOKIE, defaultLocale, isLocale } from './routing'
  * the language switcher sets via a server action.
  */
 export default getRequestConfig(async () => {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value
     const locale = isLocale(fromCookie) ? fromCookie : defaultLocale
 

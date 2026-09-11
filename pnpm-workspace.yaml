@@ -3,12 +3,39 @@ allowBuilds:
   '@parcel/watcher': true
   # Native SWC bindings.
   '@swc/core': true
+  # Pure-JS package; its install script is not needed to use the library, so we
+  # don't grant it the right to execute code at install time.
+  stream-chat: false
   # napi bindings used by the eslint import resolver.
   unrs-resolver: true
 
 # Moved from package.json "pnpm.overrides" — pnpm 11 no longer reads that field.
-# Neither package is currently in the dependency tree; these pins only take
-# effect if something (e.g. Sentry/OpenTelemetry) pulls them back in.
 overrides:
+  # Neither package is currently in the dependency tree; these pins only take
+  # effect if something (e.g. Sentry/OpenTelemetry) pulls them back in.
   import-in-the-middle: 1.15.0
   require-in-the-middle: 7.5.2
+
+  # --- Security pins for transitive deps we don't control directly ---
+  # These sit deep inside @ant-design/charts' and stream-chat's trees, so they
+  # can't be fixed by bumping a direct dependency. All are patch/minor bumps
+  # within the same major. Re-check these when the parent packages update; an
+  # override that outlives its advisory is just drift.
+  #
+  # GHSA: code injection via _.template key names (high).
+  lodash: '>=4.17.24'
+  # RCE via RegExp.flags / Date.prototype.toISOString (high).
+  serialize-javascript: '>=7.0.3'
+  # Memory-exhaustion DoS from tiny fragments (high).
+  ws: '>=8.21.0'
+  # CRLF injection via unescaped multipart field names (high).
+  form-data: '>=4.0.6'
+  # Host confusion via literal backslash authority delimiter (high).
+  fast-uri: '>=3.1.4'
+  # Credential/redirect handling fixes consumed by stream-chat's axios.
+  follow-redirects: '>=1.15.11'
+  # Bundled inside Next.js' own toolchain; Next 14.2.x still ships the old ones.
+  # These go away on the Next 15 upgrade — drop the pins at that point.
+  nanoid: '>=3.3.16'
+  postcss: '>=8.5.12'
+  browserslist: '>=4.28.7'

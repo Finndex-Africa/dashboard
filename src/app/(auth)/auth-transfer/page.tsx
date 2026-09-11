@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getRoleRedirectPath, getUserRoleFromToken } from '@/lib/role-redirects';
+import { setAuthCookie, clearAuthStorage } from '@/lib/auth-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
@@ -21,11 +22,7 @@ function AuthTransferContent() {
             const isLogout = searchParams.get('logout') === 'true';
             if (isLogout) {
                 // Remove only auth-related storage keys to avoid wiping developer logs
-                localStorage.removeItem('token');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                localStorage.removeItem('refreshToken');
-                document.cookie = 'token=; path=/; max-age=0';
+                clearAuthStorage();
                 return;
             }
 
@@ -58,16 +55,18 @@ function AuthTransferContent() {
 
                 if (data.success && data.data.valid) {
                     // Clear existing auth data (only auth keys)
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('refreshToken');
-                    document.cookie = 'token=; path=/; max-age=0';
+                    clearAuthStorage();
 
                     // Store the new token and user data
                     localStorage.setItem('token', token);
                     localStorage.setItem('user', JSON.stringify(data.data.user));
-                    document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                    setAuthCookie(token);
+
+                    // Scrub the token out of the address bar and this entry in
+                    // session history. It arrived as a query param, so without
+                    // this it lingers in browser history, in any Referer header
+                    // the next navigation sends, and in shared/bookmarked URLs.
+                    window.history.replaceState(null, '', window.location.pathname);
 
                     // Dispatch custom event to notify AuthProvider immediately
                     window.dispatchEvent(new Event('auth-updated'));

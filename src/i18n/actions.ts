@@ -16,11 +16,14 @@ import {
 export async function setLocale(locale: Locale) {
     if (!isLocale(locale)) return
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     cookieStore.set(LOCALE_COOKIE, locale, {
         maxAge: LOCALE_COOKIE_MAX_AGE,
         sameSite: 'lax',
         path: '/',
+        // Only over TLS in production; left off locally so http://localhost keeps
+        // remembering the language.
+        secure: process.env.NODE_ENV === 'production',
     })
 
     revalidatePath('/', 'layout')

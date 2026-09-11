@@ -8,10 +8,10 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "20"
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+# Security headers are defined once in next.config.js so they apply on every host
+# (Netlify, self-hosted via server.js, local). Duplicating them here caused the two
+# sources to drift, so this file no longer sets them.
+#
+# X-XSS-Protection was removed deliberately: the legacy auditor it enables is gone
+# from modern browsers and its filter introduced its own injection bugs. The CSP in
+# next.config.js replaces it.

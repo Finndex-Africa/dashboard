@@ -1,5 +1,6 @@
 import axios from 'axios';
 import message from 'antd/es/message';
+import { setAuthCookie, clearAuthStorage } from '@/lib/auth-cookie';
 // Small JWT decoder to avoid relying on package default export in the bundler.
 function decodeJwt(token: string): any | null {
     try {
@@ -108,6 +109,10 @@ export class AuthService {
                 // Store token and user data
                 window.localStorage.setItem('token', token);
                 window.localStorage.setItem('user', JSON.stringify(user));
+                // Middleware authorizes off the cookie, not localStorage. Without
+                // this, a direct /login sign-in left no cookie and every protected
+                // route bounced the user straight back out.
+                setAuthCookie(token);
             }
             this.token = token;
 
@@ -123,8 +128,10 @@ export class AuthService {
     }
 
     logout(): void {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Clears localStorage *and* the `token` cookie. Previously only
+        // localStorage was cleared, so the cookie survived and middleware kept
+        // treating the session as live after a "logout".
+        clearAuthStorage();
         this.token = null;
         window.location.href = '/login';
     }

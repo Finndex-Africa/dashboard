@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { clearAuthStorage } from './auth-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -67,9 +68,7 @@ class ApiClient {
                                       errorMessage.toLowerCase().includes('authentication');
 
                     if (isAuthError && typeof window !== 'undefined') {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        document.cookie = 'token=; path=/; max-age=0';
+                        clearAuthStorage();
                         const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
                         window.location.href = websiteUrl;
                     }

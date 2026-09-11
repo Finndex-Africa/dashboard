@@ -4,7 +4,6 @@
 /node_modules
 /.pnp
 .pnp.js
-.env
 
 # testing
 /coverage
@@ -27,9 +26,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
-.env*.local
-.env.development
-.env.production
 
 # vercel
 .vercel
@@ -37,3 +33,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local env files — deny all, allow only the template
+.env
+.env.*
+!.env.example
+
+# scratch / analysis scripts
+/*.py

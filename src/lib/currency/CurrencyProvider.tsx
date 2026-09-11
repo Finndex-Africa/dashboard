@@ -69,7 +69,9 @@ export function CurrencyProvider({
     (next: Currency) => {
       setCurrencyState(next);
       // One year, lax: this is a display preference, not a credential.
-      document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+      // Not a credential, but there's no reason to let it travel over plain HTTP.
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; SameSite=Lax${secure}`;
       // Server components that render figures read the cookie, so they need to
       // re-render too — client state alone would leave them on the old currency
       // until the next full navigation.
